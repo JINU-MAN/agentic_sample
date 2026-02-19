@@ -1,0 +1,35 @@
+[
+  {
+    "name": "WebSearchAnalyst",
+    "type": "a2a",
+    "base_url": "http://127.0.0.1:9101",
+    "module": "agent.web_search_agent",
+    "attr": "web_search_agent",
+    "description": "Internet search and web-page evidence summarization via MCP tools.",
+    "capabilities": ["web_search", "web_summary", "fact_check", "slack_post"]
+  },
+  {
+    "name": "PaperAnalyst",
+    "type": "a2a",
+    "base_url": "http://127.0.0.1:9102",
+    "module": "agent.paper_agent",
+    "attr": "research_agent",
+    "description": "Paper search, full-text memory, and fast follow-up QA from local PDF corpus.",
+    "capabilities": [
+      "paper_search",
+      "paper_summary",
+      "paper_fulltext_memory",
+      "paper_memory_query",
+      "slack_post"
+    ]
+  },
+  {
+    "name": "SocialMediaAnalyst",
+    "type": "a2a",
+    "base_url": "http://127.0.0.1:9103",
+    "module": "agent.sns_agent",
+    "attr": "sns_agent",
+    "description": "SNS post collection, summarization, and Slack sharing via MCP tools.",
+    "capabilities": ["sns_search", "sns_summary", "slack_post"]
+  }
+]
