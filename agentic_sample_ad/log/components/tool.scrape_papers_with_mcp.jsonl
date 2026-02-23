@@ -1,0 +1,2 @@
+{"ts": "2026-02-23T09:30:37.956278+00:00", "level": "INFO", "component": "tool.scrape_papers_with_mcp", "action": "call_started", "direction": "outbound", "details": {"query": "prompt injection", "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\paper_server.py"}}
+{"ts": "2026-02-23T09:30:40.796737+00:00", "level": "INFO", "component": "tool.scrape_papers_with_mcp", "action": "call_completed", "direction": "inbound", "details": {"query": "prompt injection", "result_count": 4}}

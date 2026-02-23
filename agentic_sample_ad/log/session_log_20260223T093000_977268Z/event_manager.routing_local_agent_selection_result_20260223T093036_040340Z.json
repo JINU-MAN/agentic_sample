@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-23T09:30:36.040340+00:00",
+  "level": "INFO",
+  "component": "event_manager.routing",
+  "action": "local_agent_selection_result",
+  "direction": "internal",
+  "details": {
+    "method": "routing_hint.selected_agents",
+    "selected": [
+      "PaperAnalyst"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "ts": "2026-02-23T09:30:52.926000+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "./mcp_local/slack_server.py",
+    "tool_name": "post_message",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"ok\": true,\n  \"channel\": \"C0AFMHF42FJ\",\n  \"ts\": \"1771839052.084499\",\n  \"message\": {\n    \"user\": \"U0AEBRSE03Z\",\n    \"type\": \"message\",\n    \"ts\": \"1771839052.084499\",\n    \"bot_id\": \"B0AER7Q28DU\",\n    \"app_id\": \"A0AFMJ099PA\",\n    \"text\": \"Security Analysis of Agentic Communication Protocols.pdf - This paper seems relevant to prompt injection based on initial search results.\",\n    \"team\": \"T0AET1ZEYCA\",\n    \"bot_profile\": {\n      \"id\": \"B0AER7Q28DU\",\n      \"app_id\": \"A0AFMJ099PA\",\n      \"user_id\": \"U0AEBRSE03Z\",\n      \"name\": \"Slack-Agent\",\n      \"icons\": {\n        \"image_36\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_36.png\",\n        \"image_48\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_48.png\",\n        \"image_72\": \"https://a.slack-edge.com/80588/img/plugins/app/service_72.png\"\n      },\n      \"deleted\": false,\n      \"updated\": 1770960152,\n      \"team_id\": \"T0AET1ZEYCA\"\n    },\n    \"blocks\": [\n      {\n        \"type\": \"rich_text\",\n        \"block_id\": \"ahk\",\n        \"elements\": [\n          {\n            \"type\": \"rich_text_section\",\n            \"elements\": [\n              {\n                \"type\": \"text\",\n                \"text\": \"Security Analysis of Agentic Communication Protocols.pdf - This paper seems relevant to prompt injection based on initial search results.\"\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": {
+          "ok": true,
+          "channel": "C0AFMHF42FJ",
+          "ts": "1771839052.084499",
+          "message": {
+            "user": "U0AEBRSE03Z",
+            "type": "message",
+            "ts": "1771839052.084499",
+            "bot_id": "B0AER7Q28DU",
+            "app_id": "A0AFMJ099PA",
+            "text": "Security Analysis of Agentic Communication Protocols.pdf - This paper seems relevant to prompt injection based on initial search results.",
+            "team": "T0AET1ZEYCA",
+            "bot_profile": {
+              "id": "<max_depth_reached>",
+              "app_id": "<max_depth_reached>",
+              "user_id": "<max_depth_reached>",
+              "name": "<max_depth_reached>",
+              "icons": "<max_depth_reached>",
+              "deleted": "<max_depth_reached>",
+              "updated": "<max_depth_reached>",
+              "team_id": "<max_depth_reached>"
+            },
+            "blocks": [
+              "<max_depth_reached>"
+            ]
+          }
+        }
+      },
+      "isError": false
+    }
+  }
+}

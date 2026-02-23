@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-23T09:30:12.023213+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "bridge_launch_completed",
+  "direction": "internal",
+  "details": {
+    "count": 3,
+    "bridges": [
+      "PaperAnalyst",
+      "SocialMediaAnalyst",
+      "WebSearchAnalyst"
+    ]
+  }
+}

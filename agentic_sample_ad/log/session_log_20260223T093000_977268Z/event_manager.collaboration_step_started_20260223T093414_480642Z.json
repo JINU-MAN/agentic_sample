@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-23T09:34:14.480642+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 3,
+    "total_steps_hint": 3,
+    "agent": "WebSearchAnalyst",
+    "goal": "Summarize the blog post content and post the summary and link to the 'agentic' Slack channel. Format the message appropriately, including the blog post's title, a brief summary, and the link to the blog post.",
+    "tool_hints": [
+      "web_summary",
+      "slack_post_message"
+    ],
+    "open_needs": [],
+    "activated_agent_cards": [
+      "WebSearchAnalyst"
+    ]
+  }
+}

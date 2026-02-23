@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-23T09:30:55.005680+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_completed",
+  "direction": "inbound",
+  "details": {
+    "step": 2,
+    "total_steps_hint": 2,
+    "agent": "PaperAnalyst",
+    "ok": true
+  }
+}

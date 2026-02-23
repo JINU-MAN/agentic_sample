@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-23T09:34:14.470601+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "plan_updated",
+  "direction": "internal",
+  "details": {
+    "reason": "Consolidating summarization and posting into a single step for efficiency.",
+    "new_pending_steps": [
+      {
+        "agent": "WebSearchAnalyst",
+        "goal": "Summarize the blog post content and post the summary and link to the 'agentic' Slack channel. Format the message appropriately, including the blog post's title, a brief summary, and the link to the blog post."
+      }
+    ]
+  }
+}

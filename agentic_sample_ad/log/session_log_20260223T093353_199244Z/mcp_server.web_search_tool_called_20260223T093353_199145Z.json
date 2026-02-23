@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-23T09:33:53.199145+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_web",
+    "query": "BERT tutorial blog",
+    "max_results": 4
+  }
+}

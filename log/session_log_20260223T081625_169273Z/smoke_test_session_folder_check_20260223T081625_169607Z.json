@@ -1,0 +1,10 @@
+{
+  "ts": "2026-02-23T08:16:25.169607+00:00",
+  "level": "INFO",
+  "component": "smoke_test",
+  "action": "session_folder_check",
+  "direction": "internal",
+  "details": {
+    "ok": true
+  }
+}

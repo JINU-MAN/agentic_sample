@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-23T09:30:36.028825+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "agent_message_chunk",
+  "direction": "inbound",
+  "details": {
+    "task": "collaboration_plan",
+    "author": "MainAgent",
+    "text": "```json\n{\n  \"steps\": [\n    {\n      \"agent\": \"PaperAnalyst\",\n      \"goal\": \"Find a research paper related to 'prompt injection'. Determine appropriate search queries and retrieve relevant papers.\",\n      \"deliverable\": \"A JSON object containing the title, abstract (if available), and a link to the paper (if available).\",\n      \"tool_hints\": [\n        \"scrape_papers_with_mcp\"\n      ]\n    },\n    {\n      \"agent\": \"PaperAnalyst\",\n      \"goal\": \"Post the found paper to the 'agentic' Slack channel. Format the message appropriately, including the paper's title and a link.\",\n      \"deliverable\": \"Confirmation that the paper has been posted to the Slack channel.\",\n      \"tool_hints\": [\n        \"slack_post_message\"\n      ]\n    }\n  ],\n  \"notes\": \"The PaperAnalyst agent is used for both finding the paper and posting it to Slack, leveraging its paper search and Slack communication capabilities.\"\n}\n```"
+  }
+}

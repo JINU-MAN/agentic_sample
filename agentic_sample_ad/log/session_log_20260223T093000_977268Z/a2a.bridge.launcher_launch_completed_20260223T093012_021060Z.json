@@ -1,0 +1,34 @@
+{
+  "ts": "2026-02-23T09:30:12.021060+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge.launcher",
+  "action": "launch_completed",
+  "direction": "internal",
+  "details": {
+    "agent": "WebSearchAnalyst",
+    "host": "127.0.0.1",
+    "port": 9101,
+    "pid": 17432,
+    "command": [
+      "C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "-m",
+      "agentic_sample_ad.mcp_local.a2a_bridge_server",
+      "--module",
+      "agentic_sample_ad.web_search_agent.agent",
+      "--attr",
+      "web_search_agent",
+      "--name",
+      "WebSearchAnalyst",
+      "--description",
+      "Web search candidate discovery, page fetch validation, and evidence summarization.",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "9101",
+      "--tags",
+      "web_search,web_summary,fact_check,slack_post"
+    ],
+    "card_url": "http://127.0.0.1:9101/.well-known/agent-card.json",
+    "ready_timeout_sec": 15.0
+  }
+}

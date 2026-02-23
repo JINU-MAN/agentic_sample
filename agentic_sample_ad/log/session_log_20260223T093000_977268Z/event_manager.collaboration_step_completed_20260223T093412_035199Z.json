@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-23T09:34:12.035199+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_completed",
+  "direction": "inbound",
+  "details": {
+    "step": 2,
+    "total_steps_hint": 3,
+    "agent": "WebSearchAnalyst",
+    "ok": true
+  }
+}

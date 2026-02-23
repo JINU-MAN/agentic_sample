@@ -1,0 +1,49 @@
+{
+  "ts": "2026-02-23T09:34:21.051144+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "./mcp_local/slack_server.py",
+    "tool_name": "post_message",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"ok\": true,\n  \"channel\": \"C0AFMHF42FJ\",\n  \"ts\": \"1771839260.388059\",\n  \"message\": {\n    \"user\": \"U0AEBRSE03Z\",\n    \"type\": \"message\",\n    \"ts\": \"1771839260.388059\",\n    \"bot_id\": \"B0AER7Q28DU\",\n    \"app_id\": \"A0AFMJ099PA\",\n    \"text\": \"*BERT Model Explained - GeeksforGeeks*\\n\\nBERT (Bidirectional Encoder Representations from Transformers) is a revolutionary NLP model that overcomes the limitations of previous models by considering the full context of words in a sentence. This blog post likely covers BERT's architecture, pre-training tasks, and applications.\\n\\n<https://www.geeksforgeeks.org/nlp/explanation-of-bert-model-nlp/>\",\n    \"team\": \"T0AET1ZEYCA\",\n    \"bot_profile\": {\n      \"id\": \"B0AER7Q28DU\",\n      \"app_id\": \"A0AFMJ099PA\",\n      \"user_id\": \"U0AEBRSE03Z\",\n      \"name\": \"Slack-Agent\",\n      \"icons\": {\n        \"image_36\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_36.png\",\n        \"image_48\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_48.png\",\n        \"image_72\": \"https://a.slack-edge.com/80588/img/plugins/app/service_72.png\"\n      },\n      \"deleted\": false,\n      \"updated\": 1770960152,\n      \"team_id\": \"T0AET1ZEYCA\"\n    },\n    \"blocks\": [\n      {\n        \"type\": \"rich_text\",\n        \"block_id\": \"wySuB\",\n        \"elements\": [\n          {\n            \"type\": \"rich_text_section\",\n            \"elements\": [\n              {\n                \"type\": \"text\",\n                \"text\": \"BERT Model Explained - GeeksforGeeks\",\n                \"style\": {\n                  \"bold\": true\n                }\n              },\n              {\n                \"type\": \"text\",\n                \"text\": \"\\n\\nBERT (Bidirectional Encoder Representations from Transformers) is a revolutionary NLP model that overcomes the limitations of previous models by considering the full context of words in a sentence. This blog post likely covers BERT's architecture, pre-training tasks, and applications.\\n\\n\"\n              },\n              {\n                \"type\": \"link\",\n                \"url\": \"https://www.geeksforgeeks.org/nlp/explanation-of-bert-model-nlp/\"\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": {
+          "ok": true,
+          "channel": "C0AFMHF42FJ",
+          "ts": "1771839260.388059",
+          "message": {
+            "user": "U0AEBRSE03Z",
+            "type": "message",
+            "ts": "1771839260.388059",
+            "bot_id": "B0AER7Q28DU",
+            "app_id": "A0AFMJ099PA",
+            "text": "*BERT Model Explained - GeeksforGeeks*\n\nBERT (Bidirectional Encoder Representations from Transformers) is a revolutionary NLP model that overcomes the limitations of previous models by considering the full context of words in a sentence. This blog post likely covers BERT's architecture, pre-training tasks, and applications.\n\n<https://www.geeksforgeeks.org/nlp/explanation-of-bert-model-nlp/>",
+            "team": "T0AET1ZEYCA",
+            "bot_profile": {
+              "id": "<max_depth_reached>",
+              "app_id": "<max_depth_reached>",
+              "user_id": "<max_depth_reached>",
+              "name": "<max_depth_reached>",
+              "icons": "<max_depth_reached>",
+              "deleted": "<max_depth_reached>",
+              "updated": "<max_depth_reached>",
+              "team_id": "<max_depth_reached>"
+            },
+            "blocks": [
+              "<max_depth_reached>"
+            ]
+          }
+        }
+      },
+      "isError": false
+    }
+  }
+}

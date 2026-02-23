@@ -1,0 +1,20 @@
+{
+  "ts": "2026-02-23T09:33:48.624921+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "best blog post explaining BERT",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://ell.stackexchange.com/questions/258033/most-best-with-or-without-the",
+      "https://ell.stackexchange.com/questions/336995/it-was-the-best-ever-vs-it-is-the-best-ever",
+      "https://ell.stackexchange.com/questions/106993/about-best-the-best-and-most",
+      "https://ell.stackexchange.com/questions/182964/what-was-best-vs-what-was-the-best"
+    ]
+  }
+}

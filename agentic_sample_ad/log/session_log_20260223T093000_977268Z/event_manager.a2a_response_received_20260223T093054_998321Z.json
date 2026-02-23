@@ -1,0 +1,25 @@
+{
+  "ts": "2026-02-23T09:30:54.998321+00:00",
+  "level": "INFO",
+  "component": "event_manager.a2a",
+  "action": "response_received",
+  "direction": "inbound",
+  "details": {
+    "base_url": "http://127.0.0.1:9102",
+    "response": {
+      "id": "2be8a478-5644-4d56-bb8f-94e1a7d12086",
+      "jsonrpc": "2.0",
+      "result": {
+        "kind": "message",
+        "messageId": "811adfe00fcd4d05b1a8b87f383d31a3",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Okay, I will post the paper \"Security Analysis of Agentic Communication Protocols.pdf\" to the 'agentic' Slack channel.\nI have posted the message to the 'agentic' Slack channel.\n\nAdditional Needs: none"
+          }
+        ],
+        "role": "agent"
+      }
+    }
+  }
+}

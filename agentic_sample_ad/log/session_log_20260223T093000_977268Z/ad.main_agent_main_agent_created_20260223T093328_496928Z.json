@@ -1,0 +1,11 @@
+{
+  "ts": "2026-02-23T09:33:28.496928+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "main_agent_created",
+  "direction": "internal",
+  "details": {
+    "name": "MainAgent",
+    "model": "gemini-2.0-flash"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "ts": "2026-02-23T09:30:42.742209+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge",
+  "action": "rpc_request_completed",
+  "direction": "outbound",
+  "details": {
+    "agent": "PaperAnalyst",
+    "request_id": "16e843bb-9ca7-43bc-8e85-7e303edf51a9"
+  }
+}

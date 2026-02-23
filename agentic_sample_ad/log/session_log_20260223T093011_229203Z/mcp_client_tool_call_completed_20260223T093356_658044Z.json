@@ -1,0 +1,64 @@
+{
+  "ts": "2026-02-23T09:33:56.658044+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"论文的introduction该怎么写? - 知乎\",\n  \"url\": \"https://www.zhihu.com/question/606698988\",\n  \"snippet\": \"写Introduction就像写一篇有逻辑的故事。从大背景开始论述，层层递进，逐渐表明你所做的研究内容是有必要的。 Introduction所包含的内容大致分一下几点： （1）一个“帽子”，指出当前的问题； （2）针 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"怎样写好英文论文的 Introduction 部分？ - 知乎\",\n  \"url\": \"https://www.zhihu.com/question/49355121?sort=created\",\n  \"snippet\": \"（Video Source: Youtube. By WORDVICE） 看完了？们不妨透过下面两个问题来梳理一下其中信息： Why An Introduction Is Needed？ 「从文章的大结构来看Introduction提出了你的研究问题，这个问题 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"怎样写好英文论文的 Introduction 部分呢？ - 知乎\",\n  \"url\": \"https://www.zhihu.com/question/483747578\",\n  \"snippet\": \"Introduction应该是一篇论文中最难写的一部分，也是最重要的。“A good introduction will “sell” the study to editors, reviewers, readers, and sometimes even the media.” [1]。 通过Introduction可以判断一篇 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"论文introduction 怎么写？ - 知乎\",\n  \"url\": \"https://www.zhihu.com/question/432689786\",\n  \"snippet\": \"四步法写 Introduction 1. 提供背景资料，设置背景。 Introduction的这一初始部分为读者准备了后面更详细、更具体的信息。前几句一般都是概括性的。 以下是一些例子。 一篇关于土壤中有机物的论文可 …\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "论文的introduction该怎么写? - 知乎",
+            "url": "https://www.zhihu.com/question/606698988",
+            "snippet": "写Introduction就像写一篇有逻辑的故事。从大背景开始论述，层层递进，逐渐表明你所做的研究内容是有必要的。 Introduction所包含的内容大致分一下几点： （1）一个“帽子”，指出当前的问题； （2）针 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "怎样写好英文论文的 Introduction 部分？ - 知乎",
+            "url": "https://www.zhihu.com/question/49355121?sort=created",
+            "snippet": "（Video Source: Youtube. By WORDVICE） 看完了？们不妨透过下面两个问题来梳理一下其中信息： Why An Introduction Is Needed？ 「从文章的大结构来看Introduction提出了你的研究问题，这个问题 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "怎样写好英文论文的 Introduction 部分呢？ - 知乎",
+            "url": "https://www.zhihu.com/question/483747578",
+            "snippet": "Introduction应该是一篇论文中最难写的一部分，也是最重要的。“A good introduction will “sell” the study to editors, reviewers, readers, and sometimes even the media.” [1]。 通过Introduction可以判断一篇 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "论文introduction 怎么写？ - 知乎",
+            "url": "https://www.zhihu.com/question/432689786",
+            "snippet": "四步法写 Introduction 1. 提供背景资料，设置背景。 Introduction的这一初始部分为读者准备了后面更详细、更具体的信息。前几句一般都是概括性的。 以下是一些例子。 一篇关于土壤中有机物的论文可 …",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "ts": "2026-02-23T09:33:42.677170+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "workflow_selected",
+  "direction": "internal",
+  "details": {
+    "source": "planner_collaboration_plan",
+    "steps": [
+      {
+        "step": 1,
+        "agent": "WebSearchAnalyst",
+        "goal": "Find the best blog post explaining BERT. Determine appropriate search queries to identify relevant blog posts and return the top candidate."
+      },
+      {
+        "step": 2,
+        "agent": "WebSearchAnalyst",
+        "goal": "Fetch the content of the blog post identified in step 1."
+      },
+      {
+        "step": 3,
+        "agent": "WebSearchAnalyst",
+        "goal": "Summarize the fetched content of the blog post."
+      },
+      {
+        "step": 4,
+        "agent": "WebSearchAnalyst",
+        "goal": "Post the summary and link of the blog post to the 'agentic' Slack channel. Format the message appropriately, including the blog post's title, a brief summary, and the link to the blog post."
+      }
+    ]
+  }
+}

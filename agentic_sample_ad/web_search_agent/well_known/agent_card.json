@@ -1,0 +1,15 @@
+{
+  "name": "WebSearchAnalyst",
+  "type": "a2a",
+  "base_url": "http://127.0.0.1:9101",
+  "module": "agentic_sample_ad.web_search_agent.agent",
+  "attr": "web_search_agent",
+  "description": "Web search candidate discovery, page fetch validation, and evidence summarization.",
+  "capabilities": [
+    "web_search",
+    "web_summary",
+    "fact_check",
+    "slack_post"
+  ]
+}
+

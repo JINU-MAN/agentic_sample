@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-23T09:33:42.878512+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge",
+  "action": "rpc_request_received",
+  "direction": "inbound",
+  "details": {
+    "agent": "WebSearchAnalyst",
+    "request_id": "7af9a1b2-4d11-4bd8-8dc4-aaa8eb717d1e",
+    "method": "message/send",
+    "input_chars": 5269
+  }
+}

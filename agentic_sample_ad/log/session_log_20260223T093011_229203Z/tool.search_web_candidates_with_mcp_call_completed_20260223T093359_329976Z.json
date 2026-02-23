@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-23T09:33:59.329976+00:00",
+  "level": "INFO",
+  "component": "tool.search_web_candidates_with_mcp",
+  "action": "call_completed",
+  "direction": "inbound",
+  "details": {
+    "queries": [
+      "best blog post explaining BERT",
+      "BERT explained blog",
+      "BERT tutorial blog",
+      "introduction to BERT blog",
+      "understanding BERT blog post"
+    ],
+    "result_count": 12,
+    "error_count": 0
+  }
+}

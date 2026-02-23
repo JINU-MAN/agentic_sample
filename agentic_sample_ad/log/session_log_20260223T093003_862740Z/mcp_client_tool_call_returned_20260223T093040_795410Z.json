@@ -1,0 +1,85 @@
+{
+  "ts": "2026-02-23T09:30:40.795410+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\paper_server.py",
+    "tool_name": "search_papers",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"Security Analysis of Agentic Communication Protocols.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\Security Analysis of Agentic Communication Protocols.pdf\",\n  \"score\": 20,\n  \"matched_terms\": [\n    \"prompt\",\n    \"injection\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"... data sharing across heterogeneous actors. In such environments, the risk of credential leakage, overprivileged access, prompt injection, and unverified execution grows exponentially [2, 3]. Standard security frameworks such as OAuth 2.0 and TLS, while foundational, do not provide sufficient granula...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf\",\n  \"score\": 4,\n  \"matched_terms\": [\n    \"prompt\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...Generative AI is positioned as a precursor providing the foundation, with AI agents advancing through tool integration, prompt engineering, and reasoning enhancements. We then characterize Agentic AI systems, which, in contrast to AI Agents, represent a paradigm shift marked by multi-agent collabora...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"usenixsecurity23-seo.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\usenixsecurity23-seo.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"prompt\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...rally known to be unable to detect a zero-day attack. Although anomaly- detection is known to mitigate zero-day attacks promptly without human intervention, the false detection problem, also known as false-positive and alert fatigue, still seems chal- lenging [10, 25, 50, 56]. Besides, because ML mo...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"Tutorial on Flow-Based Network Traffic Classification Using Machine Learning.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\Tutorial on Flow-Based Network Traffic Classification Using Machine Learning.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"prompt\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"... TC techniques have evolved significantly over the years in response to shifts in network protocols and usage patterns, prompting the development of both new methods and re- finements of the existing ones. In this section, we provide a brief overview of the TC research evolution and outline the curr...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "filename": "Security Analysis of Agentic Communication Protocols.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\Security Analysis of Agentic Communication Protocols.pdf",
+            "score": 20,
+            "matched_terms": [
+              "<max_depth_reached>",
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "... data sharing across heterogeneous actors. In such environments, the risk of credential leakage, overprivileged access, prompt injection, and unverified execution grows exponentially [2, 3]. Standard security frameworks such as OAuth 2.0 and TLS, while foundational, do not provide sufficient granula...",
+            "reason": "Matched in extracted content."
+          },
+          {
+            "filename": "AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf",
+            "score": 4,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...Generative AI is positioned as a precursor providing the foundation, with AI agents advancing through tool integration, prompt engineering, and reasoning enhancements. We then characterize Agentic AI systems, which, in contrast to AI Agents, represent a paradigm shift marked by multi-agent collabora...",
+            "reason": "Matched in extracted content."
+          },
+          {
+            "filename": "usenixsecurity23-seo.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\usenixsecurity23-seo.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...rally known to be unable to detect a zero-day attack. Although anomaly- detection is known to mitigate zero-day attacks promptly without human intervention, the false detection problem, also known as false-positive and alert fatigue, still seems chal- lenging [10, 25, 50, 56]. Besides, because ML mo...",
+            "reason": "Matched in extracted content."
+          },
+          {
+            "filename": "Tutorial on Flow-Based Network Traffic Classification Using Machine Learning.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\Tutorial on Flow-Based Network Traffic Classification Using Machine Learning.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "... TC techniques have evolved significantly over the years in response to shifts in network protocols and usage patterns, prompting the development of both new methods and re- finements of the existing ones. In this section, we provide a brief overview of the TC research evolution and outline the curr...",
+            "reason": "Matched in extracted content."
+          }
+        ]
+      },
+      "isError": false
+    }
+  }
+}

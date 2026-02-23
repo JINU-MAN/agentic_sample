@@ -1,0 +1,11 @@
+{
+  "ts": "2026-02-23T09:30:40.796737+00:00",
+  "level": "INFO",
+  "component": "tool.scrape_papers_with_mcp",
+  "action": "call_completed",
+  "direction": "inbound",
+  "details": {
+    "query": "prompt injection",
+    "result_count": 4
+  }
+}

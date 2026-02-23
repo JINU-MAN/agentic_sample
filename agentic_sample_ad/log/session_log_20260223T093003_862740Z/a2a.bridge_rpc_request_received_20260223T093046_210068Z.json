@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-23T09:30:46.210068+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge",
+  "action": "rpc_request_received",
+  "direction": "inbound",
+  "details": {
+    "agent": "PaperAnalyst",
+    "request_id": "ffbcc7ae-bfaf-4e49-8209-8c1505579b15",
+    "method": "message/send",
+    "input_chars": 3063
+  }
+}

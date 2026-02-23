@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-23T09:30:50.587139+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "./mcp_local/slack_server.py",
+    "tool_name": "post_message",
+    "arguments": {
+      "channel": "agentic",
+      "text": "Security Analysis of Agentic Communication Protocols.pdf - This paper seems relevant to prompt injection based on initial search results."
+    }
+  }
+}

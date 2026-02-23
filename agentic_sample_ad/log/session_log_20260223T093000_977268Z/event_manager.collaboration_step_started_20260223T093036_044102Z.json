@@ -1,0 +1,20 @@
+{
+  "ts": "2026-02-23T09:30:36.044102+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 1,
+    "total_steps_hint": 2,
+    "agent": "PaperAnalyst",
+    "goal": "Find a research paper related to 'prompt injection'. Determine appropriate search queries and retrieve relevant papers.",
+    "tool_hints": [
+      "scrape_papers_with_mcp"
+    ],
+    "open_needs": [],
+    "activated_agent_cards": [
+      "PaperAnalyst"
+    ]
+  }
+}
