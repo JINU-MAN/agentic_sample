@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-24T05:14:50.575047+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "run_started",
+  "direction": "inbound",
+  "details": {
+    "session_id": "cf177c9d15814682bf140f2270f1e135",
+    "user_input": "대한민국, 2026년 2월"
+  },
+  "session_seq": 2161
+}

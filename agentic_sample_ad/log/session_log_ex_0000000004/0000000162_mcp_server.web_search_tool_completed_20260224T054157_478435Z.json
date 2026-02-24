@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:41:57.478435+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "OpenClo security",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://cleanup.jp/catalogue/user/catalogue/",
+      "https://www.catalabo.org/cgi-bin/openCatalog.cgi?catalogId=0259_mizumawa",
+      "https://app.icata.net/web/catalog/search/category/CATALABO_0259/CATALABO/1431640000",
+      "https://catalog.e-setsubi.net/iportal/CatalogDetail.do?method=initial_screen&volumeID=CATALABO&catalogID=84418180000"
+    ]
+  },
+  "session_seq": 162
+}

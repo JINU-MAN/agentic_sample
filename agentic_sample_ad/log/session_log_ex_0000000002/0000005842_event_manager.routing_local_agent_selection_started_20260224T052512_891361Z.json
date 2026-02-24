@@ -1,0 +1,32 @@
+{
+  "ts": "2026-02-24T05:25:12.891361+00:00",
+  "level": "INFO",
+  "component": "event_manager.routing",
+  "action": "local_agent_selection_started",
+  "direction": "internal",
+  "details": {
+    "local_agent_names": [
+      "MainAgent",
+      "PaperAnalyst",
+      "SocialMediaAnalyst",
+      "WebSearchAnalyst"
+    ],
+    "raw_plan": "Okay, I will create a plan to find the latest news about Samsung Electronics, analyze the content, and post a summary to the Slack channel 'agentic'.\n\nPlan:\n1. Use the WebSearchAnalyst to find the latest news article about Samsung Electronics. Input: \"latest news about Samsung Electronics\".\n2. Use the WebSearchAnalyst to fetch the content of the news article found in step 1. Input: URL of the news article.\n3. Summarize the content of the news article. This can be handled directly by the MainAgent since it doesn't require specialized tools.\n4. Post the summarized content to the Slack channel 'agentic'. Use the slack_post_message tool.\n\n```json\n[\n  {\n    \"agent\": \"WebSearchAnalyst\",\n    \"input\": \"latest news about Samsung Electronics\"\n  },\n  {\n    \"agent\": \"WebSearchAnalyst\",\n    \"input\": \"URL of the news article\"\n  },\n  {\n    \"agent\": \"MainAgent\",\n    \"task\": \"Summarize the content of the news article.\"\n  },\n  {\n    \"agent\": \"MainAgent\",\n    \"tool\": \"slack_post_message\",\n    \"input\": {\n      \"channel\": \"agentic\",\n      \"text\": \"Summarized content of the latest Samsung Electronics news article.\"\n    }\n  }\n]\n```",
+    "user_input": "그럼 그냥 최신 뉴스 하나만 찾아봐",
+    "routing_hint": {
+      "selected_agents": [
+        "WebSearchAnalyst",
+        "MainAgent",
+        "SocialMediaAnalyst"
+      ],
+      "keywords": [
+        "samsung electronics",
+        "latest news",
+        "summary",
+        "slack post"
+      ],
+      "reason": "The WebSearchAnalyst will find the latest news article, the MainAgent will summarize the article and post it to Slack. Coverage-first adjustment added: SocialMediaAnalyst (requested domains: comm, sns, web)."
+    }
+  },
+  "session_seq": 5842
+}

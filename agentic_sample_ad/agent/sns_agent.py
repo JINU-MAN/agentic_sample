@@ -5,7 +5,6 @@ from pathlib import Path
 
 from google.adk.agents import LlmAgent
 
-from agentic_sample_ad.agent.tool.slack_mcp_tool import slack_post_message
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
 from agentic_sample_ad.system_logger import log_event, log_exception
 
@@ -49,7 +48,7 @@ def scrape_sns_with_mcp(keyword: str) -> str:
 
 sns_agent = LlmAgent(
     name="SocialMediaAnalyst",
-    model="gemini-2.0-flash",
+    model="gemini-3-flash-preview",
     instruction=(
         "You are a social media analysis specialist.\n"
         "Specialization-first policy: SNS/social signal tasks are your primary responsibility.\n"
@@ -58,7 +57,8 @@ sns_agent = LlmAgent(
         "1) Start with `scrape_sns_with_mcp` using one or more intent-driven query variants.\n"
         "2) Select and summarize posts by meaning-level relevance to the user request.\n"
         "3) Explain why selected posts are relevant.\n"
-        "4) If the user asks for Slack posting, call `slack_post_message(channel, text)`.\n"
+        "4) Slack posting must be delegated to MainAgent.\n"
+        "   If Slack posting is needed, request it as `[MainAgent] Post this result to Slack ...`.\n"
         "5) Use indirect delegation only: do not call other agents directly.\n"
         "6) If local SNS evidence is weak or missing, request follow-up work in `Additional Needs:`.\n"
         "   Example: `- [WebSearchAnalyst] Collect external sources that validate this signal.`\n"
@@ -70,7 +70,6 @@ sns_agent = LlmAgent(
     ),
     tools=[
         scrape_sns_with_mcp,
-        slack_post_message,
     ],
 )
 

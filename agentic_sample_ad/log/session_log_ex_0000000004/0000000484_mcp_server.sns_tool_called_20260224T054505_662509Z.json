@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:45:05.662509+00:00",
+  "level": "INFO",
+  "component": "mcp_server.sns",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_sns_posts",
+    "keyword": "AI agent security vulnerabilities 2024",
+    "db_root": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\sns"
+  },
+  "session_seq": 484
+}

@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:14:50.857747+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.main_agent.agent",
+    "function": "<genexpr>",
+    "source": "main_agent/agent.py",
+    "line": 122,
+    "caller_module": "agentic_sample_ad.main_agent.agent",
+    "caller_function": "_derive_capabilities",
+    "caller_source": "main_agent/agent.py",
+    "caller_line": 102
+  },
+  "session_seq": 2236
+}

@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-24T06:26:53.221208+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\sns_server.py",
+    "tool_name": "search_sns_posts",
+    "arguments": {
+      "keyword": "OpenClaw"
+    }
+  },
+  "session_seq": 238
+}

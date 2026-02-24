@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:44:21.337227+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "plan_updated",
+  "direction": "internal",
+  "details": {
+    "reason": "WebSearchAnalyst의 뉴스 요약 결과를 바탕으로, 전문가(Specialist)의 제안에 따라 SNS 상의 실시간 반응과 추가 정보를 보완하여 더욱 풍부한 리포트를 작성하고 슬랙에 게시하기 위해 계획을 업데이트합니다.",
+    "new_pending_steps": [
+      {
+        "agent": "SocialMediaAnalyst",
+        "goal": "오픈클로(OpenClaw) 보안 이슈와 관련된 SNS(X, Reddit 등) 및 개발자 커뮤니티의 반응과 추가적인 비공식 정보를 수집하여 요약합니다."
+      },
+      {
+        "agent": "MainAgent",
+        "goal": "기존 뉴스 요약 내용과 SNS 분석 결과를 통합하여 슬랙 'agentic' 채널에 최종 보안 리포트를 게시합니다."
+      }
+    ]
+  },
+  "session_seq": 373
+}

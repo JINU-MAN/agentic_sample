@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T06:22:53.995759+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"YouTube 모바일 앱 다운로드 - Android - YouTube 고객센터\",\n  \"url\": \"https://support.google.com/youtube/answer/3227660?hl=ko&co=GENIE.Platform%3DAndroid\",\n  \"snippet\": \"YouTube 앱을 다운로드하여 스마트폰에서 시청 환경을 더욱 다채롭게 즐기세요. 앱 다운로드 참고: 앱을 다운로드하려면 Android 9.0 이상이 필요합니다. 휴대기기에서 Play 스토어를 엽니다.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"YouTube 고객센터\",\n  \"url\": \"https://support.google.com/youtube/?hl=ko\",\n  \"snippet\": \"제품 사용에 대한 도움말과 자습서 및 기타 자주 묻는 질문 (FAQ)에 대한 답변이 있는 공식 YouTube 도움말 센터입니다.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"YouTube Premium 혜택 사용하기 - 컴퓨터 - YouTube 고객센터\",\n  \"url\": \"https://support.google.com/youtube/answer/6308116?hl=ko&co=GENIE.Platform%3DDesktop\",\n  \"snippet\": \"YouTube Premium은 한층 더 업그레이드된 YouTube 환경을 제공하는 유료 멤버십입니다. 아래에서 Premium 혜택을 자세히 알아보거나 Premium 멤버십 혜택을 둘러보세요.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"YouTube 계정 만들기 - 컴퓨터 - YouTube 고객센터 - Google Help\",\n  \"url\": \"https://support.google.com/youtube/answer/161805?hl=ko&co=GENIE.Platform%3DDesktop\",\n  \"snippet\": \"YouTube에 로그인하려면 Google 계정 을 만들어야 합니다. Google 계정을 만들면 좋아요 표시, 구독, 나중에 볼 동영상, 시청 기록 등 다양한 YouTube 기능을 이용할 수 있습니다.\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "YouTube 모바일 앱 다운로드 - Android - YouTube 고객센터",
+            "url": "https://support.google.com/youtube/answer/3227660?hl=ko&co=GENIE.Platform%3DAndroid",
+            "snippet": "YouTube 앱을 다운로드하여 스마트폰에서 시청 환경을 더욱 다채롭게 즐기세요. 앱 다운로드 참고: 앱을 다운로드하려면 Android 9.0 이상이 필요합니다. 휴대기기에서 Play 스토어를 엽니다.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "YouTube 고객센터",
+            "url": "https://support.google.com/youtube/?hl=ko",
+            "snippet": "제품 사용에 대한 도움말과 자습서 및 기타 자주 묻는 질문 (FAQ)에 대한 답변이 있는 공식 YouTube 도움말 센터입니다.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "YouTube Premium 혜택 사용하기 - 컴퓨터 - YouTube 고객센터",
+            "url": "https://support.google.com/youtube/answer/6308116?hl=ko&co=GENIE.Platform%3DDesktop",
+            "snippet": "YouTube Premium은 한층 더 업그레이드된 YouTube 환경을 제공하는 유료 멤버십입니다. 아래에서 Premium 혜택을 자세히 알아보거나 Premium 멤버십 혜택을 둘러보세요.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "YouTube 계정 만들기 - 컴퓨터 - YouTube 고객센터 - Google Help",
+            "url": "https://support.google.com/youtube/answer/161805?hl=ko&co=GENIE.Platform%3DDesktop",
+            "snippet": "YouTube에 로그인하려면 Google 계정 을 만들어야 합니다. Google 계정을 만들면 좋아요 표시, 구독, 나중에 볼 동영상, 시청 기록 등 다양한 YouTube 기능을 이용할 수 있습니다.",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 70
+}

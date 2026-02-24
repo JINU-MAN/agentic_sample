@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:43:00.951742+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"오픈\",\n  \"url\": \"https://openine.com/PARTY\",\n  \"snippet\": \"도쿄등심, 모도우, 암소서울, 한암동, 쉐프의정육점 등 다양한 브랜드를 운영하고 있는 (주)오픈의 홈페이지입니다.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"NEWS - 오픈\",\n  \"url\": \"https://openine.com/NEWS\",\n  \"snippet\": \"주식회사 '오픈'이 운영하며 최상급 한우를 사용한 일본 전통 관서 스타일의 스키야키와 한우 구이 코스 다이닝을 선보이는 브랜드 ‘도쿄등심’은 4월 27일, 새로운 코스요리를 선보인다고 밝혔다.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"오픈\",\n  \"url\": \"https://openine.com/\",\n  \"snippet\": \"㈜오픈 대표 : 홍성철 ‌| 이재윤 주소 : 서울특별시 강남구 압구정로30길 67 백인빌딩, 4F 대표전화 : 1588 8922 ‌| 제휴문의 : open@openine.com\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"오픈\",\n  \"url\": \"https://openine.com/about\",\n  \"snippet\": \"오픈 기업 아이덴티티는 기업 활동에 있어 어떤 모습과 목소리를 가져야 하는지에 대한 오픈 스피릿과 기업메세지를 의미합니다. 오픈의 기업 정신, OPEN Spirit의 오픈 마인드, 끊임없는 진화, 더 나은 …\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "오픈",
+            "url": "https://openine.com/PARTY",
+            "snippet": "도쿄등심, 모도우, 암소서울, 한암동, 쉐프의정육점 등 다양한 브랜드를 운영하고 있는 (주)오픈의 홈페이지입니다.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "NEWS - 오픈",
+            "url": "https://openine.com/NEWS",
+            "snippet": "주식회사 '오픈'이 운영하며 최상급 한우를 사용한 일본 전통 관서 스타일의 스키야키와 한우 구이 코스 다이닝을 선보이는 브랜드 ‘도쿄등심’은 4월 27일, 새로운 코스요리를 선보인다고 밝혔다.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "오픈",
+            "url": "https://openine.com/",
+            "snippet": "㈜오픈 대표 : 홍성철 ‌| 이재윤 주소 : 서울특별시 강남구 압구정로30길 67 백인빌딩, 4F 대표전화 : 1588 8922 ‌| 제휴문의 : open@openine.com",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "오픈",
+            "url": "https://openine.com/about",
+            "snippet": "오픈 기업 아이덴티티는 기업 활동에 있어 어떤 모습과 목소리를 가져야 하는지에 대한 오픈 스피릿과 기업메세지를 의미합니다. 오픈의 기업 정신, OPEN Spirit의 오픈 마인드, 끊임없는 진화, 더 나은 …",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 277
+}

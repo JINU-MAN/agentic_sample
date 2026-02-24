@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:16:06.945307+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "삼성전자 증권 리포트 2026 대한민국",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://www.samsung.com/sec/?msockid=1aab4031dc9e65e61081573bddae6464",
+      "https://www.samsung.com/sec/about-us/company-info/?msockid=1aab4031dc9e65e61081573bddae6464",
+      "https://store.samsung.com/us/",
+      "https://www.samsung.com/sec/smartphones/all-smartphones/?msockid=1aab4031dc9e65e61081573bddae6464"
+    ]
+  },
+  "session_seq": 3074
+}

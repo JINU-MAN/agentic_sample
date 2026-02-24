@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:25:06.950173+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "agent_message_chunk",
+  "direction": "inbound",
+  "details": {
+    "task": "routing_hint",
+    "author": "MainAgent",
+    "text": "```json\n{\n  \"selected_agents\": [\n    \"WebSearchAnalyst\",\n    \"MainAgent\"\n  ],\n  \"keywords\": [\n    \"Samsung Electronics\",\n    \"latest news\",\n    \"summary\",\n    \"Slack post\"\n  ],\n  \"reason\": \"The WebSearchAnalyst will find the latest news article, the MainAgent will summarize the article and post it to Slack.\"\n}\n```"
+  },
+  "session_seq": 5619
+}

@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:17:28.958582+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.agent.paper_agent",
+    "function": "load_paper_memory_with_mcp",
+    "source": "agent/paper_agent.py",
+    "line": 329,
+    "caller_module": "google.adk.tools.function_tool",
+    "caller_function": "FunctionTool._invoke_callable",
+    "caller_source": "C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\google\\adk\\tools\\function_tool.py",
+    "caller_line": 220
+  },
+  "session_seq": 3721
+}

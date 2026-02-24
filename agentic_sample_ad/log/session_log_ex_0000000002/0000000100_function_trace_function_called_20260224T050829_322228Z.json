@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:08:29.322228+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.scripts.start_a2a_agents",
+    "function": "_read_ready_timeout_sec",
+    "source": "scripts/start_a2a_agents.py",
+    "line": 113,
+    "caller_module": "agentic_sample_ad.scripts.start_a2a_agents",
+    "caller_function": "launch_bridges",
+    "caller_source": "scripts/start_a2a_agents.py",
+    "caller_line": 139
+  },
+  "session_seq": 100
+}

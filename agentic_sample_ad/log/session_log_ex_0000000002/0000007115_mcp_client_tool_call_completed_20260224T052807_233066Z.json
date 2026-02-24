@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:28:07.233066+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"日本年金機構ホームページ\",\n  \"url\": \"https://www.nenkin.go.jp/\",\n  \"snippet\": \"2026年2月13日 [令和7年年金制度改正関係]在職老齢年金制度が改正されます 2026年2月12日 「ねんきんネット」をご利用の方へ控除証明書の電子送付サービスに関するお知らせメールを送信します …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"申請・届出様式｜日本年金機構\",\n  \"url\": \"https://www.nenkin.go.jp/shinsei/index.html\",\n  \"snippet\": \"書類の記入には、万年筆やボールペン等、消すことができない筆記用具を使用してください。 記入方法は、それぞれの様式の記入例を参照してください。 年金相談や手続きを代理人に委任するときは …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"申請・届出様式（健康保険・厚生年金保険）｜日本年金機構\",\n  \"url\": \"https://www.nenkin.go.jp/shinsei/kounen/index.html\",\n  \"snippet\": \"申請・届出様式（国民年金） 申請・届出様式（健康保険・厚生年金保険） 申請・届出様式（年金等の受け取り） 申請・届出様式（年金記録の照会、訂正請求） 申請・届出様式（社会保障協定） 申請 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"ねんきんネット｜日本年金機構\",\n  \"url\": \"https://www.nenkin.go.jp/n_net/\",\n  \"snippet\": \"日本年金機構は「ねんきんネット」をご利用のお客様に各種お知らせメールを送付していますが、日本年金機構を装い、お客様の個人情報等を盗み出したり、不審なサイトへ誘導したりしようとする …\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "日本年金機構ホームページ",
+            "url": "https://www.nenkin.go.jp/",
+            "snippet": "2026年2月13日 [令和7年年金制度改正関係]在職老齢年金制度が改正されます 2026年2月12日 「ねんきんネット」をご利用の方へ控除証明書の電子送付サービスに関するお知らせメールを送信します …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "申請・届出様式｜日本年金機構",
+            "url": "https://www.nenkin.go.jp/shinsei/index.html",
+            "snippet": "書類の記入には、万年筆やボールペン等、消すことができない筆記用具を使用してください。 記入方法は、それぞれの様式の記入例を参照してください。 年金相談や手続きを代理人に委任するときは …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "申請・届出様式（健康保険・厚生年金保険）｜日本年金機構",
+            "url": "https://www.nenkin.go.jp/shinsei/kounen/index.html",
+            "snippet": "申請・届出様式（国民年金） 申請・届出様式（健康保険・厚生年金保険） 申請・届出様式（年金等の受け取り） 申請・届出様式（年金記録の照会、訂正請求） 申請・届出様式（社会保障協定） 申請 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "ねんきんネット｜日本年金機構",
+            "url": "https://www.nenkin.go.jp/n_net/",
+            "snippet": "日本年金機構は「ねんきんネット」をご利用のお客様に各種お知らせメールを送付していますが、日本年金機構を装い、お客様の個人情報等を盗み出したり、不審なサイトへ誘導したりしようとする …",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 7115
+}

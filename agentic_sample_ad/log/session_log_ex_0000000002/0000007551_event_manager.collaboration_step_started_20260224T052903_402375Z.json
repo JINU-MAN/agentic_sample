@@ -1,0 +1,25 @@
+{
+  "ts": "2026-02-24T05:29:03.402375+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 4,
+    "total_steps_hint": 5,
+    "agent": "WebSearchAnalyst",
+    "goal": "Search for 'today news' and summarize the first result.",
+    "tool_hints": [
+      "search_web_candidates_with_mcp",
+      "fetch_web_page_with_mcp"
+    ],
+    "open_needs": [
+      "[WebSearchAnalyst] Search for 'today news' and summarize the first result."
+    ],
+    "activated_agent_cards": [
+      "WebSearchAnalyst",
+      "MainAgent"
+    ]
+  },
+  "session_seq": 7551
+}

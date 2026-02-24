@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:20:59.212279+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_web",
+    "query": "Samsung Electronics stock price news last month",
+    "max_results": 4
+  },
+  "session_seq": 5043
+}

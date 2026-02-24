@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:10:00.824761+00:00",
+  "level": "INFO",
+  "component": "event_manager",
+  "action": "agents_selected",
+  "direction": "internal",
+  "details": {
+    "selected": [
+      "WebSearchAnalyst",
+      "PaperAnalyst",
+      "MainAgent",
+      "SocialMediaAnalyst"
+    ]
+  },
+  "session_seq": 560
+}

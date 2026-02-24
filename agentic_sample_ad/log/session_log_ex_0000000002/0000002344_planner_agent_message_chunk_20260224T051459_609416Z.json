@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:14:59.609416+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "agent_message_chunk",
+  "direction": "inbound",
+  "details": {
+    "task": "routing_hint",
+    "author": "MainAgent",
+    "text": "```json\n{\n  \"selected_agents\": [\n    \"MainAgent\"\n  ],\n  \"keywords\": [\n    \"clarification\",\n    \"timeframe\"\n  ],\n  \"reason\": \"The user provided a date in the future. I need to clarify if they meant a different date or want a hypothetical analysis.\"\n}\n```"
+  },
+  "session_seq": 2344
+}

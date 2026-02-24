@@ -1,0 +1,19 @@
+{
+  "ts": "2026-02-24T05:37:49.618296+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "agent_runtime_metadata_enriched",
+  "direction": "internal",
+  "details": {
+    "name": "PaperAnalyst",
+    "module": "agentic_sample_ad.paper_agent.agent",
+    "attr": "paper_agent",
+    "tool_names": [
+      "scrape_papers_with_mcp",
+      "load_paper_memory_with_mcp",
+      "expand_paper_memory_with_mcp",
+      "query_paper_memory"
+    ]
+  },
+  "session_seq": 20
+}

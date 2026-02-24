@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Mapping
 
 from google.adk.agents import LlmAgent
 
+from agentic_sample_ad.agent.tool.slack_mcp_tool import slack_post_message
 from agentic_sample_ad.planner import plan_with_main_agent
 
 from .card_registry import load_sub_agent_cards
@@ -21,6 +22,12 @@ from .system_logger import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MAIN_AGENT_CORE_CAPABILITIES = [
+    "coordination",
+    "workflow_replanning",
+    "user_clarification_routing",
+    "comm.slack.post",
+]
 
 
 def _load_env_file() -> None:
@@ -49,15 +56,17 @@ def _load_env_file() -> None:
 def create_main_agent() -> LlmAgent:
     agent = LlmAgent(
         name="MainAgent",
-        model="gemini-2.0-flash",
+        model="gemini-3-flash-preview",
         instruction=(
             "You are the coordinator of a multi-agent system. "
             "Understand the user request, create practical execution steps, "
-            "and orchestrate specialist agents for best quality."
+            "and orchestrate specialist agents for best quality. "
+            "Slack posting is allowed only from MainAgent. "
+            "If Slack delivery is required, MainAgent must call `slack_post_message` directly."
         ),
-        tools=[],
+        tools=[slack_post_message],
     )
-    log_main_event("main_agent_created", {"name": "MainAgent", "model": "gemini-2.0-flash"})
+    log_main_event("main_agent_created", {"name": "MainAgent", "model": "gemini-3-flash-preview"})
     return agent
 
 
@@ -133,6 +142,8 @@ def _enrich_cards_with_runtime_metadata(cards: List[Dict[str, Any]]) -> List[Dic
     enriched: List[Dict[str, Any]] = []
     for raw in cards:
         item = dict(raw)
+        if not str(item.get("role", "")).strip():
+            item["role"] = "worker"
         module_name = str(item.get("module", "")).strip()
         attr_name = str(item.get("attr", "")).strip()
         if not module_name or not attr_name:
@@ -188,6 +199,61 @@ def _enrich_cards_with_runtime_metadata(cards: List[Dict[str, Any]]) -> List[Dic
     return enriched
 
 
+def _build_main_agent_registry_entry(main_agent: LlmAgent) -> Dict[str, Any]:
+    name = str(getattr(main_agent, "name", "")).strip() or "MainAgent"
+    instruction = str(getattr(main_agent, "instruction", "") or "").strip()
+    tools = _extract_tool_metadata(main_agent)
+    tool_names = [
+        str(tool.get("name", "")).strip()
+        for tool in tools
+        if isinstance(tool, Mapping) and str(tool.get("name", "")).strip()
+    ]
+    return {
+        "name": name,
+        "type": "local",
+        "role": "coordinator",
+        "description": "Coordinator for planning, replanning, and cross-agent handoff execution.",
+        "capabilities": _derive_capabilities(
+            existing=list(MAIN_AGENT_CORE_CAPABILITIES),
+            agent_name=name,
+            tool_names=tool_names,
+        ),
+        "tools": tools,
+        "instruction_preview": _doc_preview(instruction, max_len=320) if instruction else "",
+        # Runtime object reference for local execution in event_manager.
+        "agent_obj": main_agent,
+    }
+
+
+def _build_unified_agent_registry(
+    *,
+    main_agent: LlmAgent,
+    sub_agents: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    registry: List[Dict[str, Any]] = []
+    seen_names: set[str] = set()
+
+    main_entry = _build_main_agent_registry_entry(main_agent)
+    main_name_key = str(main_entry.get("name", "")).strip().lower()
+    if main_name_key:
+        seen_names.add(main_name_key)
+        registry.append(main_entry)
+
+    for item in sub_agents:
+        entry = dict(item)
+        name = str(entry.get("name", "")).strip()
+        if not name:
+            continue
+        key = name.lower()
+        if key in seen_names:
+            continue
+        seen_names.add(key)
+        if not str(entry.get("role", "")).strip():
+            entry["role"] = "worker"
+        registry.append(entry)
+    return registry
+
+
 def run_main_agent(user_input: str, session_id: str = "default") -> str:
     initialize_main_logging()
     _load_env_file()
@@ -203,12 +269,20 @@ def run_main_agent(user_input: str, session_id: str = "default") -> str:
         session.add_user_turn(user_input)
 
         main_agent = create_main_agent()
-        available_agents = _enrich_cards_with_runtime_metadata(load_sub_agent_cards())
+        sub_agents = _enrich_cards_with_runtime_metadata(load_sub_agent_cards())
+        available_agents = _build_unified_agent_registry(
+            main_agent=main_agent,
+            sub_agents=sub_agents,
+        )
         log_main_event(
             "available_agents_finalized",
             {
                 "count": len(available_agents),
                 "names": [str(item.get("name", "")) for item in available_agents],
+                "roles": {
+                    str(item.get("name", "")): str(item.get("role", "")).strip() or "worker"
+                    for item in available_agents
+                },
             },
         )
 

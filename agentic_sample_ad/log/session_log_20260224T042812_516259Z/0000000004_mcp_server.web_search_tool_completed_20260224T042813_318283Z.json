@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-24T04:28:13.318283+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "fetch_page",
+    "url": "https://www.usatoday.com/live-story/news/world/2026/02/23/mexico-el-mencho-live-updates-news/88821399007/",
+    "status_code": 200,
+    "content_length": 23238,
+    "truncated": true
+  },
+  "session_seq": 4
+}

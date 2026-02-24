@@ -1,0 +1,50 @@
+{
+  "ts": "2026-02-24T05:30:17.820181+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "./mcp_local/slack_server.py",
+    "tool_name": "post_message",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"ok\": true,\n  \"channel\": \"C0AFMHF42FJ\",\n  \"ts\": \"1771911015.568779\",\n  \"message\": {\n    \"user\": \"U0AEBRSE03Z\",\n    \"type\": \"message\",\n    \"ts\": \"1771911015.568779\",\n    \"bot_id\": \"B0AER7Q28DU\",\n    \"app_id\": \"A0AFMJ099PA\",\n    \"text\": \"I was unable to find a recent news article about Samsung Electronics. The search tool is functioning, but it is not providing accurate results for specific company news like Samsung. It returns general news when searching for 'today news', but fails to find relevant information about Samsung, often providing irrelevant results with incorrect dates.\",\n    \"team\": \"T0AET1ZEYCA\",\n    \"bot_profile\": {\n      \"id\": \"B0AER7Q28DU\",\n      \"app_id\": \"A0AFMJ099PA\",\n      \"user_id\": \"U0AEBRSE03Z\",\n      \"name\": \"Slack-Agent\",\n      \"icons\": {\n        \"image_36\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_36.png\",\n        \"image_48\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_48.png\",\n        \"image_72\": \"https://a.slack-edge.com/80588/img/plugins/app/service_72.png\"\n      },\n      \"deleted\": false,\n      \"updated\": 1770960152,\n      \"team_id\": \"T0AET1ZEYCA\"\n    },\n    \"blocks\": [\n      {\n        \"type\": \"rich_text\",\n        \"block_id\": \"vlBs\",\n        \"elements\": [\n          {\n            \"type\": \"rich_text_section\",\n            \"elements\": [\n              {\n                \"type\": \"text\",\n                \"text\": \"I was unable to find a recent news article about Samsung Electronics. The search tool is functioning, but it is not providing accurate results for specific company news like Samsung. It returns general news when searching for 'today news', but fails to find relevant information about Samsung, often providing irrelevant results with incorrect dates.\"\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": {
+          "ok": true,
+          "channel": "C0AFMHF42FJ",
+          "ts": "1771911015.568779",
+          "message": {
+            "user": "U0AEBRSE03Z",
+            "type": "message",
+            "ts": "1771911015.568779",
+            "bot_id": "B0AER7Q28DU",
+            "app_id": "A0AFMJ099PA",
+            "text": "I was unable to find a recent news article about Samsung Electronics. The search tool is functioning, but it is not providing accurate results for specific company news like Samsung. It returns general news when searching for 'today news', but fails to find relevant information about Samsung, often providing irrelevant results with incorrect dates.",
+            "team": "T0AET1ZEYCA",
+            "bot_profile": {
+              "id": "<max_depth_reached>",
+              "app_id": "<max_depth_reached>",
+              "user_id": "<max_depth_reached>",
+              "name": "<max_depth_reached>",
+              "icons": "<max_depth_reached>",
+              "deleted": "<max_depth_reached>",
+              "updated": "<max_depth_reached>",
+              "team_id": "<max_depth_reached>"
+            },
+            "blocks": [
+              "<max_depth_reached>"
+            ]
+          }
+        }
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 8095
+}

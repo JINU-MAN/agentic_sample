@@ -1,0 +1,22 @@
+{
+  "ts": "2026-02-24T05:15:07.112419+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 1,
+    "total_steps_hint": 4,
+    "agent": "WebSearchAnalyst",
+    "goal": "Find news articles and brokerage reports related to Samsung Electronics stock price fluctuations in South Korea during February 2026.",
+    "tool_hints": [
+      "search_web_candidates_with_mcp",
+      "fetch_web_page_with_mcp"
+    ],
+    "open_needs": [],
+    "activated_agent_cards": [
+      "WebSearchAnalyst"
+    ]
+  },
+  "session_seq": 2598
+}

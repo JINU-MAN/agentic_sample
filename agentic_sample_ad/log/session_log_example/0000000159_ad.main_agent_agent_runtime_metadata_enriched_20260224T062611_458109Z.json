@@ -1,0 +1,17 @@
+{
+  "ts": "2026-02-24T06:26:11.458109+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "agent_runtime_metadata_enriched",
+  "direction": "internal",
+  "details": {
+    "name": "WebSearchAnalyst",
+    "module": "agentic_sample_ad.web_search_agent.agent",
+    "attr": "web_search_agent",
+    "tool_names": [
+      "search_web_candidates_with_mcp",
+      "fetch_web_page_with_mcp"
+    ]
+  },
+  "session_seq": 159
+}

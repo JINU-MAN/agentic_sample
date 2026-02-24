@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:13:26.599120+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "open_needs_updated_from_agent_output",
+  "direction": "inbound",
+  "details": {
+    "added_needs": [
+      "[MainAgent] Ask user which region/time range should be prioritized.",
+      "```"
+    ],
+    "open_needs": [
+      "[MainAgent] Ask user which region/time range should be prioritized.",
+      "```"
+    ]
+  },
+  "session_seq": 2136
+}

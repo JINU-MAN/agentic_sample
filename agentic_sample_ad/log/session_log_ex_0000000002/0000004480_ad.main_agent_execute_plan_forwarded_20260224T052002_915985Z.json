@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-24T05:20:02.915985+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "execute_plan_forwarded",
+  "direction": "internal",
+  "details": {
+    "num_available_agents": 4,
+    "has_context": true
+  },
+  "session_seq": 4480
+}

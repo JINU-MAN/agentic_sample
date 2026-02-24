@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:08:31.643951+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.scripts.start_a2a_agents",
+    "function": "_is_agent_card_ready",
+    "source": "scripts/start_a2a_agents.py",
+    "line": 85,
+    "caller_module": "agentic_sample_ad.scripts.start_a2a_agents",
+    "caller_function": "_wait_for_agent_card_ready",
+    "caller_source": "scripts/start_a2a_agents.py",
+    "caller_line": 99
+  },
+  "session_seq": 106
+}

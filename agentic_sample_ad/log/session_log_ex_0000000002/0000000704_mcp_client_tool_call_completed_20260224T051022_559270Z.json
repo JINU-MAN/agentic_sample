@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:10:22.559270+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"QUERIES の意味・使い方・読み方 | Weblio 英和辞書\",\n  \"url\": \"https://ejje.weblio.jp/content/QUERIES\",\n  \"snippet\": \"I will conduct a couple of simple queries, search queries. 例文帳に追加 まず いくつか簡単な検索をしてみます - 映画・海外ドラマ英語字幕翻訳辞書\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"QUERY | 意味, Cambridge 英語辞書での定義\",\n  \"url\": \"https://dictionary.cambridge.org/ja/dictionary/english/query\",\n  \"snippet\": \"What was their response to your query? He could always do something useful instead of wasting my time with footling queries. Most of the job involves sorting customers out who have queries. I've got a …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"Querry, Query, Querries or Queries : Which is Correct?\",\n  \"url\": \"https://blog.engram.us/querry-query-querries-or-queries-which-is-correct/\",\n  \"snippet\": \"Dec 17, 2023 · \\\"Querry\\\" is the incorrect spelling of \\\"query.\\\" A \\\"query\\\" is a request for information or an inquiry, typically posed as a question. \\\"Querries\\\" is the incorrect spelling of \\\"queries.\\\" \\\"Queries\\\" is the …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"QUERIES definition and meaning | Collins English Dictionary\",\n  \"url\": \"https://www.collinsdictionary.com/dictionary/english/queries\",\n  \"snippet\": \"Take one of the queries that has vexed humanity for centuries. We are also now getting queries about the coronavirus. She says there were basic queries that stalled the case that could have been …\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "QUERIES の意味・使い方・読み方 | Weblio 英和辞書",
+            "url": "https://ejje.weblio.jp/content/QUERIES",
+            "snippet": "I will conduct a couple of simple queries, search queries. 例文帳に追加 まず いくつか簡単な検索をしてみます - 映画・海外ドラマ英語字幕翻訳辞書",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "QUERY | 意味, Cambridge 英語辞書での定義",
+            "url": "https://dictionary.cambridge.org/ja/dictionary/english/query",
+            "snippet": "What was their response to your query? He could always do something useful instead of wasting my time with footling queries. Most of the job involves sorting customers out who have queries. I've got a …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "Querry, Query, Querries or Queries : Which is Correct?",
+            "url": "https://blog.engram.us/querry-query-querries-or-queries-which-is-correct/",
+            "snippet": "Dec 17, 2023 · \"Querry\" is the incorrect spelling of \"query.\" A \"query\" is a request for information or an inquiry, typically posed as a question. \"Querries\" is the incorrect spelling of \"queries.\" \"Queries\" is the …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "QUERIES definition and meaning | Collins English Dictionary",
+            "url": "https://www.collinsdictionary.com/dictionary/english/queries",
+            "snippet": "Take one of the queries that has vexed humanity for centuries. We are also now getting queries about the coronavirus. She says there were basic queries that stalled the case that could have been …",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 704
+}

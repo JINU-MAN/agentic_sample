@@ -1,0 +1,17 @@
+{
+  "ts": "2026-02-24T05:11:55.654601+00:00",
+  "level": "INFO",
+  "component": "tool.search_web_candidates_with_mcp",
+  "action": "call_completed",
+  "direction": "inbound",
+  "details": {
+    "queries": [
+      "{\"queries_json\": \"[\"Samsung Electronics stock price news in Korea\"",
+      "\"News about Samsung stock price\"",
+      "\"Recent Samsung stock price news\"]\"}"
+    ],
+    "result_count": 12,
+    "error_count": 0
+  },
+  "session_seq": 1361
+}

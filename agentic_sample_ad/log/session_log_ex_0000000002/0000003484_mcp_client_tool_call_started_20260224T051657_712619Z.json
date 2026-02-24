@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:16:57.712619+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\paper_server.py",
+    "tool_name": "get_paper_head",
+    "arguments": {
+      "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\AE_ An Asymmetric Extremum Content Defined Chunking Algorithm for Fast and Bandwidth-Efficient Data Deduplication.pdf",
+      "max_chars": 16000
+    }
+  },
+  "session_seq": 3484
+}

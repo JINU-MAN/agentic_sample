@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:15:23.794304+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_web",
+    "query": "Samsung Electronics stock report February 2026 South Korea",
+    "max_results": 4
+  },
+  "session_seq": 2755
+}

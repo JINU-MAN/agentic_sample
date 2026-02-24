@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:15:41.396439+00:00",
+  "level": "INFO",
+  "component": "tool.fetch_web_page_with_mcp",
+  "action": "call_started",
+  "direction": "outbound",
+  "details": {
+    "url": "https://www.samsung.com/sec/?msockid=308405a75d316fc3177a12ad5cb66e2c",
+    "max_chars": 6000,
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py"
+  },
+  "session_seq": 2917
+}

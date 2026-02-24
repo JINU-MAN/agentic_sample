@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:14:50.621246+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.main_agent.card_registry",
+    "function": "collect_sub_agent_card_files",
+    "source": "main_agent/card_registry.py",
+    "line": 35,
+    "caller_module": "agentic_sample_ad.main_agent.card_registry",
+    "caller_function": "load_sub_agent_cards",
+    "caller_source": "main_agent/card_registry.py",
+    "caller_line": 54
+  },
+  "session_seq": 2171
+}

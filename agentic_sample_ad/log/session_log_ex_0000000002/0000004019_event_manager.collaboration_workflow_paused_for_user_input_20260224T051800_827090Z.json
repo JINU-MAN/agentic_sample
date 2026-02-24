@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:18:00.827090+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "workflow_paused_for_user_input",
+  "direction": "internal",
+  "details": {
+    "step": 2,
+    "agent": "PaperAnalyst",
+    "request": "Ask user to narrow domain, timeframe, or keywords."
+  },
+  "session_seq": 4019
+}

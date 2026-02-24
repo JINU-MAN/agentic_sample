@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:41:10.362326+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"首頁 | 養鍋\",\n  \"url\": \"https://www.yangguo.com.tw/\",\n  \"snippet\": \"【養鍋平日限定活動｜邊吃鍋邊玩麻將，贏好禮！ 】2/10-3/31，週一至週四到全台養鍋門市，點「阿嬤ㄟ古早雞系列」即可參加摸麻將活動，猜中花色即送限量好禮！ 品嚐人氣「啵皮辣雞鍋」、「蒜爆 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"餐點介紹 | 養鍋 - yangguo\",\n  \"url\": \"https://www.yangguo.com.tw/meal\",\n  \"snippet\": \"最新消息 News 加盟養鍋 Franchise yangguo6028@gmail.com 品牌故事 最新消息 全球據點 客服留言 餐點介紹 媒體影音 加盟養鍋 網站地圖 人才招募\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"全球據點 | 養鍋 - yangguo\",\n  \"url\": \"https://www.yangguo.com.tw/area\",\n  \"snippet\": \"台北市信義區忠孝東路四段559巷28號 02-27682889\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"最新消息 | 養鍋 - yangguo\",\n  \"url\": \"https://www.yangguo.com.tw/news\",\n  \"snippet\": \"養鍋新年吃鍋送紅包袋活動開跑！2026/1/12 起，至全台養鍋門市單筆消費滿 $5...\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "首頁 | 養鍋",
+            "url": "https://www.yangguo.com.tw/",
+            "snippet": "【養鍋平日限定活動｜邊吃鍋邊玩麻將，贏好禮！ 】2/10-3/31，週一至週四到全台養鍋門市，點「阿嬤ㄟ古早雞系列」即可參加摸麻將活動，猜中花色即送限量好禮！ 品嚐人氣「啵皮辣雞鍋」、「蒜爆 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "餐點介紹 | 養鍋 - yangguo",
+            "url": "https://www.yangguo.com.tw/meal",
+            "snippet": "最新消息 News 加盟養鍋 Franchise yangguo6028@gmail.com 品牌故事 最新消息 全球據點 客服留言 餐點介紹 媒體影音 加盟養鍋 網站地圖 人才招募",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "全球據點 | 養鍋 - yangguo",
+            "url": "https://www.yangguo.com.tw/area",
+            "snippet": "台北市信義區忠孝東路四段559巷28號 02-27682889",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "最新消息 | 養鍋 - yangguo",
+            "url": "https://www.yangguo.com.tw/news",
+            "snippet": "養鍋新年吃鍋送紅包袋活動開跑！2026/1/12 起，至全台養鍋門市單筆消費滿 $5...",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 69
+}

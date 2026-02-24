@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:19:55.649411+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.planner",
+    "function": "_format_available_agents_for_prompt",
+    "source": "planner.py",
+    "line": 264,
+    "caller_module": "agentic_sample_ad.planner",
+    "caller_function": "_derive_collaboration_plan",
+    "caller_source": "planner.py",
+    "caller_line": 659
+  },
+  "session_seq": 4422
+}

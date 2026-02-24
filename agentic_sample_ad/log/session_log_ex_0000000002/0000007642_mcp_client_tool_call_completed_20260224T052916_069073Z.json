@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:29:16.069073+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"Google News - Headlines\",\n  \"url\": \"https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFZxYUdjU0FtVnVHZ0pWVXlnQVAB\",\n  \"snippet\": \"Read full articles, watch videos, browse thousands of titles and more on the \\\"Headlines\\\" topic with Google News.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"NBC News - Breaking Headlines and Video Reports on World, U.S. and ...\",\n  \"url\": \"https://www.nbcnews.com/\",\n  \"snippet\": \"Go to NBCNews.com for breaking news, videos, and the latest top stories in world news, business, politics, health and pop culture.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"Breaking News , Latest News and Videos | CNN\",\n  \"url\": \"https://www.cnn.com/\",\n  \"snippet\": \"View the latest news and breaking news today for U.S., world, weather, entertainment, politics and health at CNN.com.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"Fox News - Breaking News Updates | Latest News Headlines | Photos ...\",\n  \"url\": \"https://www.foxnews.com/?msockid=0b3f8c8d310b69d03c0e9b8730f568b1\",\n  \"snippet\": \"Breaking News, Latest News and Current News from FOXNews.com. Breaking news and video. Latest Current News: U.S., World, Entertainment, Health, Business, Technology ...\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "Google News - Headlines",
+            "url": "https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFZxYUdjU0FtVnVHZ0pWVXlnQVAB",
+            "snippet": "Read full articles, watch videos, browse thousands of titles and more on the \"Headlines\" topic with Google News.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "NBC News - Breaking Headlines and Video Reports on World, U.S. and ...",
+            "url": "https://www.nbcnews.com/",
+            "snippet": "Go to NBCNews.com for breaking news, videos, and the latest top stories in world news, business, politics, health and pop culture.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "Breaking News , Latest News and Videos | CNN",
+            "url": "https://www.cnn.com/",
+            "snippet": "View the latest news and breaking news today for U.S., world, weather, entertainment, politics and health at CNN.com.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "Fox News - Breaking News Updates | Latest News Headlines | Photos ...",
+            "url": "https://www.foxnews.com/?msockid=0b3f8c8d310b69d03c0e9b8730f568b1",
+            "snippet": "Breaking News, Latest News and Current News from FOXNews.com. Breaking news and video. Latest Current News: U.S., World, Entertainment, Health, Business, Technology ...",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 7642
+}

@@ -1,0 +1,28 @@
+{
+  "ts": "2026-02-24T04:59:31.384557+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "agentic_sample_ad/mcp_local/slack_server.py",
+    "tool_name": "post_message",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"ok\": false,\n  \"error\": \"invalid_channel\",\n  \"message\": \"channel is required.\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": {
+          "ok": false,
+          "error": "invalid_channel",
+          "message": "channel is required."
+        }
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 14
+}

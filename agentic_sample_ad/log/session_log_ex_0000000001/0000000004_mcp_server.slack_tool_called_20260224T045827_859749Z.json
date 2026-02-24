@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T04:58:27.859749+00:00",
+  "level": "INFO",
+  "component": "mcp_server.slack",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "post_message",
+    "channel": "",
+    "text": "healthcheck",
+    "thread_ts": null
+  },
+  "session_seq": 4
+}

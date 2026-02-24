@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T05:28:56.317005+00:00",
+  "level": "INFO",
+  "component": "workflow.need",
+  "action": "need_emitted",
+  "direction": "internal",
+  "details": {
+    "source_agent": "MainAgent",
+    "target_agent": "WebSearchAnalyst",
+    "request": "Search for 'today news' and summarize the first result.",
+    "workflow_step": 3
+  },
+  "session_seq": 7436
+}

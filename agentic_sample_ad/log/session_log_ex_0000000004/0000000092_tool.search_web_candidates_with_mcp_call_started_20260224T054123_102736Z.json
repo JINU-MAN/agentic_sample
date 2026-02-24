@@ -1,0 +1,19 @@
+{
+  "ts": "2026-02-24T05:41:23.102736+00:00",
+  "level": "INFO",
+  "component": "tool.search_web_candidates_with_mcp",
+  "action": "call_started",
+  "direction": "outbound",
+  "details": {
+    "queries": [
+      "\"오픈클로\" 보안",
+      "\"OpenClo\" security news",
+      "오픈클로 해킹",
+      "오픈클로 취약점 점검",
+      "오픈클라우드 보안 뉴스"
+    ],
+    "max_results_per_query": 4,
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py"
+  },
+  "session_seq": 92
+}

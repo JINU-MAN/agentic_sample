@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T06:27:38.801045+00:00",
+  "level": "INFO",
+  "component": "mcp_server.sns",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_sns_posts",
+    "keyword": "오픈클로 CVE-2026-25253",
+    "result_count": 0,
+    "matched_files": []
+  },
+  "session_seq": 349
+}

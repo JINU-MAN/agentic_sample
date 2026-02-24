@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:42:23.597344+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "site:github.com/openclaw/openclaw security",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 0,
+    "top_urls": []
+  },
+  "session_seq": 208
+}

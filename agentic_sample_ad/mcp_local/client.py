@@ -1,4 +1,7 @@
-﻿import asyncio
+from __future__ import annotations
+
+import asyncio
+import os
 import sys
 import threading
 from contextlib import AsyncExitStack
@@ -10,7 +13,14 @@ from mcp.client.stdio import stdio_client
 
 from agentic_sample_ad.system_logger import log_event, log_exception
 
-PACKAGE_NAME = __name__.split(".")[0] if "." in __name__ else "agentic_sample_ad"
+
+def _child_process_env(*, pythonpath_prepend: Path | None = None) -> Dict[str, str]:
+    env = os.environ.copy()
+    if pythonpath_prepend is not None:
+        prepend = str(pythonpath_prepend)
+        current = str(env.get("PYTHONPATH", "")).strip()
+        env["PYTHONPATH"] = os.pathsep.join([prepend, current]) if current else prepend
+    return env
 
 
 def _server_params(server_script_path: str) -> StdioServerParameters:
@@ -20,7 +30,12 @@ def _server_params(server_script_path: str) -> StdioServerParameters:
     server_path = Path(server_script_path).resolve()
 
     if server_path.parent.name == "mcp_local" and server_path.name.endswith("_server.py"):
-        module = f"{PACKAGE_NAME}.mcp_local.{server_path.stem}"
+        # Standalone-friendly execution:
+        # run package module and pin PYTHONPATH to package parent.
+        project_root = server_path.parent.parent
+        package_name = project_root.name
+        module = f"{package_name}.mcp_local.{server_path.stem}"
+        child_env = _child_process_env(pythonpath_prepend=project_root.parent)
         log_event(
             "mcp_client",
             "server_params_resolved",
@@ -28,12 +43,14 @@ def _server_params(server_script_path: str) -> StdioServerParameters:
                 "server_script_path": str(server_path),
                 "execution_mode": "module",
                 "module": module,
+                "project_root": str(project_root),
+                "pythonpath_prepend": str(project_root.parent),
             },
         )
         return StdioServerParameters(
             command=sys.executable,
             args=["-m", module],
-            env=None,
+            env=child_env,
         )
 
     log_event(
@@ -47,7 +64,7 @@ def _server_params(server_script_path: str) -> StdioServerParameters:
     return StdioServerParameters(
         command=sys.executable,
         args=[str(server_path)],
-        env=None,
+        env=_child_process_env(),
     )
 
 
@@ -164,5 +181,3 @@ def call_mcp_tool(
 
 
 __all__ = ["call_mcp_tool"]
-
-

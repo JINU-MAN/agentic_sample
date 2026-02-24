@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:29:14.953537+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "today news",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFZxYUdjU0FtVnVHZ0pWVXlnQVAB",
+      "https://www.nbcnews.com/",
+      "https://www.cnn.com/",
+      "https://www.foxnews.com/?msockid=0b3f8c8d310b69d03c0e9b8730f568b1"
+    ]
+  },
+  "session_seq": 7637
+}

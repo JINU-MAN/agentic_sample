@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:30:12.311583+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.agent.tool.slack_mcp_tool",
+    "function": "_resolve_slack_server_path",
+    "source": "agent/tool/slack_mcp_tool.py",
+    "line": 9,
+    "caller_module": "agentic_sample_ad.agent.tool.slack_mcp_tool",
+    "caller_function": "slack_post_message",
+    "caller_source": "agent/tool/slack_mcp_tool.py",
+    "caller_line": 14
+  },
+  "session_seq": 8063
+}

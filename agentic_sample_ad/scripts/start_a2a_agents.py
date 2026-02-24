@@ -20,7 +20,7 @@ BRIDGE_MODULE = "agentic_sample_ad.mcp_local.a2a_bridge_server"
 if str(PACKAGE_PARENT_DIR) not in sys.path:
     sys.path.insert(0, str(PACKAGE_PARENT_DIR))
 
-from agentic_sample_ad.system_logger import initialize_process_logging, log_event, log_exception
+from agentic_sample_ad.system_logger import finalize_process_logging, initialize_process_logging, log_event, log_exception
 
 
 DEFAULT_CARD_PATH = ROOT_DIR / "agent_cards" / "agent_card.json"
@@ -301,37 +301,40 @@ def stop_bridges(processes: List[BridgeProcess]) -> None:
 
 
 def main() -> None:
-    initialize_process_logging()
-    _load_env_file()
-    args = _parse_args()
-
-    processes = launch_bridges(card_path=args.card_path, only=args.only)
-    if not processes:
-        print("No new bridge process was started.")
-        return
-
-    print("A2A bridges are running. Press Ctrl+C to stop all.")
     try:
-        while True:
-            time.sleep(1.0)
-            dead: List[str] = []
-            for name, process, host, port in processes:
-                if process.poll() is not None:
-                    dead.append(f"{name}({host}:{port})")
-            if dead:
-                print(f"[warning] exited bridge process: {', '.join(dead)}")
-                log_event(
-                    "a2a.bridge.launcher",
-                    "bridge_process_exited",
-                    {"agents": dead},
-                    level="ERROR",
-                )
-                break
-    except KeyboardInterrupt:
-        pass
+        initialize_process_logging()
+        _load_env_file()
+        args = _parse_args()
+
+        processes = launch_bridges(card_path=args.card_path, only=args.only)
+        if not processes:
+            print("No new bridge process was started.")
+            return
+
+        print("A2A bridges are running. Press Ctrl+C to stop all.")
+        try:
+            while True:
+                time.sleep(1.0)
+                dead: List[str] = []
+                for name, process, host, port in processes:
+                    if process.poll() is not None:
+                        dead.append(f"{name}({host}:{port})")
+                if dead:
+                    print(f"[warning] exited bridge process: {', '.join(dead)}")
+                    log_event(
+                        "a2a.bridge.launcher",
+                        "bridge_process_exited",
+                        {"agents": dead},
+                        level="ERROR",
+                    )
+                    break
+        except KeyboardInterrupt:
+            pass
+        finally:
+            stop_bridges(processes)
+            print("All bridge processes stopped.")
     finally:
-        stop_bridges(processes)
-        print("All bridge processes stopped.")
+        finalize_process_logging()
 
 
 if __name__ == "__main__":

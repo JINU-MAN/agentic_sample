@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T06:20:03.101612+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge.launcher",
+  "action": "bridge_process_stopped",
+  "direction": "internal",
+  "details": {
+    "agent": "SocialMediaAnalyst",
+    "host": "127.0.0.1",
+    "port": 9103,
+    "pid": 30708
+  },
+  "session_seq": 519
+}

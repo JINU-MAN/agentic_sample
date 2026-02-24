@@ -9,8 +9,6 @@
     "paper_search",
     "paper_summary",
     "paper_fulltext_memory",
-    "paper_memory_query",
-    "slack_post"
+    "paper_memory_query"
   ]
 }
-

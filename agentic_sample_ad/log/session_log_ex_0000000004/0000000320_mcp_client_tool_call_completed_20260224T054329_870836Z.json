@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:43:29.870836+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"국세청 홈택스\",\n  \"url\": \"http://www.hometax.go.kr/\",\n  \"snippet\": \"국세청 홈택스는 국세 관련 서비스와 정보를 제공하는 포털입니다.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"국세청 홈택스\",\n  \"url\": \"http://www.hometax.go.kr/ui/pp/yrs_index.html?isCdn=Y&ST1BOX=1&ND2BOX=1&RD3BOX=1\",\n  \"snippet\": \"(목) ~ 1.20. (화) 에 이용자가 많으므로 1.21. (수) 이후 접속하면 기다리지 않고 이용할 수 있습니다. 연말정산 이용자가 집중되는 1.20. (화), 09시부터 18시까지는 자료 대량조회 (스크래핑) 서비스가 일부 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"국세청 홈택스\",\n  \"url\": \"https://www.hometax.go.kr/websquare/websquare.html?w2xPath=/ui/pp/index_pp.xml&tmIdx=04&tm2lIdx=0405000000&tm3lIdx=0405040000\",\n  \"snippet\": \"Sep 18, 2025 · 국세청 홈택스는 국세 신고, 납부 및 증명 서비스를 제공하는 공식 사이트입니다.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"손택스 이용안내 - hometax.go.kr\",\n  \"url\": \"https://mob.tbht.hometax.go.kr/jsonAction.do?actionId=UTBRMAAC01F001\",\n  \"snippet\": \"원활한 서비스를 위해 임시운영하는 페이지 입니다. 동일한 문제가 지속적으로 발생하는 경우 고객센터로 문의하여주시기 바랍니다. 연락처 : 국번없이 126\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "국세청 홈택스",
+            "url": "http://www.hometax.go.kr/",
+            "snippet": "국세청 홈택스는 국세 관련 서비스와 정보를 제공하는 포털입니다.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "국세청 홈택스",
+            "url": "http://www.hometax.go.kr/ui/pp/yrs_index.html?isCdn=Y&ST1BOX=1&ND2BOX=1&RD3BOX=1",
+            "snippet": "(목) ~ 1.20. (화) 에 이용자가 많으므로 1.21. (수) 이후 접속하면 기다리지 않고 이용할 수 있습니다. 연말정산 이용자가 집중되는 1.20. (화), 09시부터 18시까지는 자료 대량조회 (스크래핑) 서비스가 일부 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "국세청 홈택스",
+            "url": "https://www.hometax.go.kr/websquare/websquare.html?w2xPath=/ui/pp/index_pp.xml&tmIdx=04&tm2lIdx=0405000000&tm3lIdx=0405040000",
+            "snippet": "Sep 18, 2025 · 국세청 홈택스는 국세 신고, 납부 및 증명 서비스를 제공하는 공식 사이트입니다.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "손택스 이용안내 - hometax.go.kr",
+            "url": "https://mob.tbht.hometax.go.kr/jsonAction.do?actionId=UTBRMAAC01F001",
+            "snippet": "원활한 서비스를 위해 임시운영하는 페이지 입니다. 동일한 문제가 지속적으로 발생하는 경우 고객센터로 문의하여주시기 바랍니다. 연락처 : 국번없이 126",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 320
+}

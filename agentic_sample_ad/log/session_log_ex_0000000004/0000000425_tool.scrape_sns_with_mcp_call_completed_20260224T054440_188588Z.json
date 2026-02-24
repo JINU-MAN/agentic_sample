@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:44:40.188588+00:00",
+  "level": "INFO",
+  "component": "tool.scrape_sns_with_mcp",
+  "action": "call_completed",
+  "direction": "inbound",
+  "details": {
+    "keyword": "오픈클로 보안",
+    "result": {
+      "content": [],
+      "structuredContent": {
+        "result": []
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 425
+}

@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:27:15.092882+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_web",
+    "query": "Samsung news today",
+    "max_results": 4
+  },
+  "session_seq": 6788
+}

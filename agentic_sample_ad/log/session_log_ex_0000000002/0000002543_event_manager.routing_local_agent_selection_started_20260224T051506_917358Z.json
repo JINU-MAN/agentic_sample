@@ -1,0 +1,30 @@
+{
+  "ts": "2026-02-24T05:15:06.917358+00:00",
+  "level": "INFO",
+  "component": "event_manager.routing",
+  "action": "local_agent_selection_started",
+  "direction": "internal",
+  "details": {
+    "local_agent_names": [
+      "MainAgent",
+      "PaperAnalyst",
+      "SocialMediaAnalyst",
+      "WebSearchAnalyst"
+    ],
+    "raw_plan": "Okay, I understand the user wants me to analyze the stock price fluctuations of Samsung Electronics in South Korea during February 2026, gather relevant news and brokerage reports, summarize the findings, and post the summary to the \"agentic\" Slack channel.\n\nHere's my plan:\n\n**Plan:**\n\n1.  **Clarify the user request:** The user specified the location and time frame for the Samsung stock analysis. However, 2026 is in the future. I will ask the user if they meant 2024 or if they want a hypothetical analysis for 2026.\n    *   Agent: MainAgent\n    *   Input: \"The requested time frame is in the future (February 2026). Did you mean February 2024, or do you want a hypothetical analysis for February 2026?\"",
+    "user_input": "대한민국, 2026년 2월",
+    "routing_hint": {
+      "selected_agents": [
+        "MainAgent",
+        "SocialMediaAnalyst",
+        "WebSearchAnalyst"
+      ],
+      "keywords": [
+        "clarification",
+        "timeframe"
+      ],
+      "reason": "The user provided a date in the future. I need to clarify if they meant a different date or want a hypothetical analysis. Coverage-first adjustment added: SocialMediaAnalyst, WebSearchAnalyst (requested domains: comm, sns, web)."
+    }
+  },
+  "session_seq": 2543
+}

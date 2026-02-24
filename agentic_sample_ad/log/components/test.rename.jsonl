@@ -1,0 +1,2 @@
+{"ts": "2026-02-24T01:37:16.684020+00:00", "level": "INFO", "component": "test.rename", "action": "one", "direction": "internal", "details": {}, "session_seq": 1}
+{"ts": "2026-02-24T01:37:16.722019+00:00", "level": "INFO", "component": "test.rename", "action": "two", "direction": "internal", "details": {}, "session_seq": 2}

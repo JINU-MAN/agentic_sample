@@ -6,14 +6,28 @@ from typing import Any, Dict, List
 
 
 AD_ROOT = Path(__file__).resolve().parents[1]
-SUB_AGENT_DIR_NAMES = ("paper_agent", "sns_agent", "web_search_agent")
+EXCLUDED_DIR_NAMES = {
+    "__pycache__",
+    "agent",
+    "agent_cards",
+    "common",
+    "db",
+    "log",
+    "main_agent",
+    "mcp_local",
+    "scripts",
+}
 
 
 def sub_agent_dirs() -> List[Path]:
     dirs: List[Path] = []
-    for name in SUB_AGENT_DIR_NAMES:
-        path = AD_ROOT / name
-        if path.exists() and path.is_dir():
+    for path in sorted(AD_ROOT.iterdir(), key=lambda p: p.name.lower()):
+        if not path.is_dir():
+            continue
+        if path.name in EXCLUDED_DIR_NAMES:
+            continue
+        candidate = path / "well_known" / "agent_card.json"
+        if candidate.exists() and candidate.is_file():
             dirs.append(path)
     return dirs
 
@@ -58,4 +72,3 @@ def load_sub_agent_cards() -> List[Dict[str, Any]]:
             loaded.append(item)
 
     return loaded
-

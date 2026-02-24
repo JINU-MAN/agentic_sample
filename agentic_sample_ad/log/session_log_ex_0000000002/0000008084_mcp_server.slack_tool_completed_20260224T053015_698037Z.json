@@ -1,0 +1,47 @@
+{
+  "ts": "2026-02-24T05:30:15.698037+00:00",
+  "level": "INFO",
+  "component": "mcp_server.slack",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "result": {
+      "ok": true,
+      "channel": "C0AFMHF42FJ",
+      "ts": "1771911015.568779",
+      "message": {
+        "user": "U0AEBRSE03Z",
+        "type": "message",
+        "ts": "1771911015.568779",
+        "bot_id": "B0AER7Q28DU",
+        "app_id": "A0AFMJ099PA",
+        "text": "I was unable to find a recent news article about Samsung Electronics. The search tool is functioning, but it is not providing accurate results for specific company news like Samsung. It returns general news when searching for 'today news', but fails to find relevant information about Samsung, often providing irrelevant results with incorrect dates.",
+        "team": "T0AET1ZEYCA",
+        "bot_profile": {
+          "id": "B0AER7Q28DU",
+          "app_id": "A0AFMJ099PA",
+          "user_id": "U0AEBRSE03Z",
+          "name": "Slack-Agent",
+          "icons": {
+            "image_36": "https://a.slack-edge.com/80588/img/plugins/app/bot_36.png",
+            "image_48": "https://a.slack-edge.com/80588/img/plugins/app/bot_48.png",
+            "image_72": "https://a.slack-edge.com/80588/img/plugins/app/service_72.png"
+          },
+          "deleted": false,
+          "updated": 1770960152,
+          "team_id": "T0AET1ZEYCA"
+        },
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "vlBs",
+            "elements": [
+              "<max_depth_reached>"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "session_seq": 8084
+}

@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:28:22.491695+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_web",
+    "query": "Samsung Electronics news release January 26 2026",
+    "max_results": 4
+  },
+  "session_seq": 7214
+}

@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:11:27.648158+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"성균관대학교 학부대학 - Sungkyunkwan University\",\n  \"url\": \"https://hakbu.skku.edu/hakbu/index.do\",\n  \"snippet\": \"1 day ago · 성균관대, ‘2026년 첨단산업 특성화대학’ 바이오 분야 선정 2026-02-19 물리학과 노창동 교수 연구팀 참여 국제공동연구, 아이스큐브 중성미자 관측소 대규모 고도화 사업 진행 2026-02-13 성균관대, …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"성균관대학교 학부대학 | 대학소개 | 학부대학소개\",\n  \"url\": \"https://hakbu.skku.edu/hakbu/intro/intro.do\",\n  \"snippet\": \"설립하였으며, 이후 교양교육과정의 지속적인 개편을 통해 성균관대 학부 모델의 확립과 한국형 FYE (First Year Experience) 모델을 제시하고 있다. 대계열 신입생의 학사지도 및 학생생활 지원을 통해 기존 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"성균관대학교 학부대학 | 진로탐색 | 학과안내\",\n  \"url\": \"https://hakbu.skku.edu/hakbu/explore/info.do\",\n  \"snippet\": \"성균관대학교 학부대학의 진로탐색 및 학과 정보를 제공합니다.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"성균관대학교 학부대학 | 성균인되기 | 인터넷서비스\",\n  \"url\": \"https://hakbu.skku.edu/hakbu/member/internet.do\",\n  \"snippet\": \"인터넷 서비스란? 성균인에게는 기본적으로 학교에서 인터넷서비스 (SKKU INTERNET SERVICE)가 제공됩니다. 인터넷서비스는 성대 인트라넷 (IntraNet) 서비스인 학사서비스 (GLS:Gold Lawn Square …\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "성균관대학교 학부대학 - Sungkyunkwan University",
+            "url": "https://hakbu.skku.edu/hakbu/index.do",
+            "snippet": "1 day ago · 성균관대, ‘2026년 첨단산업 특성화대학’ 바이오 분야 선정 2026-02-19 물리학과 노창동 교수 연구팀 참여 국제공동연구, 아이스큐브 중성미자 관측소 대규모 고도화 사업 진행 2026-02-13 성균관대, …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "성균관대학교 학부대학 | 대학소개 | 학부대학소개",
+            "url": "https://hakbu.skku.edu/hakbu/intro/intro.do",
+            "snippet": "설립하였으며, 이후 교양교육과정의 지속적인 개편을 통해 성균관대 학부 모델의 확립과 한국형 FYE (First Year Experience) 모델을 제시하고 있다. 대계열 신입생의 학사지도 및 학생생활 지원을 통해 기존 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "성균관대학교 학부대학 | 진로탐색 | 학과안내",
+            "url": "https://hakbu.skku.edu/hakbu/explore/info.do",
+            "snippet": "성균관대학교 학부대학의 진로탐색 및 학과 정보를 제공합니다.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "성균관대학교 학부대학 | 성균인되기 | 인터넷서비스",
+            "url": "https://hakbu.skku.edu/hakbu/member/internet.do",
+            "snippet": "인터넷 서비스란? 성균인에게는 기본적으로 학교에서 인터넷서비스 (SKKU INTERNET SERVICE)가 제공됩니다. 인터넷서비스는 성대 인트라넷 (IntraNet) 서비스인 학사서비스 (GLS:Gold Lawn Square …",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 1170
+}

@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:30:23.835027+00:00",
+  "level": "INFO",
+  "component": "event_manager.local_agent",
+  "action": "message_chunk",
+  "direction": "inbound",
+  "details": {
+    "agent": "MainAgent",
+    "author": "MainAgent",
+    "text": "The message has been posted to the Slack channel."
+  },
+  "session_seq": 8114
+}

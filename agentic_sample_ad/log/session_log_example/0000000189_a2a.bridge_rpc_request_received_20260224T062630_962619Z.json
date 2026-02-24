@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T06:26:30.962619+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge",
+  "action": "rpc_request_received",
+  "direction": "inbound",
+  "details": {
+    "agent": "SocialMediaAnalyst",
+    "request_id": "0e6d3626-b607-43f1-8be2-829ac925abc7",
+    "method": "message/send",
+    "input_chars": 8641
+  },
+  "session_seq": 189
+}

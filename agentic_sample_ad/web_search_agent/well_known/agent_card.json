@@ -8,8 +8,6 @@
   "capabilities": [
     "web_search",
     "web_summary",
-    "fact_check",
-    "slack_post"
+    "fact_check"
   ]
 }
-

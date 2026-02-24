@@ -1,0 +1,27 @@
+{
+  "ts": "2026-02-24T04:59:27.457121+00:00",
+  "level": "ERROR",
+  "component": "test.taskgroup",
+  "action": "simulated_exception_group_2",
+  "direction": "internal",
+  "details": {
+    "probe": true,
+    "error_type": "ExceptionGroup",
+    "error": "taskgroup probe2 (2 sub-exceptions)",
+    "traceback": "  + Exception Group Traceback (most recent call last):\n  |   File \"<string>\", line 3, in <module>\n  |     raise ExceptionGroup('taskgroup probe2', [ValueError('inner-1'), RuntimeError('inner-2')])\n  | ExceptionGroup: taskgroup probe2 (2 sub-exceptions)\n  +-+---------------- 1 ----------------\n    | ValueError: inner-1\n    +---------------- 2 ----------------\n    | RuntimeError: inner-2\n    +------------------------------------\n",
+    "sub_exceptions": [
+      {
+        "error_type": "ValueError",
+        "error": "inner-1",
+        "traceback": "ValueError: inner-1\n"
+      },
+      {
+        "error_type": "RuntimeError",
+        "error": "inner-2",
+        "traceback": "RuntimeError: inner-2\n"
+      }
+    ],
+    "is_exception_group": true
+  },
+  "session_seq": 8
+}

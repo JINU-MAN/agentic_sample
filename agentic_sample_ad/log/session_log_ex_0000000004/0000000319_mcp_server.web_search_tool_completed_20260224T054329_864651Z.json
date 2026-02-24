@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:43:29.864651+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "OpenClo security incident",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "http://www.hometax.go.kr/",
+      "http://www.hometax.go.kr/ui/pp/yrs_index.html?isCdn=Y&ST1BOX=1&ND2BOX=1&RD3BOX=1",
+      "https://www.hometax.go.kr/websquare/websquare.html?w2xPath=/ui/pp/index_pp.xml&tmIdx=04&tm2lIdx=0405000000&tm3lIdx=0405040000",
+      "https://mob.tbht.hometax.go.kr/jsonAction.do?actionId=UTBRMAAC01F001"
+    ]
+  },
+  "session_seq": 319
+}

@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:28:01.173306+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "Samsung official news",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://support.google.com/docs/answer/10296604?hl=en&co=GENIE.Platform%3DDesktop",
+      "https://support.google.com/docs/answer/11526892?hl=en&co=GENIE.Platform%3DDesktop",
+      "https://support.google.com/docs/answer/11526892?hl=id-US&co=GENIE.Platform%3DDesktop",
+      "https://support.google.com/docs/answer/11526892?hl=da&co=GENIE.Platform%3DDesktop"
+    ]
+  },
+  "session_seq": 7074
+}

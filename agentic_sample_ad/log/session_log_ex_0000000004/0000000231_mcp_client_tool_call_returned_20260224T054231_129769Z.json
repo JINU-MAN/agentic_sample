@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:42:31.129769+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error executing tool search_web: Expecting value: line 1 column 1 (char 0)"
+        }
+      ],
+      "isError": true
+    }
+  },
+  "session_seq": 231
+}

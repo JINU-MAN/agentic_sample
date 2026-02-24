@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:25:13.040341+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 1,
+    "total_steps_hint": 5,
+    "agent": "WebSearchAnalyst",
+    "goal": "Find the latest news article about Samsung Electronics.",
+    "tool_hints": [
+      "search_web_candidates_with_mcp"
+    ],
+    "open_needs": [],
+    "activated_agent_cards": [
+      "WebSearchAnalyst"
+    ]
+  },
+  "session_seq": 5878
+}

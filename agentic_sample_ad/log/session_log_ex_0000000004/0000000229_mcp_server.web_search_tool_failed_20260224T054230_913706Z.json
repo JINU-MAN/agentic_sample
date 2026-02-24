@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:42:30.913706+00:00",
+  "level": "ERROR",
+  "component": "mcp_server.web_search",
+  "action": "tool_failed",
+  "direction": "internal",
+  "details": {
+    "tool": "search_web",
+    "query": "OpenClaw CVE",
+    "max_results": 4,
+    "error_type": "JSONDecodeError",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py\", line 268, in search_web\n    payload = ddg_response.json()\n  File \"C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\httpx\\_models.py\", line 832, in json\n    return jsonlib.loads(self.content, **kwargs)\n           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\json\\__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\json\\decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\json\\decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n"
+  },
+  "session_seq": 229
+}

@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-24T05:40:15.477008+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge",
+  "action": "server_starting",
+  "direction": "internal",
+  "details": {
+    "agent": "WebSearchAnalyst",
+    "module": "agentic_sample_ad.web_search_agent.agent",
+    "attr": "web_search_agent",
+    "host": "127.0.0.1",
+    "port": 9101
+  },
+  "session_seq": 11
+}

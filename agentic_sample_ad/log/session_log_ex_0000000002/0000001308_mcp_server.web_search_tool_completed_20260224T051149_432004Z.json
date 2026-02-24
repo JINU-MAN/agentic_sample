@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:11:49.432004+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "\"News about Samsung stock price\"",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://www.bbc.co.uk/news/topics/c08yy0qz2wnt",
+      "https://www.bbc.co.uk/news/live/cy7jnjz75e8t",
+      "https://www.bbc.co.uk/news/articles/c795qgejzpxo",
+      "https://www.bbc.co.uk/news/world/us_and_canada"
+    ]
+  },
+  "session_seq": 1308
+}

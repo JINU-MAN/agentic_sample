@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:12:30.339278+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "{'query': 'Samsung Electronics stock price last 2 weeks', 'max_results_per_query': 4}",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://support.google.com/docs/answer/3093343?hl=ru",
+      "https://support.google.com/docs/answer/3093343?hl=en",
+      "https://support.google.com/docs/answer/3093343?hl=es-419",
+      "https://support.google.com/docs/answer/3093343?hl=zh-Hant"
+    ]
+  },
+  "session_seq": 1708
+}

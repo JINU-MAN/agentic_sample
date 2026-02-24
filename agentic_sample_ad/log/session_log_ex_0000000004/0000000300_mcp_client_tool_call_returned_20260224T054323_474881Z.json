@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:43:23.474881+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"乗換案内｜乗換案内NEXT\",\n  \"url\": \"https://mb.jorudan.co.jp/os/norikae.cgi?c=10&incs=utf8\",\n  \"snippet\": \"ひかえる 利用しない 優先列車 のぞみ優先 ひかりも表示 各駅停車優先 直通列車優先 座席種類優先 おまかせ 指定席 自由席 グリーン席 乗換時間 標準 余裕を持つ 短め 雨天混雑モード 利用しない 利用す …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"ジョルダン 乗換案内\",\n  \"url\": \"https://linemini.jorudan.co.jp/liff/\",\n  \"snippet\": \"ジョルダン乗換案内は、電車やバスの経路検索をサポートし、便利で迅速な移動手段を提供します。\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"ジョルダン 乗換案内・路線情報・時刻表・運行情報サービス\",\n  \"url\": \"https://www.jorudan.co.jp/norikae/teiki.html\",\n  \"snippet\": \"定期代を簡単に検索できるジョルダンのサービスです。鉄道やバスなどの経路検索と併せて便利に利用できます。\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"乗換案内NEXT | 経路検索の決定版！時刻表・運行情報・定期代\",\n  \"url\": \"https://mb.jorudan.co.jp/os/norikae.cgi\",\n  \"snippet\": \"経路検索の決定版！ スマートフォンで全国の電車、飛行機、バス、フェリーの時刻表・運賃・乗換案内・鉄道路線図・定期代などが調べられます。 スポットや住所までの乗り換え案内なら乗換案内NEXT\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "乗換案内｜乗換案内NEXT",
+            "url": "https://mb.jorudan.co.jp/os/norikae.cgi?c=10&incs=utf8",
+            "snippet": "ひかえる 利用しない 優先列車 のぞみ優先 ひかりも表示 各駅停車優先 直通列車優先 座席種類優先 おまかせ 指定席 自由席 グリーン席 乗換時間 標準 余裕を持つ 短め 雨天混雑モード 利用しない 利用す …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "ジョルダン 乗換案内",
+            "url": "https://linemini.jorudan.co.jp/liff/",
+            "snippet": "ジョルダン乗換案内は、電車やバスの経路検索をサポートし、便利で迅速な移動手段を提供します。",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "ジョルダン 乗換案内・路線情報・時刻表・運行情報サービス",
+            "url": "https://www.jorudan.co.jp/norikae/teiki.html",
+            "snippet": "定期代を簡単に検索できるジョルダンのサービスです。鉄道やバスなどの経路検索と併せて便利に利用できます。",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "乗換案内NEXT | 経路検索の決定版！時刻表・運行情報・定期代",
+            "url": "https://mb.jorudan.co.jp/os/norikae.cgi",
+            "snippet": "経路検索の決定版！ スマートフォンで全国の電車、飛行機、バス、フェリーの時刻表・運賃・乗換案内・鉄道路線図・定期代などが調べられます。 スポットや住所までの乗り換え案内なら乗換案内NEXT",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 300
+}

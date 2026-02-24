@@ -1,0 +1,17 @@
+{
+  "ts": "2026-02-24T05:11:17.418320+00:00",
+  "level": "INFO",
+  "component": "tool.search_web_candidates_with_mcp",
+  "action": "call_started",
+  "direction": "outbound",
+  "details": {
+    "queries": [
+      "{\"queries_json\": \"[\"삼성전자 주가 뉴스 2주\"",
+      "\"최근 2주 삼성전자 주가\"",
+      "\"Samsung stock news Korea recent\"]\"}"
+    ],
+    "max_results_per_query": 4,
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py"
+  },
+  "session_seq": 1109
+}

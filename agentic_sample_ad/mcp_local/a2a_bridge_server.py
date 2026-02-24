@@ -14,7 +14,7 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
-from agentic_sample_ad.system_logger import initialize_process_logging, log_event, log_exception
+from agentic_sample_ad.system_logger import finalize_process_logging, initialize_process_logging, log_event, log_exception
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -275,39 +275,42 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    initialize_process_logging()
-    _load_env_file()
-    args = _parse_args()
+    try:
+        initialize_process_logging()
+        _load_env_file()
+        args = _parse_args()
 
-    resolved_name, agent_obj = _resolve_local_agent(args.module, args.attr)
-    agent_name = args.name.strip() or resolved_name
-    description = args.description.strip() or f"A2A bridge for local agent '{agent_name}'."
-    tags = [token.strip() for token in str(args.tags).split(",") if token.strip()]
-    if not tags:
-        tags = ["local-bridge", "agentic"]
+        resolved_name, agent_obj = _resolve_local_agent(args.module, args.attr)
+        agent_name = args.name.strip() or resolved_name
+        description = args.description.strip() or f"A2A bridge for local agent '{agent_name}'."
+        tags = [token.strip() for token in str(args.tags).split(",") if token.strip()]
+        if not tags:
+            tags = ["local-bridge", "agentic"]
 
-    app = create_app(
-        module_name=args.module,
-        attr_name=args.attr,
-        agent_name=agent_name,
-        agent_obj=agent_obj,
-        description=description,
-        host=args.host,
-        port=args.port,
-        tags=tags,
-    )
-    log_event(
-        "a2a.bridge",
-        "server_starting",
-        {
-            "agent": agent_name,
-            "module": args.module,
-            "attr": args.attr,
-            "host": args.host,
-            "port": args.port,
-        },
-    )
-    uvicorn.run(app, host=args.host, port=args.port, log_level=str(args.log_level).lower())
+        app = create_app(
+            module_name=args.module,
+            attr_name=args.attr,
+            agent_name=agent_name,
+            agent_obj=agent_obj,
+            description=description,
+            host=args.host,
+            port=args.port,
+            tags=tags,
+        )
+        log_event(
+            "a2a.bridge",
+            "server_starting",
+            {
+                "agent": agent_name,
+                "module": args.module,
+                "attr": args.attr,
+                "host": args.host,
+                "port": args.port,
+            },
+        )
+        uvicorn.run(app, host=args.host, port=args.port, log_level=str(args.log_level).lower())
+    finally:
+        finalize_process_logging()
 
 
 if __name__ == "__main__":

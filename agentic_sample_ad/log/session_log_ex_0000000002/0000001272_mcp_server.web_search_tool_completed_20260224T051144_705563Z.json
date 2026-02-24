@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:11:44.705563+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "{\"queries_json\": \"[\"Samsung Electronics stock price news in Korea\"",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://ejje.weblio.jp/content/QUERIES",
+      "https://dictionary.cambridge.org/ja/dictionary/english/query",
+      "https://blog.engram.us/querry-query-querries-or-queries-which-is-correct/",
+      "https://www.collinsdictionary.com/dictionary/english/queries"
+    ]
+  },
+  "session_seq": 1272
+}

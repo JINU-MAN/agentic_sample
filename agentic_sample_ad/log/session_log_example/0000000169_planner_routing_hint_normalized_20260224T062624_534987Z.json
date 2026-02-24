@@ -1,0 +1,22 @@
+{
+  "ts": "2026-02-24T06:26:24.534987+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "routing_hint_normalized",
+  "direction": "internal",
+  "details": {
+    "routing_hint": {
+      "selected_agents": [
+        "SocialMediaAnalyst",
+        "MainAgent"
+      ],
+      "keywords": [
+        "sns_search",
+        "slack_post_message",
+        "openclo_security_sns"
+      ],
+      "reason": "SocialMediaAnalyst is required to search and summarize SNS discussions regarding OpenCLO security, and MainAgent is needed to post the resulting summary to the specified Slack channel."
+    }
+  },
+  "session_seq": 169
+}

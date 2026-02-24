@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:13:15.361965+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"QUERY - Cправка - Редакторы Google Документов\",\n  \"url\": \"https://support.google.com/docs/answer/3093343?hl=ru\",\n  \"snippet\": \"QUERY Выполняет запросы на базе языка запросов API визуализации Google. Пример использования QUERY(A2:E6; \\\"select avg(A) pivot B\\\") QUERY(A2:E6; F2; ЛОЖЬ) Синтаксис …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"QUERY function - Google Docs Editors Help\",\n  \"url\": \"https://support.google.com/docs/answer/3093343?hl=en\",\n  \"snippet\": \"QUERY(A2:E6,F2,FALSE) Syntax QUERY(data, query, [headers]) data - The range of cells to perform the query on. Each column of data can only hold boolean, numeric (including date/time types) or …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"Función QUERY - Ayuda de Editores de Documentos de Google\",\n  \"url\": \"https://support.google.com/docs/answer/3093343?hl=es-419\",\n  \"snippet\": \"query: Consulta que se va a hacer, escrita en el lenguaje de consultas de la API de visualización de Google. El valor de la consulta debe encerrarse entre comillas o debe referir a una celda que …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"查詢函式 (QUERY) - Google 文件編輯器說明\",\n  \"url\": \"https://support.google.com/docs/answer/3093343?hl=zh-Hant\",\n  \"snippet\": \"In case of mixed data types in a single column, the majority data type determines the data type of the column for query purposes. Minority data types are considered null values.\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "QUERY - Cправка - Редакторы Google Документов",
+            "url": "https://support.google.com/docs/answer/3093343?hl=ru",
+            "snippet": "QUERY Выполняет запросы на базе языка запросов API визуализации Google. Пример использования QUERY(A2:E6; \"select avg(A) pivot B\") QUERY(A2:E6; F2; ЛОЖЬ) Синтаксис …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "QUERY function - Google Docs Editors Help",
+            "url": "https://support.google.com/docs/answer/3093343?hl=en",
+            "snippet": "QUERY(A2:E6,F2,FALSE) Syntax QUERY(data, query, [headers]) data - The range of cells to perform the query on. Each column of data can only hold boolean, numeric (including date/time types) or …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "Función QUERY - Ayuda de Editores de Documentos de Google",
+            "url": "https://support.google.com/docs/answer/3093343?hl=es-419",
+            "snippet": "query: Consulta que se va a hacer, escrita en el lenguaje de consultas de la API de visualización de Google. El valor de la consulta debe encerrarse entre comillas o debe referir a una celda que …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "查詢函式 (QUERY) - Google 文件編輯器說明",
+            "url": "https://support.google.com/docs/answer/3093343?hl=zh-Hant",
+            "snippet": "In case of mixed data types in a single column, the majority data type determines the data type of the column for query purposes. Minority data types are considered null values.",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 2042
+}

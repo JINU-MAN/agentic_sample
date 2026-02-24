@@ -1,0 +1,11 @@
+{
+  "ts": "2026-02-24T05:15:06.722095+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "extract_json_success",
+  "direction": "internal",
+  "details": {
+    "source": "fenced_json"
+  },
+  "session_seq": 2523
+}

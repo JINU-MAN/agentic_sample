@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:17:13.691361+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.mcp_local.client",
+    "function": "call_mcp_tool",
+    "source": "mcp_local/client.py",
+    "line": 113,
+    "caller_module": "agentic_sample_ad.agent.paper_agent",
+    "caller_function": "load_paper_memory_with_mcp",
+    "caller_source": "agent/paper_agent.py",
+    "caller_line": 329
+  },
+  "session_seq": 3597
+}

@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:08:03.878321+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.main_agent.system_logger",
+    "function": "log_main_event",
+    "source": "main_agent/system_logger.py",
+    "line": 27,
+    "caller_module": "agentic_sample_ad.main_agent.start_agentic",
+    "caller_function": "launch_sub_agent_bridges",
+    "caller_source": "main_agent/start_agentic.py",
+    "caller_line": 40
+  },
+  "session_seq": 27
+}

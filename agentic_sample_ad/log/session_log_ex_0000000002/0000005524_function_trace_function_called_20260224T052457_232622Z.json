@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:24:57.232622+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.main_agent.agent",
+    "function": "_derive_capabilities",
+    "source": "main_agent/agent.py",
+    "line": 102,
+    "caller_module": "agentic_sample_ad.main_agent.agent",
+    "caller_function": "_enrich_cards_with_runtime_metadata",
+    "caller_source": "main_agent/agent.py",
+    "caller_line": 141
+  },
+  "session_seq": 5524
+}

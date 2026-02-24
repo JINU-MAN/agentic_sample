@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:29:59.213884+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.event_manager",
+    "function": "<genexpr>",
+    "source": "event_manager.py",
+    "line": 1212,
+    "caller_module": "agentic_sample_ad.event_manager",
+    "caller_function": "_format_agent_card_snapshots",
+    "caller_source": "event_manager.py",
+    "caller_line": 1200
+  },
+  "session_seq": 7999
+}

@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:29:23.334133+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.agent.web_search_agent",
+    "function": "fetch_web_page_with_mcp",
+    "source": "agent/web_search_agent.py",
+    "line": 275,
+    "caller_module": "google.adk.tools.function_tool",
+    "caller_function": "FunctionTool._invoke_callable",
+    "caller_source": "C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\google\\adk\\tools\\function_tool.py",
+    "caller_line": 220
+  },
+  "session_seq": 7686
+}

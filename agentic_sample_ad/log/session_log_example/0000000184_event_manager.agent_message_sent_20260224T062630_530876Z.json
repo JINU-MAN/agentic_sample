@@ -1,0 +1,17 @@
+{
+  "ts": "2026-02-24T06:26:30.530876+00:00",
+  "level": "INFO",
+  "component": "event_manager.agent_message",
+  "action": "sent",
+  "direction": "outbound",
+  "details": {
+    "from_agent": "MainAgent",
+    "to_agent": "SocialMediaAnalyst",
+    "channel": "collaboration_step",
+    "message_length": 8641,
+    "message_preview": "You are participating in a multi-agent collaboration workflow. Use the context packet below as the source of truth for capabilities, tools, and current state. Decide your own approach for this step; do not call other agents directly. If another agent is needed, emit a need request. Either of these formats is accepted: - JSON: {\"needs\": [{\"target\": \"AgentName\", \"request\": \"...\"}]} - Text: [AgentName] concrete request Provide handoff-ready output for this step. Workflow Context Packet: { \"workflow\": { \"workflow_id\": \"093f70836de243729a0e6578d44b5fcf-0fff8ccd\", \"current_step\": 1, \"total_steps_hint\": 2, \"assigned_agent\": \"SocialMediaAnalyst\" }, \"task\": { \"goal\": \"Search for SNS posts (X/Twitter, LinkedIn, etc.) regarding OpenCLO/OpenClaw security vulnerabilities (CVE-2026-25253) and summarize the public reaction, community concerns, and shared insights.\", \"expected_deliverable\": \"A structured summary of SNS discussions including common sentiments and key points mentioned by users.\", \"tool_hints\": [ \"scrape_sns_with_mcp\" ] }, \"request\": { \"user_input\": \"그와 관련해서 사람들이 얘기한 sns 게시물 있으면 그것도 찾아서 올려줘\", \"conversation_history\": \"user: 오픈클로 보안 관련 최신 뉴스 찾아서 내용 정리하고 슬랙 agentic 채널에 올려줘\\nassistant: =...(truncated)",
+    "workflow_id": "093f70836de243729a0e6578d44b5fcf-0fff8ccd",
+    "workflow_step": 1
+  },
+  "session_seq": 184
+}

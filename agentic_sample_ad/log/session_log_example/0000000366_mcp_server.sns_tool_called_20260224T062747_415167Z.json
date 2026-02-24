@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T06:27:47.415167+00:00",
+  "level": "INFO",
+  "component": "mcp_server.sns",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_sns_posts",
+    "keyword": "itworld 오픈클로",
+    "db_root": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\sns"
+  },
+  "session_seq": 366
+}

@@ -1,0 +1,3 @@
+{"ts": "2026-02-24T01:45:29.726924+00:00", "level": "INFO", "component": "test.shared", "action": "parent_started", "direction": "internal", "details": {"step": 1}, "session_seq": 1}
+{"ts": "2026-02-24T01:45:29.841471+00:00", "level": "INFO", "component": "test.shared", "action": "child_ran", "direction": "internal", "details": {"step": 2}, "session_seq": 2}
+{"ts": "2026-02-24T01:45:29.872689+00:00", "level": "INFO", "component": "test.shared", "action": "parent_done", "direction": "internal", "details": {"step": 3}, "session_seq": 3}

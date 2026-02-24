@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:21:10.282736+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "삼성전자 주가 뉴스 최근 한달",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://www.samsung.com/sec/?msockid=25381798bd5c6a2f2a1f0092bca26b3a",
+      "https://www.samsung.com/sec/about-us/company-info/?msockid=25381798bd5c6a2f2a1f0092bca26b3a",
+      "https://store.samsung.com/us/",
+      "https://www.samsung.com/sec/smartphones/all-smartphones/?msockid=25381798bd5c6a2f2a1f0092bca26b3a"
+    ]
+  },
+  "session_seq": 5118
+}

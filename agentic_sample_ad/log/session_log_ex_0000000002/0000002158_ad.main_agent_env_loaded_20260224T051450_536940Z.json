@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:14:50.536940+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "env_loaded",
+  "direction": "internal",
+  "details": {
+    "path": "C:\\agentic_sample_api\\agentic_sample_ad\\.env",
+    "loaded_count": 0,
+    "loaded_keys": []
+  },
+  "session_seq": 2158
+}

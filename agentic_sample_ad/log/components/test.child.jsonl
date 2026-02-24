@@ -1,0 +1,2 @@
+{"ts": "2026-02-23T09:48:05.838723+00:00", "level": "INFO", "component": "test.child", "action": "started", "direction": "internal", "details": {"k": 2}}
+{"ts": "2026-02-23T10:24:58.891124+00:00", "level": "INFO", "component": "test.child", "action": "started", "direction": "internal", "details": {"n": 2}, "session_seq": 2}

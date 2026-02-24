@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:15:07.660771+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge",
+  "action": "agent_card_requested",
+  "direction": "inbound",
+  "details": {
+    "agent": "WebSearchAnalyst",
+    "module": "agentic_sample_ad.web_search_agent.agent",
+    "attr": "web_search_agent"
+  },
+  "session_seq": 2620
+}

@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T06:27:30.900476+00:00",
+  "level": "INFO",
+  "component": "tool.scrape_sns_with_mcp",
+  "action": "call_completed",
+  "direction": "inbound",
+  "details": {
+    "keyword": "AI security news",
+    "result": {
+      "content": [],
+      "structuredContent": {
+        "result": []
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 334
+}

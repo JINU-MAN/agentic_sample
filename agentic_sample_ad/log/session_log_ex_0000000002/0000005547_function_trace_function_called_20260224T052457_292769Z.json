@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:24:57.292769+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.main_agent.agent",
+    "function": "_build_unified_agent_registry",
+    "source": "main_agent/agent.py",
+    "line": 228,
+    "caller_module": "agentic_sample_ad.main_agent.agent",
+    "caller_function": "run_main_agent",
+    "caller_source": "main_agent/agent.py",
+    "caller_line": 257
+  },
+  "session_seq": 5547
+}

@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T05:43:01.612558+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "failure_review_started",
+  "direction": "outbound",
+  "details": {
+    "failed_step": 1,
+    "failed_agent": "WebSearchAnalyst",
+    "pending_count": 2,
+    "open_needs_count": 0
+  },
+  "session_seq": 281
+}

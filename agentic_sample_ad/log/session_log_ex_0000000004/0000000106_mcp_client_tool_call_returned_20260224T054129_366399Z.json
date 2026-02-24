@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:41:29.366399+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"IRCTC\",\n  \"url\": \"https://www.irctc.co.in/\",\n  \"snippet\": \"IRCTC offers an advanced eTicketing system for booking train tickets, checking PNR status, and accessing travel information seamlessly.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"Book E-Ticket\",\n  \"url\": \"https://contents.irctc.co.in/en/bookEticket.html\",\n  \"snippet\": \"Ticket reservation page appears; check whether the train name and the station names displayed on the top of the page are same as desired by you. Enter the names of the Passengers, age, sex and berth …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"BookMyTrain - IRCTC Next Generation eTicketing System\",\n  \"url\": \"https://contents.irctc.co.in/en/bookmytrain.html\",\n  \"snippet\": \"The railway reservation system opens at 1:30 am every morning, and the facility is available till 11:30pm every night. The system is shut down between 11:30pm to 1:30am every day, which is why online …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"IRCTC eQuery Portal\",\n  \"url\": \"https://equery.irctc.co.in/irctc_equery/\",\n  \"snippet\": \"Access the IRCTC eQuery system for inquiries, complaints, and feedback related to train reservations and services.\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "IRCTC",
+            "url": "https://www.irctc.co.in/",
+            "snippet": "IRCTC offers an advanced eTicketing system for booking train tickets, checking PNR status, and accessing travel information seamlessly.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "Book E-Ticket",
+            "url": "https://contents.irctc.co.in/en/bookEticket.html",
+            "snippet": "Ticket reservation page appears; check whether the train name and the station names displayed on the top of the page are same as desired by you. Enter the names of the Passengers, age, sex and berth …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "BookMyTrain - IRCTC Next Generation eTicketing System",
+            "url": "https://contents.irctc.co.in/en/bookmytrain.html",
+            "snippet": "The railway reservation system opens at 1:30 am every morning, and the facility is available till 11:30pm every night. The system is shut down between 11:30pm to 1:30am every day, which is why online …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "IRCTC eQuery Portal",
+            "url": "https://equery.irctc.co.in/irctc_equery/",
+            "snippet": "Access the IRCTC eQuery system for inquiries, complaints, and feedback related to train reservations and services.",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 106
+}

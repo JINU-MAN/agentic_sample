@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:11:48.654137+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_web",
+    "query": "\"News about Samsung stock price\"",
+    "max_results": 4
+  },
+  "session_seq": 1305
+}

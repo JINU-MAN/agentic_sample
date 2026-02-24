@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-24T05:25:35.388996+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "call_mode",
+  "direction": "internal",
+  "details": {
+    "mode": "threaded_event_loop",
+    "tool_name": "search_web"
+  },
+  "session_seq": 6056
+}

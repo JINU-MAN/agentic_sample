@@ -10,8 +10,7 @@
       "paper_search",
       "paper_summary",
       "paper_fulltext_memory",
-      "paper_memory_query",
-      "slack_post"
+      "paper_memory_query"
     ]
   },
   {
@@ -23,8 +22,7 @@
     "description": "SNS post collection, relevance filtering, and concise social signal summarization.",
     "capabilities": [
       "sns_search",
-      "sns_summary",
-      "slack_post"
+      "sns_summary"
     ]
   },
   {
@@ -37,8 +35,7 @@
     "capabilities": [
       "web_search",
       "web_summary",
-      "fact_check",
-      "slack_post"
+      "fact_check"
     ]
   }
 ]

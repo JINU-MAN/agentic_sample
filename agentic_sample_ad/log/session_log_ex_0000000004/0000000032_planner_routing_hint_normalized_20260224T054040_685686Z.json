@@ -1,0 +1,22 @@
+{
+  "ts": "2026-02-24T05:40:40.685686+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "routing_hint_normalized",
+  "direction": "internal",
+  "details": {
+    "routing_hint": {
+      "selected_agents": [
+        "WebSearchAnalyst",
+        "MainAgent"
+      ],
+      "keywords": [
+        "오픈클로 보안 뉴스",
+        "뉴스 요약",
+        "슬랙 게시"
+      ],
+      "reason": "WebSearchAnalyst가 오픈클로 보안 관련 뉴스를 검색하고 요약하며, MainAgent가 최종 결과를 슬랙 채널에 게시합니다."
+    }
+  },
+  "session_seq": 32
+}

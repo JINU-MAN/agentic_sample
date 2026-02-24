@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:24:56.878659+00:00",
+  "level": "INFO",
+  "component": "a2a.package",
+  "action": "logging_enabled",
+  "direction": "internal",
+  "details": {
+    "logger": "a2a",
+    "level": "INFO",
+    "enabled": true
+  },
+  "session_seq": 5430
+}

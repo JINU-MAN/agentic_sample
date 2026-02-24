@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:09:35.442940+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.main_agent.agent",
+    "function": "_doc_preview",
+    "source": "main_agent/agent.py",
+    "line": 73,
+    "caller_module": "agentic_sample_ad.main_agent.agent",
+    "caller_function": "_extract_tool_metadata",
+    "caller_source": "main_agent/agent.py",
+    "caller_line": 80
+  },
+  "session_seq": 248
+}

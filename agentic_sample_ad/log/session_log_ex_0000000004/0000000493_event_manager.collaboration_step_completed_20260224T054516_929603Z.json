@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T05:45:16.929603+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_completed",
+  "direction": "inbound",
+  "details": {
+    "step": 3,
+    "total_steps_hint": 4,
+    "agent": "SocialMediaAnalyst",
+    "ok": true
+  },
+  "session_seq": 493
+}

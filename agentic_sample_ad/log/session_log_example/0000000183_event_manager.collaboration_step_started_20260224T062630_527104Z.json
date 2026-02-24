@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T06:26:30.527104+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 1,
+    "total_steps_hint": 2,
+    "agent": "SocialMediaAnalyst",
+    "goal": "Search for SNS posts (X/Twitter, LinkedIn, etc.) regarding OpenCLO/OpenClaw security vulnerabilities (CVE-2026-25253) and summarize the public reaction, community concerns, and shared insights.",
+    "tool_hints": [
+      "scrape_sns_with_mcp"
+    ],
+    "open_needs": [],
+    "activated_agent_cards": [
+      "SocialMediaAnalyst"
+    ]
+  },
+  "session_seq": 183
+}

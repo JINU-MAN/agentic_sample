@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:17:02.159624+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.agent.paper_agent",
+    "function": "<genexpr>",
+    "source": "agent/paper_agent.py",
+    "line": 227,
+    "caller_module": "agentic_sample_ad.agent.paper_agent",
+    "caller_function": "_build_overview_text",
+    "caller_source": "agent/paper_agent.py",
+    "caller_line": 187
+  },
+  "session_seq": 3519
+}

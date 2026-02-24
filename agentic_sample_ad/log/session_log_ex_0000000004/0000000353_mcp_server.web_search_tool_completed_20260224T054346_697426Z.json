@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-24T05:43:46.697426+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "fetch_page",
+    "url": "https://www.boannews.com/media/view.asp?idx=142321",
+    "status_code": 200,
+    "content_length": 4984,
+    "truncated": false
+  },
+  "session_seq": 353
+}

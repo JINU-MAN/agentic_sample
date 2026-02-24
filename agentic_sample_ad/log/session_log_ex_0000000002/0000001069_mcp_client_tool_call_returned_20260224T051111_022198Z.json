@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:11:11.022198+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"Samsung 대한민국 | 모바일 | TV | 가전 | IT\",\n  \"url\": \"https://www.samsung.com/sec/?msockid=2676b4409a5b68e427baa34a9bf5698b\",\n  \"snippet\": \"AI for All 삼성케어플러스 모바일/PC 삼성케어플러스 가전/TV 갤럭시 캠퍼스 갤럭시 AI 클래스 AI 구독클럽 아울렛 #Samsung Experience 삼닷 Live 비즈니스 스토리 제품 갤럭시 스마트폰 갤럭시 탭 갤럭시 북 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"기업 정보 | 회사소개 | Samsung 대한민국\",\n  \"url\": \"https://www.samsung.com/sec/about-us/company-info/?msockid=2676b4409a5b68e427baa34a9bf5698b\",\n  \"snippet\": \"삼성전자는 사람과 사회를 생각하는 글로벌 일류기업을 추구합니다. ‘경영이념, 핵심가치, 경영원칙’의 가치체계를 경영의 나침반으로 삼고, 인재와 기술을 바탕으로 최고의 제품과 서비스를 창출하여 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"store.samsung.com\",\n  \"url\": \"https://store.samsung.com/us/\",\n  \"snippet\": \"store.samsung.com ... ‎\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"갤럭시 스마트폰 | Samsung 대한민국\",\n  \"url\": \"https://www.samsung.com/sec/smartphones/all-smartphones/?msockid=2676b4409a5b68e427baa34a9bf5698b\",\n  \"snippet\": \"삼성닷컴에서 더 많은 혜택을 믿고 사는 삼성닷컴 혜택과 서비스까지 한 번에 더 알아보기 갤럭시 Z 플립7 자급제 (삼성닷컴/삼성 강남 전용컬러) SM-F766NLGAKOO 4.8\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "Samsung 대한민국 | 모바일 | TV | 가전 | IT",
+            "url": "https://www.samsung.com/sec/?msockid=2676b4409a5b68e427baa34a9bf5698b",
+            "snippet": "AI for All 삼성케어플러스 모바일/PC 삼성케어플러스 가전/TV 갤럭시 캠퍼스 갤럭시 AI 클래스 AI 구독클럽 아울렛 #Samsung Experience 삼닷 Live 비즈니스 스토리 제품 갤럭시 스마트폰 갤럭시 탭 갤럭시 북 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "기업 정보 | 회사소개 | Samsung 대한민국",
+            "url": "https://www.samsung.com/sec/about-us/company-info/?msockid=2676b4409a5b68e427baa34a9bf5698b",
+            "snippet": "삼성전자는 사람과 사회를 생각하는 글로벌 일류기업을 추구합니다. ‘경영이념, 핵심가치, 경영원칙’의 가치체계를 경영의 나침반으로 삼고, 인재와 기술을 바탕으로 최고의 제품과 서비스를 창출하여 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "store.samsung.com",
+            "url": "https://store.samsung.com/us/",
+            "snippet": "store.samsung.com ... ‎",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "갤럭시 스마트폰 | Samsung 대한민국",
+            "url": "https://www.samsung.com/sec/smartphones/all-smartphones/?msockid=2676b4409a5b68e427baa34a9bf5698b",
+            "snippet": "삼성닷컴에서 더 많은 혜택을 믿고 사는 삼성닷컴 혜택과 서비스까지 한 번에 더 알아보기 갤럭시 Z 플립7 자급제 (삼성닷컴/삼성 강남 전용컬러) SM-F766NLGAKOO 4.8",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 1069
+}

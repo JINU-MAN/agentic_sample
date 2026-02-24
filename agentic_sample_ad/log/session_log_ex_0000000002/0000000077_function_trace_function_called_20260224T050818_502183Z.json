@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:08:18.502183+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.mcp_local.client",
+    "function": "<module>",
+    "source": "mcp_local/client.py",
+    "line": 1,
+    "caller_module": "importlib._bootstrap",
+    "caller_function": "_call_with_frames_removed",
+    "caller_source": "<frozen importlib._bootstrap>",
+    "caller_line": 480
+  },
+  "session_seq": 77
+}

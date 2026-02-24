@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:14:50.883812+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "agent_runtime_metadata_enriched",
+  "direction": "internal",
+  "details": {
+    "name": "SocialMediaAnalyst",
+    "module": "agentic_sample_ad.sns_agent.agent",
+    "attr": "sns_agent",
+    "tool_names": [
+      "scrape_sns_with_mcp"
+    ]
+  },
+  "session_seq": 2249
+}

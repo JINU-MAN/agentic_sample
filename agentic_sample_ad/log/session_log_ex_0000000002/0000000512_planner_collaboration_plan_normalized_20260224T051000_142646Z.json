@@ -1,0 +1,62 @@
+{
+  "ts": "2026-02-24T05:10:00.142646+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "collaboration_plan_normalized",
+  "direction": "internal",
+  "details": {
+    "collaboration_plan": {
+      "steps": [
+        {
+          "agent": "WebSearchAnalyst",
+          "goal": "Find relevant news articles about Samsung Electronics' stock price fluctuations over the last two weeks.",
+          "deliverable": "List of relevant news articles with summaries.",
+          "tool_hints": [
+            "search_web_candidates_with_mcp",
+            "fetch_web_page_with_mcp"
+          ]
+        },
+        {
+          "agent": "PaperAnalyst",
+          "goal": "Find relevant analyst reports about Samsung Electronics' stock price fluctuations over the last two weeks.",
+          "deliverable": "List of relevant analyst reports with summaries.",
+          "tool_hints": [
+            "scrape_papers_with_mcp"
+          ]
+        },
+        {
+          "agent": "WebSearchAnalyst",
+          "goal": "Summarize the key findings from the news articles.",
+          "deliverable": "Summary of key findings from news articles.",
+          "tool_hints": [
+            "web_summary"
+          ]
+        },
+        {
+          "agent": "PaperAnalyst",
+          "goal": "Summarize the key findings from the analyst reports.",
+          "deliverable": "Summary of key findings from analyst reports.",
+          "tool_hints": [
+            "paper_summary"
+          ]
+        },
+        {
+          "agent": "MainAgent",
+          "goal": "Combine the summaries from the news articles and analyst reports into a single, concise summary of Samsung Electronics' stock price fluctuations over the last two weeks.",
+          "deliverable": "Concise summary of Samsung Electronics' stock price fluctuations over the last two weeks.",
+          "tool_hints": []
+        },
+        {
+          "agent": "MainAgent",
+          "goal": "Post the summary to the \"agentic\" Slack channel.",
+          "deliverable": "Confirmation that the summary has been posted to the Slack channel.",
+          "tool_hints": [
+            "slack_post_message"
+          ]
+        }
+      ],
+      "notes": "The plan involves finding news articles and analyst reports, summarizing their findings, combining the summaries, and posting the combined summary to a Slack channel."
+    }
+  },
+  "session_seq": 512
+}

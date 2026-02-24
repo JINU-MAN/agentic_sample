@@ -269,6 +269,7 @@ def _format_available_agents_for_prompt(available_agents: List[Dict[str, Any]]) 
     for agent in available_agents:
         name = str(agent.get("name", "UnknownAgent")).strip() or "UnknownAgent"
         agent_type = str(agent.get("type", "")).strip() or "unknown"
+        role = str(agent.get("role", "")).strip() or "worker"
         desc = str(agent.get("description", "")).strip()
 
         capabilities = [str(item).strip() for item in agent.get("capabilities", []) if str(item).strip()]
@@ -296,6 +297,7 @@ def _format_available_agents_for_prompt(available_agents: List[Dict[str, Any]]) 
         lines.append(
             f"- name: {name}\n"
             f"  type: {agent_type}\n"
+            f"  role: {role}\n"
             f"  description: {desc}\n"
             f"  capabilities: {caps_text}\n"
             f"  tools: {tools_text}\n"
@@ -305,6 +307,7 @@ def _format_available_agents_for_prompt(available_agents: List[Dict[str, Any]]) 
 
 
 def _agent_domain_tags(agent_meta: Dict[str, Any]) -> set[str]:
+    role = str(agent_meta.get("role", "")).strip().lower()
     blob_parts: List[str] = [
         str(agent_meta.get("name", "")),
         str(agent_meta.get("description", "")),
@@ -319,12 +322,16 @@ def _agent_domain_tags(agent_meta: Dict[str, Any]) -> set[str]:
     blob = " ".join(blob_parts).lower()
 
     domains: set[str] = set()
+    if role in {"coordinator", "control"}:
+        domains.add("coordination")
     if any(token in blob for token in ["paper", "papers", "pdf", "research"]):
         domains.add("paper")
     if any(token in blob for token in ["web", "article", "articles", "news", "search_web", "fetch_web"]):
         domains.add("web")
-    if any(token in blob for token in ["sns", "social", "post", "posts"]):
+    if any(token in blob for token in ["sns", "social", "social_media", "search_sns", "scrape_sns"]):
         domains.add("sns")
+    if any(token in blob for token in ["slack", "comm.", "post_message", "notification", "channel_delivery"]):
+        domains.add("comm")
     return domains
 
 
@@ -337,6 +344,8 @@ def _requested_domains_from_text(text: str) -> set[str]:
         requested.add("web")
     if any(token in lowered for token in ["sns", "social media", "social", "post", "posts"]):
         requested.add("sns")
+    if any(token in lowered for token in ["slack", "channel", "post to", "send to"]):
+        requested.add("comm")
     return requested
 
 
@@ -436,8 +445,16 @@ def _derive_step_tool_hints(agent_meta: Dict[str, Any], max_hints: int = 3) -> L
 
 def _build_specialist_step(agent_meta: Dict[str, Any], user_input: str) -> Dict[str, Any]:
     name = str(agent_meta.get("name", "UnknownAgent")).strip() or "UnknownAgent"
+    role = str(agent_meta.get("role", "")).strip().lower()
     tags = _agent_domain_tags(agent_meta)
-    if "paper" in tags:
+    if role in {"coordinator", "control"} or "coordination" in tags or "comm" in tags:
+        goal = (
+            "Handle coordination and cross-agent handoff tasks for this request, including any final delivery actions "
+            "that belong to coordinator capabilities.\n"
+            f"User request: {user_input}"
+        )
+        deliverable = "Coordinator action result and final handoff status."
+    elif "paper" in tags:
         goal = (
             "Lead paper/research evidence collection and analysis for this request. "
             "Search local paper DB first, and if coverage is insufficient, request WebSearchAnalyst follow-up via Additional Needs for MainAgent routing.\n"
@@ -620,6 +637,7 @@ def _derive_routing_hint(
         "- Include every agent that materially improves accuracy/completeness.\n"
         "- Do not force single-agent selection when multiple evidence sources are requested.\n\n"
         "- Select based on user goal and available agent capabilities/tools.\n"
+        "- Include coordinator agents when the request needs cross-agent handoff or external channel delivery.\n"
         "- Avoid hardcoded assumptions about specific agent names.\n\n"
         f"Recent conversation context:\n{conversation_history or '(none)'}\n\n"
         f"User request:\n{user_input}\n\n"
@@ -679,8 +697,9 @@ def _derive_collaboration_plan(
         "- Prioritize satisfying user intent and factual completeness over runtime speed.\n"
         "- Prefer specialist-owned steps rather than assigning specialist tasks to non-specialists.\n"
         "- Prefer multi-agent collaboration when it improves coverage or verification.\n\n"
-        "- Choose agents and tool usage strategy based on available metadata, not hardcoded roles.\n"
-        "- For each step, add tool_hints when useful.\n\n"
+        "- Choose agents based on capabilities/tools metadata, not hardcoded roles.\n"
+        "- Do not force tool usage in steps; use tool_hints only when clearly helpful.\n"
+        "- If a task requires a capability owned by a specific agent (for example channel posting), assign that step to the owner agent.\n\n"
         f"Recent conversation context:\n{conversation_history or '(none)'}\n\n"
         f"User request:\n{user_input}\n\n"
         f"Current plan text:\n{raw_plan}\n\n"
@@ -737,9 +756,10 @@ def plan_with_main_agent(
         "2) Then write a 'Plan:' section with numbered steps.\n"
         "3) For each step, specify which agent to use and what input to provide.\n"
         "4) If no sub-agent is needed, explain why and provide direct handling steps.\n"
-        "5) Select agents and tool strategies from the available metadata; avoid hardcoded assumptions.\n"
+        "5) Select agents from the available capabilities/tools metadata; avoid hardcoded assumptions.\n"
         "6) Prioritize accuracy, evidence coverage, and user-request fulfillment over speed.\n"
         "7) When different evidence sources are requested, include matching specialists.\n\n"
+        "8) If the request includes channel delivery (for example Slack posting), include the coordinator agent step that owns the delivery capability.\n\n"
         f"Recent conversation context:\n{conversation_history or '(none)'}\n\n"
         f"User request:\n{user_input}\n\n"
         f"Available agents:\n{agents_desc}\n"

@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:43:43.071837+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "fetch_page",
+    "arguments": {
+      "url": "https://moonit.kr/openclaw-cve-2026-25253-security-vulnerability/",
+      "max_chars": 6000
+    }
+  },
+  "session_seq": 341
+}

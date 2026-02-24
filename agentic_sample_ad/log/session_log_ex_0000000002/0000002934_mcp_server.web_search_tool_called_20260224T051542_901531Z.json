@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:15:42.901531+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "fetch_page",
+    "url": "https://www.samsung.com/sec/?msockid=308405a75d316fc3177a12ad5cb66e2c",
+    "max_chars": 6000
+  },
+  "session_seq": 2934
+}

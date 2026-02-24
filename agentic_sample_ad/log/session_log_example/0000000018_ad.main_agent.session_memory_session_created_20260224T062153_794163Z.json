@@ -1,0 +1,11 @@
+{
+  "ts": "2026-02-24T06:21:53.794163+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent.session_memory",
+  "action": "session_created",
+  "direction": "internal",
+  "details": {
+    "session_id": "093f70836de243729a0e6578d44b5fcf"
+  },
+  "session_seq": 18
+}

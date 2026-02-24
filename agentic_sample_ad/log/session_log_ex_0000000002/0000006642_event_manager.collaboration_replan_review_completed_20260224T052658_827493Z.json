@@ -1,0 +1,149 @@
+{
+  "ts": "2026-02-24T05:26:58.827493+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "replan_review_completed",
+  "direction": "inbound",
+  "details": {
+    "additional_needs": [
+      "[MainAgent] Please investigate the search tool's functionality and determine why it is returning irrelevant results with incorrect dates."
+    ],
+    "should_update_plan": true,
+    "updated_steps": [
+      {
+        "agent": "WebSearchAnalyst",
+        "goal": "Find the latest news article about Samsung Electronics.",
+        "deliverable": "URL of the latest news article.",
+        "tool_hints": [
+          "search_web_candidates_with_mcp"
+        ],
+        "agent_meta": {
+          "name": "WebSearchAnalyst",
+          "type": "a2a",
+          "base_url": "http://127.0.0.1:9101",
+          "module": "agentic_sample_ad.web_search_agent.agent",
+          "attr": "web_search_agent",
+          "description": "Web search candidate discovery, page fetch validation, and evidence summarization.",
+          "capabilities": [
+            "web_search",
+            "web_summary",
+            "fact_check",
+            "websearchanalyst",
+            "search_web_candidates_with_mcp",
+            "fetch_web_page_with_mcp"
+          ],
+          "source_card_path": "C:\\agentic_sample_api\\agentic_sample_ad\\web_search_agent\\well_known\\agent_card.json",
+          "role": "worker",
+          "tools": [
+            {
+              "name": "<max_depth_reached>",
+              "description": "<max_depth_reached>"
+            },
+            {
+              "name": "<max_depth_reached>",
+              "description": "<max_depth_reached>"
+            }
+          ],
+          "instruction_preview": "You are a web research specialist. Specialization-first policy: web/article/news evidence is your primary responsibility. You decide search intent, query strategy, and relevance criteria yourself. Do not assume fixed keyword mappings. Operating rules: 1) First decide 3-6 query candidates from the user intent. 2) Call `..."
+        }
+      },
+      {
+        "agent": "WebSearchAnalyst",
+        "goal": "Fetch the content of the news article.",
+        "deliverable": "Content of the news article.",
+        "tool_hints": [
+          "fetch_web_page_with_mcp"
+        ],
+        "agent_meta": {
+          "name": "WebSearchAnalyst",
+          "type": "a2a",
+          "base_url": "http://127.0.0.1:9101",
+          "module": "agentic_sample_ad.web_search_agent.agent",
+          "attr": "web_search_agent",
+          "description": "Web search candidate discovery, page fetch validation, and evidence summarization.",
+          "capabilities": [
+            "web_search",
+            "web_summary",
+            "fact_check",
+            "websearchanalyst",
+            "search_web_candidates_with_mcp",
+            "fetch_web_page_with_mcp"
+          ],
+          "source_card_path": "C:\\agentic_sample_api\\agentic_sample_ad\\web_search_agent\\well_known\\agent_card.json",
+          "role": "worker",
+          "tools": [
+            {
+              "name": "<max_depth_reached>",
+              "description": "<max_depth_reached>"
+            },
+            {
+              "name": "<max_depth_reached>",
+              "description": "<max_depth_reached>"
+            }
+          ],
+          "instruction_preview": "You are a web research specialist. Specialization-first policy: web/article/news evidence is your primary responsibility. You decide search intent, query strategy, and relevance criteria yourself. Do not assume fixed keyword mappings. Operating rules: 1) First decide 3-6 query candidates from the user intent. 2) Call `..."
+        }
+      },
+      {
+        "agent": "MainAgent",
+        "goal": "Summarize the content of the news article.",
+        "deliverable": "A concise summary of the news article.",
+        "tool_hints": [],
+        "agent_meta": {
+          "name": "MainAgent",
+          "type": "local",
+          "role": "coordinator",
+          "description": "Coordinator for planning, replanning, and cross-agent handoff execution.",
+          "capabilities": [
+            "coordination",
+            "workflow_replanning",
+            "user_clarification_routing",
+            "comm.slack.post",
+            "mainagent",
+            "slack_post_message"
+          ],
+          "tools": [
+            {
+              "name": "<max_depth_reached>",
+              "description": "<max_depth_reached>"
+            }
+          ],
+          "instruction_preview": "You are the coordinator of a multi-agent system. Understand the user request, create practical execution steps, and orchestrate specialist agents for best quality. Slack posting is allowed only from MainAgent. If Slack delivery is required, MainAgent must call `slack_post_message` directly.",
+          "agent_obj": "name='MainAgent' description='' parent_agent=None sub_agents=[] before_agent_callback=None after_agent_callback=None model='gemini-2.0-flash' instruction='You are the coordinator of a multi-agent system. Understand the user request, create practical execution steps, and orchestrate specialist agents for best quality. Slack posting is allowed only from MainAgent. If Slack delivery is required, MainAgent must call `slack_post_message` directly.' global_instruction='' static_instruction=None tools=[<function slack_post_message at 0x00000154D241C900>] generate_content_config=None disallow_transfer_to_parent=False disallow_transfer_to_peers=False include_contents='default' input_schema=None output_schema=None output_key=None planner=None code_executor=None before_model_callback=None after_model_callback=None on_model_error_callback=None before_tool_callback=None after_tool_callback=None on_tool_error_callback=None"
+        }
+      },
+      {
+        "agent": "MainAgent",
+        "goal": "Post the summarized content to the Slack channel 'agentic'.",
+        "deliverable": "Confirmation that the summary has been posted to Slack.",
+        "tool_hints": [
+          "slack_post_message"
+        ],
+        "agent_meta": {
+          "name": "MainAgent",
+          "type": "local",
+          "role": "coordinator",
+          "description": "Coordinator for planning, replanning, and cross-agent handoff execution.",
+          "capabilities": [
+            "coordination",
+            "workflow_replanning",
+            "user_clarification_routing",
+            "comm.slack.post",
+            "mainagent",
+            "slack_post_message"
+          ],
+          "tools": [
+            {
+              "name": "<max_depth_reached>",
+              "description": "<max_depth_reached>"
+            }
+          ],
+          "instruction_preview": "You are the coordinator of a multi-agent system. Understand the user request, create practical execution steps, and orchestrate specialist agents for best quality. Slack posting is allowed only from MainAgent. If Slack delivery is required, MainAgent must call `slack_post_message` directly.",
+          "agent_obj": "name='MainAgent' description='' parent_agent=None sub_agents=[] before_agent_callback=None after_agent_callback=None model='gemini-2.0-flash' instruction='You are the coordinator of a multi-agent system. Understand the user request, create practical execution steps, and orchestrate specialist agents for best quality. Slack posting is allowed only from MainAgent. If Slack delivery is required, MainAgent must call `slack_post_message` directly.' global_instruction='' static_instruction=None tools=[<function slack_post_message at 0x00000154D241C900>] generate_content_config=None disallow_transfer_to_parent=False disallow_transfer_to_peers=False include_contents='default' input_schema=None output_schema=None output_key=None planner=None code_executor=None before_model_callback=None after_model_callback=None on_model_error_callback=None before_tool_callback=None after_tool_callback=None on_tool_error_callback=None"
+        }
+      }
+    ],
+    "reason": "The search tool is malfunctioning, but we should retry the original plan."
+  },
+  "session_seq": 6642
+}

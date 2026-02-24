@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:16:26.431516+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.event_manager",
+    "function": "_async_review_collaboration_progress_with_main_agent",
+    "source": "event_manager.py",
+    "line": 1683,
+    "caller_module": "asyncio.events",
+    "caller_function": "Handle._run",
+    "caller_source": "C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\asyncio\\events.py",
+    "caller_line": 87
+  },
+  "session_seq": 3219
+}

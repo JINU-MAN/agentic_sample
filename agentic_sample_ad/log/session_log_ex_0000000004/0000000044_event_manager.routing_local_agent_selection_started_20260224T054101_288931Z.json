@@ -1,0 +1,31 @@
+{
+  "ts": "2026-02-24T05:41:01.288931+00:00",
+  "level": "INFO",
+  "component": "event_manager.routing",
+  "action": "local_agent_selection_started",
+  "direction": "internal",
+  "details": {
+    "local_agent_names": [
+      "MainAgent",
+      "PaperAnalyst",
+      "SocialMediaAnalyst",
+      "WebSearchAnalyst"
+    ],
+    "raw_plan": "사용자 목표: 오픈클로(OpenClo) 보안 관련 최신 뉴스를 검색 및 요약하여 슬랙 'agentic' 채널에 게시합니다.\n\nPlan:\n\n1. **WebSearchAnalyst를 사용하여 뉴스 검색 및 요약**: '오픈클로 보안', 'OpenClo security news' 등의 키워드로 최신 뉴스를 검색하고, 발견된 기사들의 내용을 파악하여 핵심 보안 이슈를 요약합니다.\n2. **MainAgent를 사용하여 슬랙 게시**: WebSearchAnalyst가 정리한 요약 내용을 바탕으로 `slack_post_message` 기능을 호출하여 슬랙의 'agentic' 채널에 메시지를 전송합니다.",
+    "user_input": "오픈클로 보안 관련 뉴스 찾아서 내용 정리하고 슬랙 agentic 채널에 올려줘",
+    "routing_hint": {
+      "selected_agents": [
+        "WebSearchAnalyst",
+        "MainAgent",
+        "SocialMediaAnalyst"
+      ],
+      "keywords": [
+        "오픈클로 보안 뉴스",
+        "뉴스 요약",
+        "슬랙 게시"
+      ],
+      "reason": "WebSearchAnalyst가 오픈클로 보안 관련 뉴스를 검색하고 요약하며, MainAgent가 최종 결과를 슬랙 채널에 게시합니다. Coverage-first adjustment added: SocialMediaAnalyst (requested domains: comm, sns, web)."
+    }
+  },
+  "session_seq": 44
+}

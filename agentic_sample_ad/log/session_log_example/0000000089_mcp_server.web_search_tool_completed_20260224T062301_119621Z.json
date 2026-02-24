@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T06:23:01.119621+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "OpenCLO platform security",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://jasso.jangan.ac.kr/LoginServlet?method=idpwProcessEx&ssid=121",
+      "https://www.jangan.ac.kr/jangan/index.do",
+      "https://jcampusv2.jangan.ac.kr/login/doLoginPage.dunet",
+      "https://onestop.jangan.ac.kr/jau/indexNew/index.do"
+    ]
+  },
+  "session_seq": 89
+}

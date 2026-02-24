@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:29:23.461290+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "fetch_page",
+    "arguments": {
+      "url": "https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFZxYUdjU0FtVnVHZ0pWVXlnQVAB",
+      "max_chars": 6000
+    }
+  },
+  "session_seq": 7692
+}

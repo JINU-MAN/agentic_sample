@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:27:07.906706+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "__main__",
+    "function": "handle_jsonrpc",
+    "source": "mcp_local/a2a_bridge_server.py",
+    "line": 183,
+    "caller_module": "fastapi.routing",
+    "caller_function": "run_endpoint_function",
+    "caller_source": "C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\fastapi\\routing.py",
+    "caller_line": 306
+  },
+  "session_seq": 6724
+}

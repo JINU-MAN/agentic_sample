@@ -1,0 +1,23 @@
+{
+  "ts": "2026-02-24T05:14:51.005076+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "available_agents_finalized",
+  "direction": "internal",
+  "details": {
+    "count": 4,
+    "names": [
+      "MainAgent",
+      "PaperAnalyst",
+      "SocialMediaAnalyst",
+      "WebSearchAnalyst"
+    ],
+    "roles": {
+      "MainAgent": "coordinator",
+      "PaperAnalyst": "worker",
+      "SocialMediaAnalyst": "worker",
+      "WebSearchAnalyst": "worker"
+    }
+  },
+  "session_seq": 2295
+}

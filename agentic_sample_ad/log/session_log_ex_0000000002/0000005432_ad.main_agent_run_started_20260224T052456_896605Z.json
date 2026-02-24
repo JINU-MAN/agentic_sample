@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-24T05:24:56.896605+00:00",
+  "level": "INFO",
+  "component": "ad.main_agent",
+  "action": "run_started",
+  "direction": "inbound",
+  "details": {
+    "session_id": "cf177c9d15814682bf140f2270f1e135",
+    "user_input": "그럼 그냥 최신 뉴스 하나만 찾아봐"
+  },
+  "session_seq": 5432
+}

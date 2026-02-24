@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:41:49.349669+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"簿記 3級 | 商工会議所の 検定 試験\",\n  \"url\": \"https://www.kentei.ne.jp/bookkeeping/class3\",\n  \"snippet\": \"Apr 14, 2023 · 簿記3級のレベル業種・職種にかかわらずビジネスパーソンが身に付けておくべき「必須の基本知識」として、多くの企業から評価される資格。 基本的な商業簿記を修得し、小規模企業 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"簿記3級 とは？難易度・勉強法・無料独学問題｜StudyPro\",\n  \"url\": \"https://studyboki3.com/\",\n  \"snippet\": \"簿記3級を独学で取得したい方に向けて、簿記3級の概要や具体的な勉強法を解説します。 イラストや丁寧な解説付きの実践問題に加え、予想模試も全て無料で用意しています。\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"【日商 簿記3級 】無料問題集～わかりやすい解説で独学でも安心 ...\",\n  \"url\": \"https://inuboki.com/3q-mondai/\",\n  \"snippet\": \"仕訳問題集 電卓不要の仕訳問題集 日商簿記3級の仕訳問題集です。 本番のネット試験とほぼ同じ形式で入力できるように作っていますので試験対策としてご利用ください。 チェックシートの機能な …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"簿記3級 の難易度はどれくらい？合格率や勉強時間・独学者にお ...\",\n  \"url\": \"https://shikakutimes.jp/boki/573\",\n  \"snippet\": \"Aug 17, 2024 · 簿記3級は人気資格の1つなので合格率や必要な勉強時間などの難易度について詳しく知りたい人も多いはず。 簿記3級はしっかり勉強すれば誰にでも合格できる可能性がある資格です。 …\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "簿記 3級 | 商工会議所の 検定 試験",
+            "url": "https://www.kentei.ne.jp/bookkeeping/class3",
+            "snippet": "Apr 14, 2023 · 簿記3級のレベル業種・職種にかかわらずビジネスパーソンが身に付けておくべき「必須の基本知識」として、多くの企業から評価される資格。 基本的な商業簿記を修得し、小規模企業 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "簿記3級 とは？難易度・勉強法・無料独学問題｜StudyPro",
+            "url": "https://studyboki3.com/",
+            "snippet": "簿記3級を独学で取得したい方に向けて、簿記3級の概要や具体的な勉強法を解説します。 イラストや丁寧な解説付きの実践問題に加え、予想模試も全て無料で用意しています。",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "【日商 簿記3級 】無料問題集～わかりやすい解説で独学でも安心 ...",
+            "url": "https://inuboki.com/3q-mondai/",
+            "snippet": "仕訳問題集 電卓不要の仕訳問題集 日商簿記3級の仕訳問題集です。 本番のネット試験とほぼ同じ形式で入力できるように作っていますので試験対策としてご利用ください。 チェックシートの機能な …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "簿記3級 の難易度はどれくらい？合格率や勉強時間・独学者にお ...",
+            "url": "https://shikakutimes.jp/boki/573",
+            "snippet": "Aug 17, 2024 · 簿記3級は人気資格の1つなので合格率や必要な勉強時間などの難易度について詳しく知りたい人も多いはず。 簿記3級はしっかり勉強すれば誰にでも合格できる可能性がある資格です。 …",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 143
+}

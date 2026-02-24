@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:13:19.557301+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.agent.web_search_agent",
+    "function": "_canonicalize_url",
+    "source": "agent/web_search_agent.py",
+    "line": 83,
+    "caller_module": "agentic_sample_ad.agent.web_search_agent",
+    "caller_function": "search_web_candidates_with_mcp",
+    "caller_source": "agent/web_search_agent.py",
+    "caller_line": 176
+  },
+  "session_seq": 2083
+}

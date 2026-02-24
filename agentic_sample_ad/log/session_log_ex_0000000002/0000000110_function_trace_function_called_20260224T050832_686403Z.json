@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:08:32.686403+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "__main__",
+    "function": "_resolve_local_agent",
+    "source": "mcp_local/a2a_bridge_server.py",
+    "line": 39,
+    "caller_module": "__main__",
+    "caller_function": "main",
+    "caller_source": "mcp_local/a2a_bridge_server.py",
+    "caller_line": 277
+  },
+  "session_seq": 110
+}

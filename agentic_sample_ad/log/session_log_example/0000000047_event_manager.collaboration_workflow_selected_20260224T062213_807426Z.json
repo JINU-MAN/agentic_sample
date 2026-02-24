@@ -1,0 +1,28 @@
+{
+  "ts": "2026-02-24T06:22:13.807426+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "workflow_selected",
+  "direction": "internal",
+  "details": {
+    "source": "planner_collaboration_plan",
+    "steps": [
+      {
+        "step": 1,
+        "agent": "WebSearchAnalyst",
+        "goal": "오픈클로(OpenCLO) 보안 관련 최신 뉴스 및 기사를 검색하고, 주요 내용을 요약하여 보고서를 작성합니다."
+      },
+      {
+        "step": 2,
+        "agent": "MainAgent",
+        "goal": "WebSearchAnalyst가 제공한 요약 내용을 바탕으로 슬랙 'agentic' 채널에 메시지를 게시합니다."
+      },
+      {
+        "step": 3,
+        "agent": "SocialMediaAnalyst",
+        "goal": "Lead SNS/social-signal collection and meaning-level summarization for this request.\nUser request: 오픈클로 보안 관련 최신 뉴스 찾아서 내용 정리하고 슬랙 agentic 채널에 올려줘"
+      }
+    ]
+  },
+  "session_seq": 47
+}

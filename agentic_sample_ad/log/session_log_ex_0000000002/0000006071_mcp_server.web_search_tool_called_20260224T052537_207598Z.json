@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:25:37.207598+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "search_web",
+    "query": "Recent developments at Samsung",
+    "max_results": 4
+  },
+  "session_seq": 6071
+}

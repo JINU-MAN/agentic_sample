@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:17:19.931845+00:00",
+  "level": "INFO",
+  "component": "tool.load_paper_memory_with_mcp",
+  "action": "call_completed",
+  "direction": "inbound",
+  "details": {
+    "workflow_id": "cf177c9d15814682bf140f2270f1e135-dddfbbb7",
+    "query": "factors influencing stock prices South Korea",
+    "loaded_count": 2,
+    "full_loaded_count": 0,
+    "load_mode": "overview",
+    "total_chars": 10170
+  },
+  "session_seq": 3689
+}

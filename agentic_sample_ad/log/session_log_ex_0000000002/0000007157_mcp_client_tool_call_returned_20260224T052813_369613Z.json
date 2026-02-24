@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:28:13.369613+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"How to take a screenshot\",\n  \"url\": \"https://www.take-a-screenshot.org/\",\n  \"snippet\": \"How to take a screenshot on your smartphone, tablet, notebook or desktop computer\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"How to take a screenshot in Windows\",\n  \"url\": \"https://www.take-a-screenshot.org/windows.html\",\n  \"snippet\": \"Use either keyboard shortcuts or the Snipping Tool to take a screenshot of the whole screen or of a single window.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"Screenshot erstellen – so geht’s\",\n  \"url\": \"https://www.take-a-screenshot.org/de/\",\n  \"snippet\": \"Screenshot-Anleitung für Smartphones, Tablets und Desktop-Computer\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"Screenshot erstellen mit Windows\",\n  \"url\": \"https://www.take-a-screenshot.org/de/windows.html\",\n  \"snippet\": \"Verwende entweder Tastenkürzel oder das „Snipping Tool“ um einen Screenshot des ganzen Bildschirms oder eines Fensters zu erstellen.\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "How to take a screenshot",
+            "url": "https://www.take-a-screenshot.org/",
+            "snippet": "How to take a screenshot on your smartphone, tablet, notebook or desktop computer",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "How to take a screenshot in Windows",
+            "url": "https://www.take-a-screenshot.org/windows.html",
+            "snippet": "Use either keyboard shortcuts or the Snipping Tool to take a screenshot of the whole screen or of a single window.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "Screenshot erstellen – so geht’s",
+            "url": "https://www.take-a-screenshot.org/de/",
+            "snippet": "Screenshot-Anleitung für Smartphones, Tablets und Desktop-Computer",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "Screenshot erstellen mit Windows",
+            "url": "https://www.take-a-screenshot.org/de/windows.html",
+            "snippet": "Verwende entweder Tastenkürzel oder das „Snipping Tool“ um einen Screenshot des ganzen Bildschirms oder eines Fensters zu erstellen.",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 7157
+}

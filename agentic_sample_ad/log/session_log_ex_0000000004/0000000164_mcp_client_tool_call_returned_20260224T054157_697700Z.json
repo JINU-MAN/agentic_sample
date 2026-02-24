@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:41:57.697700+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"カタログ 閲覧・請求｜ クリナップ - CLEANUP\",\n  \"url\": \"https://cleanup.jp/catalogue/user/catalogue/\",\n  \"snippet\": \"・一部の カタログ は分割してお届けすることがあります。 ・本配送サービスは日本国内のみ対象です。 ・同じ カタログ は2冊以上お申込みいただけません。 建築・設計・流通関係者さまなど、2冊以上 …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"クリナップ 株式会社 | 水まわり カタログ | カタログ ビュー\",\n  \"url\": \"https://www.catalabo.org/cgi-bin/openCatalog.cgi?catalogId=0259_mizumawa\",\n  \"snippet\": \"最新 カタログ を2000冊以上掲載しています。 会員登録不要で、いつでもどこでもご利用いただけます。\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"クリナップ 株式会社 | クリナップ 株式会社 デジタル カタログ ...\",\n  \"url\": \"https://app.icata.net/web/catalog/search/category/CATALABO_0259/CATALABO/1431640000\",\n  \"snippet\": \"見たい カタログ を選択して、詳細をご確認いただけます.\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"カタログ 図書館｜水まわり カタログ\",\n  \"url\": \"https://catalog.e-setsubi.net/iportal/CatalogDetail.do?method=initial_screen&volumeID=CATALABO&catalogID=84418180000\",\n  \"snippet\": \"分類毎に、マイバインダーへ追加、ダウンロード、 カタログ ビュー閲覧ができます。\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "カタログ 閲覧・請求｜ クリナップ - CLEANUP",
+            "url": "https://cleanup.jp/catalogue/user/catalogue/",
+            "snippet": "・一部の カタログ は分割してお届けすることがあります。 ・本配送サービスは日本国内のみ対象です。 ・同じ カタログ は2冊以上お申込みいただけません。 建築・設計・流通関係者さまなど、2冊以上 …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "クリナップ 株式会社 | 水まわり カタログ | カタログ ビュー",
+            "url": "https://www.catalabo.org/cgi-bin/openCatalog.cgi?catalogId=0259_mizumawa",
+            "snippet": "最新 カタログ を2000冊以上掲載しています。 会員登録不要で、いつでもどこでもご利用いただけます。",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "クリナップ 株式会社 | クリナップ 株式会社 デジタル カタログ ...",
+            "url": "https://app.icata.net/web/catalog/search/category/CATALABO_0259/CATALABO/1431640000",
+            "snippet": "見たい カタログ を選択して、詳細をご確認いただけます.",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "カタログ 図書館｜水まわり カタログ",
+            "url": "https://catalog.e-setsubi.net/iportal/CatalogDetail.do?method=initial_screen&volumeID=CATALABO&catalogID=84418180000",
+            "snippet": "分類毎に、マイバインダーへ追加、ダウンロード、 カタログ ビュー閲覧ができます。",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 164
+}

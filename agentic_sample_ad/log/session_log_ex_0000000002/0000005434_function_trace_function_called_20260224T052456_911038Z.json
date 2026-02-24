@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:24:56.911038+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.common.session_memory",
+    "function": "SessionMemoryStore.get_or_create",
+    "source": "common/session_memory.py",
+    "line": 64,
+    "caller_module": "agentic_sample_ad.main_agent.session_memory",
+    "caller_function": "get_or_create_session",
+    "caller_source": "main_agent/session_memory.py",
+    "caller_line": 9
+  },
+  "session_seq": 5434
+}

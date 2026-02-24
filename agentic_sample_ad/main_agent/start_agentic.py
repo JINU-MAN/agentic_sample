@@ -7,7 +7,13 @@ from typing import Any, List, Tuple
 from agentic_sample_ad.scripts.start_a2a_agents import launch_bridges, stop_bridges
 
 from .card_registry import collect_sub_agent_card_files
-from .system_logger import initialize_main_logging, log_main_event, log_main_exception
+from .system_logger import (
+    finalize_main_logging,
+    initialize_main_logging,
+    log_main_event,
+    log_main_exception,
+    start_main_logging_session,
+)
 from .user_entry_point import input_loop
 
 
@@ -52,6 +58,8 @@ def launch_sub_agent_bridges() -> List[BridgeProcess]:
 
 
 def main() -> None:
+    # Reset session log once at process start, not during workflow execution.
+    start_main_logging_session(reset_files=True)
     initialize_main_logging()
     _load_env_file()
     bridges = launch_sub_agent_bridges()
@@ -64,9 +72,12 @@ def main() -> None:
     try:
         input_loop()
     finally:
-        if bridges:
-            stop_bridges(bridges)
-            print("A2A bridge servers stopped.")
+        try:
+            if bridges:
+                stop_bridges(bridges)
+                print("A2A bridge servers stopped.")
+        finally:
+            finalize_main_logging()
 
 
 if __name__ == "__main__":

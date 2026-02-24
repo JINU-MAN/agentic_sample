@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from .agent import run_main_agent
 from .session_memory import clear_session
-from .system_logger import initialize_main_logging
+from .system_logger import finalize_main_logging, initialize_main_logging
 
 
 def input_loop() -> None:
@@ -38,5 +38,7 @@ def input_loop() -> None:
 
 
 if __name__ == "__main__":
-    input_loop()
-
+    try:
+        input_loop()
+    finally:
+        finalize_main_logging()

@@ -1,0 +1,19 @@
+{
+  "ts": "2026-02-24T05:43:32.327451+00:00",
+  "level": "INFO",
+  "component": "tool.search_web_candidates_with_mcp",
+  "action": "call_completed",
+  "direction": "inbound",
+  "details": {
+    "queries": [
+      "OpenClo security news",
+      "오픈클로 보안 뉴스",
+      "오픈클로 취약점",
+      "OpenClo security incident",
+      "오픈클로 해킹"
+    ],
+    "result_count": 15,
+    "error_count": 0
+  },
+  "session_seq": 329
+}

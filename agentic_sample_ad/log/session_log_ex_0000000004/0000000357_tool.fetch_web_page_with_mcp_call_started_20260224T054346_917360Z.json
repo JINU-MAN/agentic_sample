@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:43:46.917360+00:00",
+  "level": "INFO",
+  "component": "tool.fetch_web_page_with_mcp",
+  "action": "call_started",
+  "direction": "outbound",
+  "details": {
+    "url": "https://lifestylerich.tistory.com/entry/%EC%98%A4%ED%94%88%ED%81%B4%EB%A1%9C-AI-%EB%B9%84%EC%84%9C-%EB%B3%B4%EC%95%88-%EB%85%BC%EB%9E%80",
+    "max_chars": 6000,
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py"
+  },
+  "session_seq": 357
+}

@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:41:31.624703+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "오픈클로 해킹",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://openine.com/PARTY",
+      "https://openine.com/NEWS",
+      "https://openine.com/",
+      "https://openine.com/about"
+    ]
+  },
+  "session_seq": 111
+}

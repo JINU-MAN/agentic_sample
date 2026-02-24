@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-24T05:42:42.812390+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "fetch_page",
+    "url": "https://thenext-ai.tistory.com/3",
+    "status_code": 200,
+    "content_length": 7144,
+    "truncated": true
+  },
+  "session_seq": 245
+}

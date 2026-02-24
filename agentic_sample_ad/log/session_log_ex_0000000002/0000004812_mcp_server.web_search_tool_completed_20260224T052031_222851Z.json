@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:20:31.222851+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "삼성 주가 변동 최근 2주",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://www.samsung.com/sec/?msockid=2789025b81466374236a1551806362ae",
+      "https://www.samsung.com/sec/about-us/company-info/?msockid=2789025b81466374236a1551806362ae",
+      "https://store.samsung.com/us/",
+      "https://www.samsung.com/sec/smartphones/all-smartphones/?msockid=2789025b81466374236a1551806362ae"
+    ]
+  },
+  "session_seq": 4812
+}

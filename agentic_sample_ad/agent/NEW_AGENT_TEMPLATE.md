@@ -81,7 +81,7 @@ Your instruction must include:
 ```python
 my_domain_agent = LlmAgent(
     name="MyDomainAnalyst",
-    model="gemini-2.0-flash",
+    model="gemini-3-flash-preview",
     instruction=(
         "You are a <domain> analysis specialist.\n"
         "Specialization-first policy: if the task matches your domain, you should lead execution.\n"

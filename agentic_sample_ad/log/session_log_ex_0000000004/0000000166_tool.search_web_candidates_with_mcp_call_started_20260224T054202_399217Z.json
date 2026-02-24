@@ -1,0 +1,19 @@
+{
+  "ts": "2026-02-24T05:42:02.399217+00:00",
+  "level": "INFO",
+  "component": "tool.search_web_candidates_with_mcp",
+  "action": "call_started",
+  "direction": "outbound",
+  "details": {
+    "queries": [
+      "OpenClaw 보안 취약점",
+      "OpenClaw security vulnerability",
+      "OpenClaw hacking news",
+      "오픈클로 보안 업데이트",
+      "OpenClaw data protection"
+    ],
+    "max_results_per_query": 4,
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py"
+  },
+  "session_seq": 166
+}

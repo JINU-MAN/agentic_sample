@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T06:22:13.794323+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "collaboration_plan_specialist_coverage_added",
+  "direction": "internal",
+  "details": {
+    "added_agents": [
+      "SocialMediaAnalyst"
+    ],
+    "step_count": 3
+  },
+  "session_seq": 39
+}

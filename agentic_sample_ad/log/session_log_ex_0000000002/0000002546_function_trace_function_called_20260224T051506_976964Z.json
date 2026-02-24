@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:15:06.976964+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.event_manager",
+    "function": "_extract_collaboration_steps",
+    "source": "event_manager.py",
+    "line": 1055,
+    "caller_module": "agentic_sample_ad.event_manager",
+    "caller_function": "execute_plan",
+    "caller_source": "event_manager.py",
+    "caller_line": 2498
+  },
+  "session_seq": 2546
+}

@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:10:01.116339+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.event_manager",
+    "function": "_build_agent_catalog_for_context",
+    "source": "event_manager.py",
+    "line": 1579,
+    "caller_module": "agentic_sample_ad.event_manager",
+    "caller_function": "_build_collaboration_step_input",
+    "caller_source": "event_manager.py",
+    "caller_line": 1606
+  },
+  "session_seq": 606
+}

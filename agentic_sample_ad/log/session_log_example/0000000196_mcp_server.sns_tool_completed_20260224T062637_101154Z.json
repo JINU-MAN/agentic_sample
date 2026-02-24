@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T06:26:37.101154+00:00",
+  "level": "INFO",
+  "component": "mcp_server.sns",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_sns_posts",
+    "keyword": "OpenClaw CVE-2026-25253 security",
+    "result_count": 0,
+    "matched_files": []
+  },
+  "session_seq": 196
+}

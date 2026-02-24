@@ -1,0 +1,38 @@
+{
+  "ts": "2026-02-24T05:25:13.001460+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "workflow_selected",
+  "direction": "internal",
+  "details": {
+    "source": "planner_collaboration_plan",
+    "steps": [
+      {
+        "step": 1,
+        "agent": "WebSearchAnalyst",
+        "goal": "Find the latest news article about Samsung Electronics."
+      },
+      {
+        "step": 2,
+        "agent": "WebSearchAnalyst",
+        "goal": "Fetch the content of the news article."
+      },
+      {
+        "step": 3,
+        "agent": "MainAgent",
+        "goal": "Summarize the content of the news article."
+      },
+      {
+        "step": 4,
+        "agent": "MainAgent",
+        "goal": "Post the summarized content to the Slack channel 'agentic'."
+      },
+      {
+        "step": 5,
+        "agent": "SocialMediaAnalyst",
+        "goal": "Lead SNS/social-signal collection and meaning-level summarization for this request.\nUser request: 그럼 그냥 최신 뉴스 하나만 찾아봐"
+      }
+    ]
+  },
+  "session_seq": 5868
+}

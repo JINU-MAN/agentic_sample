@@ -1,0 +1,65 @@
+{
+  "ts": "2026-02-24T05:26:16.774129+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 1,\n  \"title\": \"SsoLoginPage - Samsung Community\",\n  \"url\": \"https://us.community.samsung.com/t5/News-and-Announcements/OFFICIAL-Get-Support-24-7-365-by-texting-1800SAMSUNG/ba-p/2430471\",\n  \"snippet\": \"SsoLoginPage - Samsung Community\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 2,\n  \"title\": \"Samsung One UI 7 on Galaxy phones and tablets\",\n  \"url\": \"https://us.community.samsung.com/t5/Mobile-Tips/Samsung-One-UI-7-on-Galaxy-phones-and-tablets/ba-p/3232719\",\n  \"snippet\": \"May 12, 2025 · Samsung One UI 7 on Galaxy phones and tablets Samsung One UI 7 on your Galaxy phone or tablet introduces brand-new AI features and improved navigation! Our guide breaks down …\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 3,\n  \"title\": \"Samsung Community\",\n  \"url\": \"https://us.community.samsung.com/t5/Samsung-Community/ct-p/us?page=1&tab=recent_topics\",\n  \"snippet\": \"Jan 17, 2026 · Samsung Members Community Explore. Engage. Belong. Be part of an experience that will help shape the future of innovation! Get involved, join in the discussion!\",\n  \"source\": \"bing_html\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"rank\": 4,\n  \"title\": \"Galaxy S25 - Samsung Community\",\n  \"url\": \"https://us.community.samsung.com/t5/Galaxy-S25/bd-p/GalaxyS25\",\n  \"snippet\": \"Jul 27, 2025 · Transferring data from a Note 20 Ultra to S25 Ultra using Smart Switch\",\n  \"source\": \"bing_html\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "rank": 1,
+            "title": "SsoLoginPage - Samsung Community",
+            "url": "https://us.community.samsung.com/t5/News-and-Announcements/OFFICIAL-Get-Support-24-7-365-by-texting-1800SAMSUNG/ba-p/2430471",
+            "snippet": "SsoLoginPage - Samsung Community",
+            "source": "bing_html"
+          },
+          {
+            "rank": 2,
+            "title": "Samsung One UI 7 on Galaxy phones and tablets",
+            "url": "https://us.community.samsung.com/t5/Mobile-Tips/Samsung-One-UI-7-on-Galaxy-phones-and-tablets/ba-p/3232719",
+            "snippet": "May 12, 2025 · Samsung One UI 7 on Galaxy phones and tablets Samsung One UI 7 on your Galaxy phone or tablet introduces brand-new AI features and improved navigation! Our guide breaks down …",
+            "source": "bing_html"
+          },
+          {
+            "rank": 3,
+            "title": "Samsung Community",
+            "url": "https://us.community.samsung.com/t5/Samsung-Community/ct-p/us?page=1&tab=recent_topics",
+            "snippet": "Jan 17, 2026 · Samsung Members Community Explore. Engage. Belong. Be part of an experience that will help shape the future of innovation! Get involved, join in the discussion!",
+            "source": "bing_html"
+          },
+          {
+            "rank": 4,
+            "title": "Galaxy S25 - Samsung Community",
+            "url": "https://us.community.samsung.com/t5/Galaxy-S25/bd-p/GalaxyS25",
+            "snippet": "Jul 27, 2025 · Transferring data from a Note 20 Ultra to S25 Ultra using Smart Switch",
+            "source": "bing_html"
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 6336
+}

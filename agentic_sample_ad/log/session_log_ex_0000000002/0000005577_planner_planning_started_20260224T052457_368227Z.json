@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-24T05:24:57.368227+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "planning_started",
+  "direction": "internal",
+  "details": {
+    "user_input": "그럼 그냥 최신 뉴스 하나만 찾아봐",
+    "num_available_agents": 4
+  },
+  "session_seq": 5577
+}

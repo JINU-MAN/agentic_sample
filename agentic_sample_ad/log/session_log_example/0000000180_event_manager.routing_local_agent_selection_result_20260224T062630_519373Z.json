@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-24T06:26:30.519373+00:00",
+  "level": "INFO",
+  "component": "event_manager.routing",
+  "action": "local_agent_selection_result",
+  "direction": "internal",
+  "details": {
+    "method": "routing_hint.selected_agents",
+    "selected": [
+      "SocialMediaAnalyst",
+      "MainAgent"
+    ]
+  },
+  "session_seq": 180
+}

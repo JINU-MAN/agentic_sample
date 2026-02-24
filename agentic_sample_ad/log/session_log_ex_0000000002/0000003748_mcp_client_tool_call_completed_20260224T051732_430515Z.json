@@ -1,0 +1,70 @@
+{
+  "ts": "2026-02-24T05:17:32.430515+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\paper_server.py",
+    "tool_name": "search_papers",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf\",\n  \"score\": 4,\n  \"matched_terms\": [\n    \"factors\",\n    \"market\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"... understand the data it has, in order to ﬁnd value and act on it. This led to the rapid growth in the Big Data Software market. However, the traditional technologies which include data structures and algorithms, become ineﬀective when dealing with Big Data. Therefore, 1What Is Big Data?https://www.i...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"Security Analysis of Agentic Communication Protocols.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\Security Analysis of Agentic Communication Protocols.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"influencing\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...ersists across dialogue rounds [11]. •Data Poisoning:Malicious actors can inject corrupted training or contextual data, influencing downstream models to behave incorrectly or embed hidden triggers. Data poisoning has been empirically shown to scale across distributed and shared-context environments ...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"market\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...n platforms (e.g., Jasper [34]) to creative tools (e.g., Midjourney [35]), revolutionizing domains like digital design, marketing, and software prototyping throughout 2023 and beyond. Although the term AI Agent was first introduced in 1998 [3], it has since evolved significantly with the rise of gen...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "filename": "Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf",
+            "score": 4,
+            "matched_terms": [
+              "<max_depth_reached>",
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "... understand the data it has, in order to ﬁnd value and act on it. This led to the rapid growth in the Big Data Software market. However, the traditional technologies which include data structures and algorithms, become ineﬀective when dealing with Big Data. Therefore, 1What Is Big Data?https://www.i...",
+            "reason": "Matched in extracted content."
+          },
+          {
+            "filename": "Security Analysis of Agentic Communication Protocols.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\Security Analysis of Agentic Communication Protocols.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...ersists across dialogue rounds [11]. •Data Poisoning:Malicious actors can inject corrupted training or contextual data, influencing downstream models to behave incorrectly or embed hidden triggers. Data poisoning has been empirically shown to scale across distributed and shared-context environments ...",
+            "reason": "Matched in extracted content."
+          },
+          {
+            "filename": "AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...n platforms (e.g., Jasper [34]) to creative tools (e.g., Midjourney [35]), revolutionizing domains like digital design, marketing, and software prototyping throughout 2023 and beyond. Although the term AI Agent was first introduced in 1998 [3], it has since evolved significantly with the rise of gen...",
+            "reason": "Matched in extracted content."
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 3748
+}

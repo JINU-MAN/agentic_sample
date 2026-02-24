@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:41:49.001298+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "OpenClo",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://www.kentei.ne.jp/bookkeeping/class3",
+      "https://studyboki3.com/",
+      "https://inuboki.com/3q-mondai/",
+      "https://shikakutimes.jp/boki/573"
+    ]
+  },
+  "session_seq": 141
+}

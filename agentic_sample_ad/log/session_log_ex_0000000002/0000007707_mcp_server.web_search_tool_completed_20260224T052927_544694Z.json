@@ -1,0 +1,15 @@
+{
+  "ts": "2026-02-24T05:29:27.544694+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "fetch_page",
+    "url": "https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFZxYUdjU0FtVnVHZ0pWVXlnQVAB",
+    "status_code": 200,
+    "content_length": 20708,
+    "truncated": true
+  },
+  "session_seq": 7707
+}

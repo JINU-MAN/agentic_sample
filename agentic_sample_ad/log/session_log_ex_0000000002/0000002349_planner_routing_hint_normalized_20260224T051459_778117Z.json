@@ -1,0 +1,20 @@
+{
+  "ts": "2026-02-24T05:14:59.778117+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "routing_hint_normalized",
+  "direction": "internal",
+  "details": {
+    "routing_hint": {
+      "selected_agents": [
+        "MainAgent"
+      ],
+      "keywords": [
+        "clarification",
+        "timeframe"
+      ],
+      "reason": "The user provided a date in the future. I need to clarify if they meant a different date or want a hypothetical analysis."
+    }
+  },
+  "session_seq": 2349
+}

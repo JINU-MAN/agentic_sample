@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:14:59.794443+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.planner",
+    "function": "_expand_routing_hint_for_accuracy",
+    "source": "planner.py",
+    "line": 352,
+    "caller_module": "agentic_sample_ad.planner",
+    "caller_function": "_derive_routing_hint",
+    "caller_source": "planner.py",
+    "caller_line": 610
+  },
+  "session_seq": 2350
+}

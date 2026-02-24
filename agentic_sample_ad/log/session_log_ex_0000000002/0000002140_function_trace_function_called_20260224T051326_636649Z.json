@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:13:26.636649+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.event_manager",
+    "function": "_normalize_need_text",
+    "source": "event_manager.py",
+    "line": 1226,
+    "caller_module": "agentic_sample_ad.event_manager",
+    "caller_function": "_parse_targeted_need",
+    "caller_source": "event_manager.py",
+    "caller_line": 1383
+  },
+  "session_seq": 2140
+}

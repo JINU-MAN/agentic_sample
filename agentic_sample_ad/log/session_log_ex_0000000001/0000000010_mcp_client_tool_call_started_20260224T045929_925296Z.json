@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T04:59:29.925296+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "agentic_sample_ad/mcp_local/slack_server.py",
+    "tool_name": "post_message",
+    "arguments": {
+      "channel": "",
+      "text": "healthcheck2"
+    }
+  },
+  "session_seq": 10
+}

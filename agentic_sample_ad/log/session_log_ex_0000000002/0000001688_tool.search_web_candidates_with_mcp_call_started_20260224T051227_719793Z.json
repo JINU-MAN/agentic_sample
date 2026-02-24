@@ -1,0 +1,19 @@
+{
+  "ts": "2026-02-24T05:12:27.719793+00:00",
+  "level": "INFO",
+  "component": "tool.search_web_candidates_with_mcp",
+  "action": "call_started",
+  "direction": "outbound",
+  "details": {
+    "queries": [
+      "{'query': 'Samsung Electronics stock price last 2 weeks', 'max_results_per_query': 4}",
+      "{'query': 'Samsung stock news last 2 weeks', 'max_results_per_query': 4}",
+      "{'query': 'Samsung Electronics stock market analysis recent', 'max_results_per_query': 4}",
+      "{'query': 'Samsung stock price trend last 2 weeks', 'max_results_per_query': 4}",
+      "{'query': '005930.KS stock price news', 'max_results_per_query': 4}"
+    ],
+    "max_results_per_query": 4,
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py"
+  },
+  "session_seq": 1688
+}

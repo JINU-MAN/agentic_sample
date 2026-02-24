@@ -1,0 +1,17 @@
+{
+  "ts": "2026-02-24T06:23:36.826515+00:00",
+  "level": "INFO",
+  "component": "event_manager.agent_message",
+  "action": "sent",
+  "direction": "outbound",
+  "details": {
+    "from_agent": "MainAgent",
+    "to_agent": "MainAgent",
+    "channel": "collaboration_step",
+    "message_length": 5116,
+    "message_preview": "You are participating in a multi-agent collaboration workflow. Use the context packet below as the source of truth for capabilities, tools, and current state. Decide your own approach for this step; do not call other agents directly. If another agent is needed, emit a need request. Either of these formats is accepted: - JSON: {\"needs\": [{\"target\": \"AgentName\", \"request\": \"...\"}]} - Text: [AgentName] concrete request Provide handoff-ready output for this step. Workflow Context Packet: { \"workflow\": { \"workflow_id\": \"093f70836de243729a0e6578d44b5fcf-37b9bc8d\", \"current_step\": 2, \"total_steps_hint\": 2, \"assigned_agent\": \"MainAgent\" }, \"task\": { \"goal\": \"WebSearchAnalyst가 작성한 오픈클로 보안 뉴스 요약 보고서를 슬랙 'agentic' 채널에 게시합니다.\", \"expected_deliverable\": \"슬랙 메시지 전송 결과\", \"tool_hints\": [ \"slack_post_message\" ] }, \"request\": { \"user_input\": \"오픈클로 보안 관련 최신 뉴스 찾아서 내용 정리하고 슬랙 agentic 채널에 올려줘\", \"conversation_history\": \"user: 오픈클로 보안 관련 최신 뉴스 찾아서 내용 정리하고 슬랙 agentic 채널에 올려줘\" }, \"state\": { \"prior_results\": \"[Step 1 - WebSearchAnalyst]\\n오픈클로(OpenClaw, 구 Clawdbot)의 최근 보안 취약점 및 주요 뉴스에 대한 조사 결과를 정리해 드립니다.\\n\\n### **[보고서] 오픈클로(OpenClaw) 주요 보안 취약점 및 대응 현황**\\n\\n최근 자율형 AI 에이전트 플랫폼인 **오픈클로(OpenClaw)**에서 시스템 제어권을 완전히...(truncated)",
+    "workflow_id": "093f70836de243729a0e6578d44b5fcf-37b9bc8d",
+    "workflow_step": 2
+  },
+  "session_seq": 130
+}

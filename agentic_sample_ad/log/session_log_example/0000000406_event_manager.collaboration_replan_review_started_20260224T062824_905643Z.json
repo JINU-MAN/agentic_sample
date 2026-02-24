@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T06:28:24.905643+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "replan_review_started",
+  "direction": "outbound",
+  "details": {
+    "completed_count": 2,
+    "pending_count": 0,
+    "open_needs_count": 0
+  },
+  "session_seq": 406
+}

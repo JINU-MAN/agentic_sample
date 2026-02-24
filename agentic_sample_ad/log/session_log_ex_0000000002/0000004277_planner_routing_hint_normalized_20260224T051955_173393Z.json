@@ -1,0 +1,25 @@
+{
+  "ts": "2026-02-24T05:19:55.173393+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "routing_hint_normalized",
+  "direction": "internal",
+  "details": {
+    "routing_hint": {
+      "selected_agents": [
+        "WebSearchAnalyst",
+        "PaperAnalyst"
+      ],
+      "keywords": [
+        "삼성전자 주가",
+        "samsung electronics stock price",
+        "증권사 리포트",
+        "brokerage report",
+        "주가 변동",
+        "stock fluctuation"
+      ],
+      "reason": "The user wants to analyze Samsung Electronics stock price fluctuations using news articles and brokerage reports. WebSearchAnalyst and PaperAnalyst are best suited for this task."
+    }
+  },
+  "session_seq": 4277
+}

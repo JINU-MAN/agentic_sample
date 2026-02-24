@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:19:43.502536+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "./mcp_local/slack_server.py",
+    "tool_name": "post_message",
+    "arguments": {
+      "channel": "agentic",
+      "text": "I will find stock data."
+    }
+  },
+  "session_seq": 4208
+}

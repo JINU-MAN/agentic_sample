@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T05:44:53.928513+00:00",
+  "level": "INFO",
+  "component": "mcp_server.sns",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_sns_posts",
+    "keyword": "네이버 오픈클로 차단",
+    "result_count": 0,
+    "matched_files": []
+  },
+  "session_seq": 458
+}

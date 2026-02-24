@@ -1,0 +1,45 @@
+{
+  "ts": "2026-02-24T06:23:36.819581+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "replan_review_completed",
+  "direction": "inbound",
+  "details": {
+    "additional_needs": [],
+    "should_update_plan": true,
+    "updated_steps": [
+      {
+        "agent": "MainAgent",
+        "goal": "WebSearchAnalyst가 작성한 오픈클로 보안 뉴스 요약 보고서를 슬랙 'agentic' 채널에 게시합니다.",
+        "deliverable": "슬랙 메시지 전송 결과",
+        "tool_hints": [
+          "slack_post_message"
+        ],
+        "agent_meta": {
+          "name": "MainAgent",
+          "type": "local",
+          "role": "coordinator",
+          "description": "Coordinator for planning, replanning, and cross-agent handoff execution.",
+          "capabilities": [
+            "coordination",
+            "workflow_replanning",
+            "user_clarification_routing",
+            "comm.slack.post",
+            "mainagent",
+            "slack_post_message"
+          ],
+          "tools": [
+            {
+              "name": "<max_depth_reached>",
+              "description": "<max_depth_reached>"
+            }
+          ],
+          "instruction_preview": "You are the coordinator of a multi-agent system. Understand the user request, create practical execution steps, and orchestrate specialist agents for best quality. Slack posting is allowed only from MainAgent. If Slack delivery is required, MainAgent must call `slack_post_message` directly.",
+          "agent_obj": "name='MainAgent' description='' parent_agent=None sub_agents=[] before_agent_callback=None after_agent_callback=None model='gemini-3-flash-preview' instruction='You are the coordinator of a multi-agent system. Understand the user request, create practical execution steps, and orchestrate specialist agents for best quality. Slack posting is allowed only from MainAgent. If Slack delivery is required, MainAgent must call `slack_post_message` directly.' global_instruction='' static_instruction=None tools=[<function slack_post_message at 0x0000026233200900>] generate_content_config=None disallow_transfer_to_parent=False disallow_transfer_to_peers=False include_contents='default' input_schema=None output_schema=None output_key=None planner=None code_executor=None before_model_callback=None after_model_callback=None on_model_error_callback=None before_tool_callback=None after_tool_callback=None on_tool_error_callback=None"
+        }
+      }
+    ],
+    "reason": "WebSearchAnalyst가 뉴스 조사를 통해 상세한 보안 취약점 보고서를 이미 작성 완료하였습니다. 사용자의 핵심 요청인 '뉴스 정리 및 슬랙 게시'를 신속하게 완수하기 위해, 불필요한 SNS 추가 분석 단계를 제거하고 즉시 슬랙 게시를 수행하도록 계획을 업데이트합니다."
+  },
+  "session_seq": 127
+}

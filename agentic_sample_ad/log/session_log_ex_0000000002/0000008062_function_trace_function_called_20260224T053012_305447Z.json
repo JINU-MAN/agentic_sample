@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:30:12.305447+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.agent.tool.slack_mcp_tool",
+    "function": "slack_post_message",
+    "source": "agent/tool/slack_mcp_tool.py",
+    "line": 14,
+    "caller_module": "google.adk.tools.function_tool",
+    "caller_function": "FunctionTool._invoke_callable",
+    "caller_source": "C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\google\\adk\\tools\\function_tool.py",
+    "caller_line": 220
+  },
+  "session_seq": 8062
+}

@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-24T05:09:50.174803+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "prompt_completed",
+  "direction": "inbound",
+  "details": {
+    "task": "routing_hint",
+    "result": "```json\n{\n  \"selected_agents\": [\n    \"WebSearchAnalyst\",\n    \"PaperAnalyst\",\n    \"MainAgent\"\n  ],\n  \"keywords\": [\n    \"samsung\",\n    \"stock price\",\n    \"news\",\n    \"analyst reports\",\n    \"slack\"\n  ],\n  \"reason\": \"The user wants news and analyst reports on Samsung's stock price, analysis and a slack post. Therefore, I need WebSearchAnalyst, PaperAnalyst and MainAgent for posting to slack.\"\n}\n```"
+  },
+  "session_seq": 340
+}

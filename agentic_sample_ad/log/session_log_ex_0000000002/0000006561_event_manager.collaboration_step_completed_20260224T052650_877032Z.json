@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T05:26:50.877032+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_completed",
+  "direction": "inbound",
+  "details": {
+    "step": 1,
+    "total_steps_hint": 5,
+    "agent": "WebSearchAnalyst",
+    "ok": true
+  },
+  "session_seq": 6561
+}

@@ -8,7 +8,6 @@ from typing import Any, Dict, List
 
 from google.adk.agents import LlmAgent
 
-from agentic_sample_ad.agent.tool.slack_mcp_tool import slack_post_message
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
 from agentic_sample_ad.system_logger import log_event, log_exception
 
@@ -815,7 +814,7 @@ def query_paper_memory(
 
 research_agent = LlmAgent(
     name="PaperAnalyst",
-    model="gemini-2.0-flash",
+    model="gemini-3-flash-preview",
     instruction=(
         "You are a paper analysis specialist.\n"
         "Specialization-first policy: if the task is paper/research/PDF related, you should lead it.\n"
@@ -830,7 +829,8 @@ research_agent = LlmAgent(
         "4) Use `query_paper_memory(question, workflow_id, ...)` for fast memory-based answers.\n\n"
         "Task rules:\n"
         "1) Explain why selected papers are relevant to the user goal.\n"
-        "2) If user explicitly asks Slack posting, call `slack_post_message(channel, text)`.\n"
+        "2) Slack posting must be delegated to MainAgent.\n"
+        "   If Slack posting is needed, request it as `[MainAgent] Post this result to Slack ...`.\n"
         "3) Use indirect delegation only: do not call other agents directly.\n"
         "4) If local DB coverage is insufficient, request specialist follow-up in `Additional Needs:`.\n"
         "   Example: `- [WebSearchAnalyst] Find trustworthy web sources and recent reports for <topic>.`\n"
@@ -845,7 +845,6 @@ research_agent = LlmAgent(
         load_paper_memory_with_mcp,
         expand_paper_memory_with_mcp,
         query_paper_memory,
-        slack_post_message,
     ],
 )
 

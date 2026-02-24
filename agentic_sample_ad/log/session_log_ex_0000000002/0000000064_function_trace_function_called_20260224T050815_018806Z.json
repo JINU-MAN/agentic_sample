@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:08:15.018806+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.scripts.start_a2a_agents",
+    "function": "_is_port_open",
+    "source": "scripts/start_a2a_agents.py",
+    "line": 72,
+    "caller_module": "agentic_sample_ad.scripts.start_a2a_agents",
+    "caller_function": "launch_bridges",
+    "caller_source": "scripts/start_a2a_agents.py",
+    "caller_line": 139
+  },
+  "session_seq": 64
+}

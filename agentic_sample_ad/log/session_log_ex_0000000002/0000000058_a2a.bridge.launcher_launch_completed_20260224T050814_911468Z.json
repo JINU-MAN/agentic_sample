@@ -1,0 +1,35 @@
+{
+  "ts": "2026-02-24T05:08:14.911468+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge.launcher",
+  "action": "launch_completed",
+  "direction": "internal",
+  "details": {
+    "agent": "PaperAnalyst",
+    "host": "127.0.0.1",
+    "port": 9102,
+    "pid": 26744,
+    "command": [
+      "C:\\Users\\wlsdn\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "-m",
+      "agentic_sample_ad.mcp_local.a2a_bridge_server",
+      "--module",
+      "agentic_sample_ad.paper_agent.agent",
+      "--attr",
+      "paper_agent",
+      "--name",
+      "PaperAnalyst",
+      "--description",
+      "Paper search, full-text memory expansion, and follow-up Q&A from local PDF corpus.",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "9102",
+      "--tags",
+      "paper_search,paper_summary,paper_fulltext_memory,paper_memory_query"
+    ],
+    "card_url": "http://127.0.0.1:9102/.well-known/agent-card.json",
+    "ready_timeout_sec": 15.0
+  },
+  "session_seq": 58
+}

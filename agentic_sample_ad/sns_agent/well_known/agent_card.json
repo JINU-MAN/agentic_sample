@@ -7,8 +7,6 @@
   "description": "SNS post collection, relevance filtering, and concise social signal summarization.",
   "capabilities": [
     "sns_search",
-    "sns_summary",
-    "slack_post"
+    "sns_summary"
   ]
 }
-

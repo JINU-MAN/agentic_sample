@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:20:39.963657+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "Samsung Electronics stock price news site:bloomberg.com OR site:reuters.com last two weeks",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 0,
+    "top_urls": []
+  },
+  "session_seq": 4883
+}

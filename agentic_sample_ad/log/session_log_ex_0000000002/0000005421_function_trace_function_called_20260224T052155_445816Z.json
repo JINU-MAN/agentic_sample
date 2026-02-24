@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:21:55.445816+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.common.session_memory",
+    "function": "SessionMemory.add_turn",
+    "source": "common/session_memory.py",
+    "line": 21,
+    "caller_module": "agentic_sample_ad.common.session_memory",
+    "caller_function": "SessionMemory.add_assistant_turn",
+    "caller_source": "common/session_memory.py",
+    "caller_line": 33
+  },
+  "session_seq": 5421
+}

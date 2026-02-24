@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T05:13:26.467661+00:00",
+  "level": "INFO",
+  "component": "workflow.need",
+  "action": "need_emitted",
+  "direction": "internal",
+  "details": {
+    "source_agent": "WebSearchAnalyst",
+    "target_agent": "MainAgent",
+    "request": "Ask user which region/time range should be prioritized.",
+    "workflow_step": 2
+  },
+  "session_seq": 2132
+}

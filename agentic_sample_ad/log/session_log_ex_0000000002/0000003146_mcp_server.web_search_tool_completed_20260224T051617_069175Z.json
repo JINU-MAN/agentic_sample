@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:16:17.069175+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "삼성 주식 분석 2026 대한민국",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://www.samsung.com/sec/?msockid=0f9c9e784db56b02132c89724cc76a93",
+      "https://www.samsung.com/sec/about-us/company-info/?msockid=0f9c9e784db56b02132c89724cc76a93",
+      "https://store.samsung.com/us/",
+      "https://www.samsung.com/sec/smartphones/all-smartphones/?msockid=0f9c9e784db56b02132c89724cc76a93"
+    ]
+  },
+  "session_seq": 3146
+}

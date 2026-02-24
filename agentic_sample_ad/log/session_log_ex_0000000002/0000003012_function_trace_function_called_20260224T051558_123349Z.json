@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:15:58.123349+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "__main__",
+    "function": "_run_local_agent",
+    "source": "mcp_local/a2a_bridge_server.py",
+    "line": 67,
+    "caller_module": "__main__",
+    "caller_function": "handle_jsonrpc",
+    "caller_source": "mcp_local/a2a_bridge_server.py",
+    "caller_line": 183
+  },
+  "session_seq": 3012
+}

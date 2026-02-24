@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:41:15.170962+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "OpenClo security updates 2024",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://web.whatsapp.com/",
+      "https://www.whatsapp.com/download",
+      "https://wa.me/?locale=en_US",
+      "https://www.techlicious.com/tip/how-to-use-whatsapp-web/"
+    ]
+  },
+  "session_seq": 81
+}

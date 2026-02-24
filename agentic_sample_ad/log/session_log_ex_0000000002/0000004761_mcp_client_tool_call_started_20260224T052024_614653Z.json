@@ -1,0 +1,16 @@
+{
+  "ts": "2026-02-24T05:20:24.614653+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_started",
+  "direction": "outbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\web_search_server.py",
+    "tool_name": "search_web",
+    "arguments": {
+      "query": "Samsung stock price fluctuation last two weeks",
+      "max_results": 4
+    }
+  },
+  "session_seq": 4761
+}

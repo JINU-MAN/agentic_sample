@@ -1,0 +1,31 @@
+{
+  "ts": "2026-02-24T06:22:13.803142+00:00",
+  "level": "INFO",
+  "component": "event_manager.routing",
+  "action": "local_agent_selection_started",
+  "direction": "internal",
+  "details": {
+    "local_agent_names": [
+      "MainAgent",
+      "PaperAnalyst",
+      "SocialMediaAnalyst",
+      "WebSearchAnalyst"
+    ],
+    "raw_plan": "The user wants to find recent security-related news regarding \"OpenCLO,\" summarize the findings, and post that summary to the \"agentic\" Slack channel.\n\n**Plan:**\n\n1. **Search and Summarize News**: Use the **WebSearchAnalyst** to find the latest news and articles related to \"OpenCLO security\" (오픈클로 보안). The agent will search for relevant web sources, fetch content, and provide a structured summary of the key security updates.\n2. **Post to Slack**: Once the summary is prepared, **MainAgent** will use its `slack_post_message` tool to deliver the summarized content to the \"agentic\" channel.\n\n---\n\n**Step 1: Search for news and summarize**\n- **Agent**: WebSearchAnalyst\n- **Input**: \"오픈클로(OpenCLO) 보안 관련 최신 뉴스 및 기사\" (Latest news and articles related to OpenCLO security)\n\n**Step 2: Post the summary to Slack**\n- **Agent**: MainAgent\n- **Input**: The summarized report from Step 1 and the target channel name \"agentic\".\n- **Tool Call**: `slack_post_message(channel=\"agentic\", text=[Summary from Step 1])`",
+    "user_input": "오픈클로 보안 관련 최신 뉴스 찾아서 내용 정리하고 슬랙 agentic 채널에 올려줘",
+    "routing_hint": {
+      "selected_agents": [
+        "WebSearchAnalyst",
+        "MainAgent",
+        "SocialMediaAnalyst"
+      ],
+      "keywords": [
+        "openclo",
+        "security news summary",
+        "slack post"
+      ],
+      "reason": "WebSearchAnalyst will search for and summarize the latest security news on OpenCLO, and MainAgent will then post the summary to the Slack channel as requested. Coverage-first adjustment added: SocialMediaAnalyst (requested domains: comm, sns, web)."
+    }
+  },
+  "session_seq": 44
+}

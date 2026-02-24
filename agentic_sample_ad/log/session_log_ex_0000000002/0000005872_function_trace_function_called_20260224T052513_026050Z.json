@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:25:13.026050+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.event_manager",
+    "function": "_format_prior_results_for_handoff",
+    "source": "event_manager.py",
+    "line": 1153,
+    "caller_module": "agentic_sample_ad.event_manager",
+    "caller_function": "_build_collaboration_step_input",
+    "caller_source": "event_manager.py",
+    "caller_line": 1606
+  },
+  "session_seq": 5872
+}

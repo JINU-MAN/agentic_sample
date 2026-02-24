@@ -1,0 +1,13 @@
+{
+  "ts": "2026-02-24T05:43:48.109170+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_called",
+  "direction": "inbound",
+  "details": {
+    "tool": "fetch_page",
+    "url": "https://lifestylerich.tistory.com/entry/%EC%98%A4%ED%94%88%ED%81%B4%EB%A1%9C-AI-%EB%B9%84%EC%84%9C-%EB%B3%B4%EC%95%88-%EB%85%BC%EB%9E%80",
+    "max_chars": 6000
+  },
+  "session_seq": 361
+}

@@ -1,0 +1,53 @@
+{
+  "ts": "2026-02-24T05:17:13.638669+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_returned",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\paper_server.py",
+    "tool_name": "search_papers",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"Security Analysis of Agentic Communication Protocols.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\Security Analysis of Agentic Communication Protocols.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"influencing\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...ersists across dialogue rounds [11]. •Data Poisoning:Malicious actors can inject corrupted training or contextual data, influencing downstream models to behave incorrectly or embed hidden triggers. Data poisoning has been empirically shown to scale across distributed and shared-context environments ...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"factors\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...losses and errors are fully compensated for by extremely low memory requirements, constant query time, and scaling, the factors that become essential in Big Data applications. About this book The purpose of this book is to introduce technology practitioners which includes software architects and dev...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "filename": "Security Analysis of Agentic Communication Protocols.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\Security Analysis of Agentic Communication Protocols.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...ersists across dialogue rounds [11]. •Data Poisoning:Malicious actors can inject corrupted training or contextual data, influencing downstream models to behave incorrectly or embed hidden triggers. Data poisoning has been empirically shown to scale across distributed and shared-context environments ...",
+            "reason": "Matched in extracted content."
+          },
+          {
+            "filename": "Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\Probabilistic-Data-Structures-and-Algorithms-for-Big-Data-Applications.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...losses and errors are fully compensated for by extremely low memory requirements, constant query time, and scaling, the factors that become essential in Big Data applications. About this book The purpose of this book is to introduce technology practitioners which includes software architects and dev...",
+            "reason": "Matched in extracted content."
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 3593
+}

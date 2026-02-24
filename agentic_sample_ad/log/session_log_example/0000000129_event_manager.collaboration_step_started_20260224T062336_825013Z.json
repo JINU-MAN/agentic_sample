@@ -1,0 +1,22 @@
+{
+  "ts": "2026-02-24T06:23:36.825013+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 2,
+    "total_steps_hint": 2,
+    "agent": "MainAgent",
+    "goal": "WebSearchAnalyst가 작성한 오픈클로 보안 뉴스 요약 보고서를 슬랙 'agentic' 채널에 게시합니다.",
+    "tool_hints": [
+      "slack_post_message"
+    ],
+    "open_needs": [],
+    "activated_agent_cards": [
+      "WebSearchAnalyst",
+      "MainAgent"
+    ]
+  },
+  "session_seq": 129
+}

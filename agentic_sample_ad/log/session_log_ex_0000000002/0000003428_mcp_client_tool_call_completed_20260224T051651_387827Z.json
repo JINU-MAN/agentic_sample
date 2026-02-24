@@ -1,0 +1,53 @@
+{
+  "ts": "2026-02-24T05:16:51.387827+00:00",
+  "level": "INFO",
+  "component": "mcp_client",
+  "action": "tool_call_completed",
+  "direction": "inbound",
+  "details": {
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\paper_server.py",
+    "tool_name": "search_papers",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"prediction\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...dical diagnosis (e.g., MYCIN [7]). Other notable examples include DENDRAL [8], an expert system for molecular structure prediction; XCON [9], used for computer system https://doi.org/10.1016/j.inffus.2025.103599 Received 29 May 2025; Received in revised form 25 July 2025; Accepted 30 July 2025 Infor...\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        },
+        {
+          "type": "text",
+          "text": "{\n  \"filename\": \"AE_ An Asymmetric Extremum Content Defined Chunking Algorithm for Fast and Bandwidth-Efficient Data Deduplication.pdf\",\n  \"path\": \"C:\\\\agentic_sample_api\\\\agentic_sample_ad\\\\db\\\\paper\\\\AE_ An Asymmetric Extremum Content Defined Chunking Algorithm for Fast and Bandwidth-Efficient Data Deduplication.pdf\",\n  \"score\": 2,\n  \"matched_terms\": [\n    \"electronics\"\n  ],\n  \"match_in_filename\": false,\n  \"match_in_content\": true,\n  \"preview\": \"...angy, Hong Jiang z, Dan Feng y*, Wen Xia y, Min Fu y, Fangting Huang y, Y ukun Zhouy yWuhan National Laboratory for Optoelectronics School of Computer, Huazhong University of Science and Technology, Wuhan, China zUniversity of Nebraska-Lincoln, Lincoln, NE, USA *Corresponding author: dfeng@hust.edu....\",\n  \"reason\": \"Matched in extracted content.\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "result": [
+          {
+            "filename": "AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\AI Agents vs. Agentic AI_ A Conceptual taxonomy, applications and challenges.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...dical diagnosis (e.g., MYCIN [7]). Other notable examples include DENDRAL [8], an expert system for molecular structure prediction; XCON [9], used for computer system https://doi.org/10.1016/j.inffus.2025.103599 Received 29 May 2025; Received in revised form 25 July 2025; Accepted 30 July 2025 Infor...",
+            "reason": "Matched in extracted content."
+          },
+          {
+            "filename": "AE_ An Asymmetric Extremum Content Defined Chunking Algorithm for Fast and Bandwidth-Efficient Data Deduplication.pdf",
+            "path": "C:\\agentic_sample_api\\agentic_sample_ad\\db\\paper\\AE_ An Asymmetric Extremum Content Defined Chunking Algorithm for Fast and Bandwidth-Efficient Data Deduplication.pdf",
+            "score": 2,
+            "matched_terms": [
+              "<max_depth_reached>"
+            ],
+            "match_in_filename": false,
+            "match_in_content": true,
+            "preview": "...angy, Hong Jiang z, Dan Feng y*, Wen Xia y, Min Fu y, Fangting Huang y, Y ukun Zhouy yWuhan National Laboratory for Optoelectronics School of Computer, Huazhong University of Science and Technology, Wuhan, China zUniversity of Nebraska-Lincoln, Lincoln, NE, USA *Corresponding author: dfeng@hust.edu....",
+            "reason": "Matched in extracted content."
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "session_seq": 3428
+}

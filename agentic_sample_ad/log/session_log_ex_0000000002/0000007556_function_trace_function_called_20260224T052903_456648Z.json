@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-24T05:29:03.456648+00:00",
+  "level": "DEBUG",
+  "component": "function_trace",
+  "action": "function_called",
+  "direction": "internal",
+  "details": {
+    "module": "agentic_sample_ad.event_manager",
+    "function": "_a2a_card_url",
+    "source": "event_manager.py",
+    "line": 351,
+    "caller_module": "agentic_sample_ad.event_manager",
+    "caller_function": "_execute_single_a2a_agent",
+    "caller_source": "event_manager.py",
+    "caller_line": 355
+  },
+  "session_seq": 7556
+}

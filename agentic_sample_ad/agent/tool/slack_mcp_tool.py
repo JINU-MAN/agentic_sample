@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 from typing import Any, Dict
 
@@ -6,27 +6,29 @@ from agentic_sample_ad.mcp_local.client import call_mcp_tool
 from agentic_sample_ad.system_logger import log_event, log_exception
 
 
-# Resolved at import time for lightweight tool calls.
-SLACK_MCP_SERVER_PATH = os.getenv("SLACK_MCP_SERVER_PATH", "")
+def _resolve_slack_server_path() -> str:
+    # Resolve at call time so values loaded from `.env` after import are reflected.
+    return str(os.getenv("SLACK_MCP_SERVER_PATH", "")).strip()
 
 
 def slack_post_message(channel: str, text: str) -> str:
     """
     Send a message through a Slack MCP server.
     """
+    slack_server_path = _resolve_slack_server_path()
     log_event(
         "tool.slack_post_message",
         "call_started",
         {
             "channel": channel,
             "text": text,
-            "has_server_path": bool(SLACK_MCP_SERVER_PATH),
-            "server_script_path": SLACK_MCP_SERVER_PATH,
+            "has_server_path": bool(slack_server_path),
+            "server_script_path": slack_server_path,
         },
         direction="outbound",
     )
 
-    if not SLACK_MCP_SERVER_PATH:
+    if not slack_server_path:
         message = "SLACK_MCP_SERVER_PATH is not configured."
         log_event(
             "tool.slack_post_message",
@@ -41,7 +43,7 @@ def slack_post_message(channel: str, text: str) -> str:
 
     try:
         result = call_mcp_tool(
-            server_script_path=SLACK_MCP_SERVER_PATH,
+            server_script_path=slack_server_path,
             tool_name=tool_name,
             arguments=arguments,
         )
@@ -57,7 +59,7 @@ def slack_post_message(channel: str, text: str) -> str:
             "tool.slack_post_message",
             "call_failed",
             e,
-            {"channel": channel, "has_server_path": bool(SLACK_MCP_SERVER_PATH)},
+            {"channel": channel, "has_server_path": bool(slack_server_path)},
         )
         raise
 

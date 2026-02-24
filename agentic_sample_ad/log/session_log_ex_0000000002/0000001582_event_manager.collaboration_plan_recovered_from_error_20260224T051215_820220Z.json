@@ -1,0 +1,43 @@
+{
+  "ts": "2026-02-24T05:12:15.820220+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "plan_recovered_from_error",
+  "direction": "internal",
+  "details": {
+    "failed_step": 1,
+    "failed_agent": "WebSearchAnalyst",
+    "reason": "Replan to retry the failed step with potentially longer timeout settings (not explicitly controllable, but a retry might help). Keeping all original steps to complete user request.",
+    "new_pending_steps": [
+      {
+        "agent": "WebSearchAnalyst",
+        "goal": "Find relevant news articles about Samsung Electronics' stock price fluctuations over the last two weeks."
+      },
+      {
+        "agent": "PaperAnalyst",
+        "goal": "Find relevant analyst reports about Samsung Electronics' stock price fluctuations over the last two weeks."
+      },
+      {
+        "agent": "WebSearchAnalyst",
+        "goal": "Summarize the key findings from the news articles."
+      },
+      {
+        "agent": "PaperAnalyst",
+        "goal": "Summarize the key findings from the analyst reports."
+      },
+      {
+        "agent": "MainAgent",
+        "goal": "Combine the summaries from the news articles and analyst reports into a single, concise summary of Samsung Electronics' stock price fluctuations over the last two weeks."
+      },
+      {
+        "agent": "MainAgent",
+        "goal": "Post the summary to the \"agentic\" Slack channel."
+      },
+      {
+        "agent": "SocialMediaAnalyst",
+        "goal": "Lead SNS/social-signal collection and meaning-level summarization for this request."
+      }
+    ]
+  },
+  "session_seq": 1582
+}

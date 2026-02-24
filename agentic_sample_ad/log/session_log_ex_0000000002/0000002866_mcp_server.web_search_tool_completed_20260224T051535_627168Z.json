@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:15:35.627168+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "삼성 주식 뉴스 2026년 2월 대한민국",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://www.samsung.com/sec/?msockid=23f0604327456db808fd774926e56cfa",
+      "https://www.samsung.com/sec/about-us/company-info/?msockid=23f0604327456db808fd774926e56cfa",
+      "https://store.samsung.com/us/",
+      "https://www.samsung.com/sec/smartphones/all-smartphones/?msockid=23f0604327456db808fd774926e56cfa"
+    ]
+  },
+  "session_seq": 2866
+}

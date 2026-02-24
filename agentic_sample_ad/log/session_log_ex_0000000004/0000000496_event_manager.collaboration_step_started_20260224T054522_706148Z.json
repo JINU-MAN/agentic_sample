@@ -1,0 +1,23 @@
+{
+  "ts": "2026-02-24T05:45:22.706148+00:00",
+  "level": "INFO",
+  "component": "event_manager.collaboration",
+  "action": "step_started",
+  "direction": "outbound",
+  "details": {
+    "step": 4,
+    "total_steps_hint": 4,
+    "agent": "MainAgent",
+    "goal": "기존 뉴스 요약 내용과 SNS 분석 결과를 통합하여 슬랙 'agentic' 채널에 최종 보안 리포트를 게시합니다.",
+    "tool_hints": [
+      "slack_post_message"
+    ],
+    "open_needs": [],
+    "activated_agent_cards": [
+      "WebSearchAnalyst",
+      "SocialMediaAnalyst",
+      "MainAgent"
+    ]
+  },
+  "session_seq": 496
+}

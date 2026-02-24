@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-24T05:11:54.002524+00:00",
+  "level": "INFO",
+  "component": "mcp_server.web_search",
+  "action": "tool_completed",
+  "direction": "outbound",
+  "details": {
+    "tool": "search_web",
+    "query": "\"Recent Samsung stock price news\"]\"}",
+    "max_results": 4,
+    "provider": "bing_html_fallback",
+    "result_count": 4,
+    "top_urls": [
+      "https://dailythemedcrosswordanswers.com/prefix-that-means-recent-daily-themed-crossword",
+      "https://dailythemedcrosswordanswers.com/___-garfunkel-of-the-sound-of-silence-daily-themed-crossword",
+      "https://dailythemedcrosswordanswers.com/peaky-___-british-crime-drama-series-starring-cillian-murphy-that-aired-its-final-season-in-2022-daily-themed-crossword",
+      "https://dailythemedcrosswordanswers.com/credit-___-cash-alternative-daily-themed-crossword"
+    ]
+  },
+  "session_seq": 1344
+}

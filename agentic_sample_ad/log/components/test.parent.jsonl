@@ -1,0 +1,3 @@
+{"ts": "2026-02-23T09:48:05.781948+00:00", "level": "INFO", "component": "test.parent", "action": "started", "direction": "internal", "details": {"k": 1}}
+{"ts": "2026-02-23T10:24:58.828988+00:00", "level": "INFO", "component": "test.parent", "action": "started", "direction": "internal", "details": {"n": 1}, "session_seq": 1}
+{"ts": "2026-02-23T10:24:58.899633+00:00", "level": "INFO", "component": "test.parent", "action": "completed", "direction": "internal", "details": {"n": 3}, "session_seq": 3}

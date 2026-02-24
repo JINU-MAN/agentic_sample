@@ -1,0 +1,12 @@
+{
+  "ts": "2026-02-24T06:27:04.733084+00:00",
+  "level": "INFO",
+  "component": "tool.scrape_sns_with_mcp",
+  "action": "call_started",
+  "direction": "outbound",
+  "details": {
+    "keyword": "Endor Labs OpenClaw",
+    "server_script_path": "C:\\agentic_sample_api\\agentic_sample_ad\\mcp_local\\sns_server.py"
+  },
+  "session_seq": 272
+}

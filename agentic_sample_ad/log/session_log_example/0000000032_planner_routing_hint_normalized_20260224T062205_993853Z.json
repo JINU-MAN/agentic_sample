@@ -1,0 +1,22 @@
+{
+  "ts": "2026-02-24T06:22:05.993853+00:00",
+  "level": "INFO",
+  "component": "planner",
+  "action": "routing_hint_normalized",
+  "direction": "internal",
+  "details": {
+    "routing_hint": {
+      "selected_agents": [
+        "WebSearchAnalyst",
+        "MainAgent"
+      ],
+      "keywords": [
+        "openclo",
+        "security news summary",
+        "slack post"
+      ],
+      "reason": "WebSearchAnalyst will search for and summarize the latest security news on OpenCLO, and MainAgent will then post the summary to the Slack channel as requested."
+    }
+  },
+  "session_seq": 32
+}

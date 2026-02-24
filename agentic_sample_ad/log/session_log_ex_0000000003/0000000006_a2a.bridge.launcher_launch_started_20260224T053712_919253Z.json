@@ -1,0 +1,14 @@
+{
+  "ts": "2026-02-24T05:37:12.919253+00:00",
+  "level": "INFO",
+  "component": "a2a.bridge.launcher",
+  "action": "launch_started",
+  "direction": "internal",
+  "details": {
+    "card_path": "C:\\agentic_sample_api\\agentic_sample_ad\\sns_agent\\well_known\\agent_card.json",
+    "target_agents": [
+      "SocialMediaAnalyst"
+    ]
+  },
+  "session_seq": 6
+}
