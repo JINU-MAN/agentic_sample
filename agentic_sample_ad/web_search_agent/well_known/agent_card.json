@@ -2,6 +2,7 @@
   "name": "WebSearchAnalyst",
   "type": "a2a",
   "base_url": "http://127.0.0.1:9101",
+  "server_module": "agentic_sample_ad.web_search_agent.a2a_server",
   "module": "agentic_sample_ad.web_search_agent.agent",
   "attr": "web_search_agent",
   "description": "Web search candidate discovery, page fetch validation, and evidence summarization.",

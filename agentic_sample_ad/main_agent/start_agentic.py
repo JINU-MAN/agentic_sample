@@ -41,8 +41,61 @@ def _load_env_file() -> None:
         key, value = stripped.split("=", 1)
         key = key.strip()
         value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
+        if key and (key not in os.environ or not str(os.environ.get(key, "")).strip()):
             os.environ[key] = value
+
+
+def _upsert_env_key(env_path: Path, key: str, value: str) -> None:
+    lines: List[str] = []
+    if env_path.exists():
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+
+    updated: List[str] = []
+    replaced = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in line:
+            current_key, _ = line.split("=", 1)
+            if current_key.strip() == key:
+                updated.append(f"{key}={value}")
+                replaced = True
+                continue
+        updated.append(line)
+
+    if not replaced:
+        if updated and updated[-1].strip():
+            updated.append("")
+        updated.append(f"{key}={value}")
+
+    env_path.parent.mkdir(parents=True, exist_ok=True)
+    env_path.write_text("\n".join(updated).rstrip() + "\n", encoding="utf-8")
+
+
+def _ensure_google_api_key() -> bool:
+    env_path = PROJECT_ROOT / ".env"
+    while True:
+        _load_env_file()
+        current = str(os.environ.get("GOOGLE_API_KEY", "")).strip()
+        if current:
+            return True
+
+        print("GOOGLE_API_KEY가 비어있습니다. 키를 입력하거나 .env 수정 후 다시 실행해주세요.")
+        entered = input("GOOGLE_API_KEY 입력 (입력 없이 Enter 시 종료): ").strip()
+        if not entered:
+            print("GOOGLE_API_KEY가 없어 종료합니다.")
+            return False
+
+        os.environ["GOOGLE_API_KEY"] = entered
+        try:
+            _upsert_env_key(env_path, "GOOGLE_API_KEY", entered)
+            print("GOOGLE_API_KEY를 저장했습니다. 초기화를 다시 진행합니다.")
+        except Exception as e:
+            log_main_exception(
+                "google_api_key_persist_failed",
+                e,
+                {"path": str(env_path)},
+            )
+            print(".env 저장은 실패했지만 현재 실행에는 키를 적용했습니다.")
 
 
 def _publish_runtime_agent_cards(cards: List[Dict[str, Any]]) -> None:
@@ -271,7 +324,9 @@ def main() -> None:
     # Reset session log once at process start, not during workflow execution.
     start_main_logging_session(reset_files=True)
     initialize_main_logging()
-    _load_env_file()
+    if not _ensure_google_api_key():
+        finalize_main_logging()
+        return
     model_overrides = read_model_overrides()
     servers, runtime_cards = launch_sub_agent_servers(model_overrides=model_overrides)
     if servers:

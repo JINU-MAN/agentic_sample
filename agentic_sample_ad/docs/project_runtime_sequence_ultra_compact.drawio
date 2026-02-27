@@ -1,0 +1,92 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.5.6">
+  <diagram id="project-runtime-seq-ultra" name="프로젝트 동작 시퀀스 (초압축)">
+    <mxGraphModel dx="1455" dy="866" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" value="Agentic Sample AD - 런타임 시퀀스 (초압축)" vertex="1">
+          <mxGeometry height="30" width="760" x="30" as="geometry" />
+        </mxCell>
+        <mxCell id="u" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="사용자" vertex="1">
+          <mxGeometry height="900" width="130" x="30" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="s" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="start_agentic.py" vertex="1">
+          <mxGeometry height="900" width="140" x="190" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="메인 에이전트" vertex="1">
+          <mxGeometry height="900" width="140" x="360" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="이벤트 매니저" vertex="1">
+          <mxGeometry height="900" width="140" x="530" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="w" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="작업 에이전트들 (A2A)" vertex="1">
+          <mxGeometry height="900" width="150" x="700" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="mc" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="MCP" vertex="1">
+          <mxGeometry height="900" width="110" x="880" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="u" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;" target="s" value="1) 사용자 요청">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="170" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;" value="2) 실행">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260.00153846153853" y="200" as="sourcePoint" />
+            <mxPoint x="430.5399999999998" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;" value="3) 계획 수립 + execute_plan">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="430" y="260" as="sourcePoint" />
+            <mxPoint x="600" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;" value="4) 스텝 전달">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="600.0015384615385" y="330" as="sourcePoint" />
+            <mxPoint x="775.54" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;dashed=1;" value="5) 도구 호출 (선택)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="773.9615384615386" y="400" as="sourcePoint" />
+            <mxPoint x="934.5" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;" value="6) 스텝 결과 / 추가 필요사항">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="670" y="489.55" />
+            </Array>
+            <mxPoint x="774.5" y="489.55" as="sourcePoint" />
+            <mxPoint x="598.9615384615386" y="489.55" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;" value="7) 검토/재계획 또는 사용자 확인">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="540" />
+            </Array>
+            <mxPoint x="599.5" y="540" as="sourcePoint" />
+            <mxPoint x="428.96153846153857" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;" value="8) 최종 응답">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="427.7699999999998" y="660" as="sourcePoint" />
+            <mxPoint x="92.23153846153856" y="660" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="note" parent="1" style="shape=note;whiteSpace=wrap;html=1;size=14;" value="반복: 4~7 수행 후 종료" vertex="1">
+          <mxGeometry height="70" width="180" x="1140" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s7BmlpM1AGGp0k3F1AyW-2" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;" value="계획 실행 루프" vertex="1">
+          <mxGeometry height="290" width="550" x="410" y="300" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,6 +1,0 @@
-{"ts": "2026-02-24T01:31:45.129797+00:00", "level": "INFO", "component": "test.session", "action": "parent_started", "direction": "internal", "details": {"step": 1}, "session_seq": 1}
-{"ts": "2026-02-24T01:31:45.229409+00:00", "level": "INFO", "component": "test.session", "action": "child_ran", "direction": "internal", "details": {"step": 2}, "session_seq": 2}
-{"ts": "2026-02-24T01:31:45.411987+00:00", "level": "INFO", "component": "test.session", "action": "parent_done", "direction": "internal", "details": {"step": 3}, "session_seq": 3}
-{"ts": "2026-02-24T01:44:53.905314+00:00", "level": "INFO", "component": "test.session", "action": "first", "direction": "internal", "details": {"n": 1}, "session_seq": 1}
-{"ts": "2026-02-24T01:45:08.978925+00:00", "level": "INFO", "component": "test.session", "action": "second", "direction": "internal", "details": {"n": 2}, "session_seq": 1}
-{"ts": "2026-02-24T04:31:21.328019+00:00", "level": "INFO", "component": "test.session", "action": "folder_generation_disabled_check", "direction": "internal", "details": {"check": "no_new_dir"}, "session_seq": 1}

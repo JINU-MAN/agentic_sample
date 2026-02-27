@@ -2,6 +2,7 @@
   "name": "SocialMediaAnalyst",
   "type": "a2a",
   "base_url": "http://127.0.0.1:9103",
+  "server_module": "agentic_sample_ad.sns_agent.a2a_server",
   "module": "agentic_sample_ad.sns_agent.agent",
   "attr": "sns_agent",
   "description": "SNS post collection, relevance filtering, and concise social signal summarization.",

@@ -1,2 +1,0 @@
-{"ts": "2026-02-24T02:03:44.775840+00:00", "level": "INFO", "component": "test.verify2", "action": "one", "direction": "internal", "details": {"k": 2}, "session_seq": 1}
-{"ts": "2026-02-24T04:44:14.133150+00:00", "level": "INFO", "component": "test.verify2", "action": "after_start_reset", "direction": "internal", "details": {}, "session_seq": 1}

@@ -2,6 +2,7 @@
   "name": "PaperAnalyst",
   "type": "a2a",
   "base_url": "http://127.0.0.1:9102",
+  "server_module": "agentic_sample_ad.paper_agent.a2a_server",
   "module": "agentic_sample_ad.paper_agent.agent",
   "attr": "paper_agent",
   "description": "Paper search, full-text memory expansion, and follow-up Q&A from local PDF corpus.",

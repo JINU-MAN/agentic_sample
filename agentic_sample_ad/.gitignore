@@ -1,0 +1,3 @@
+# Logs: keep only the active session log file tracked
+log/*
+!log/session_log.jsonl

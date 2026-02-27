@@ -1,0 +1,93 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.5.2">
+  <diagram id="project-runtime-seq-simple" name="Project Runtime Sequence (Simple)">
+    <mxGraphModel dx="1351" dy="804" grid="1" gridSize="10" guides="1" tooltips="1" connect="0" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" value="Agentic Sample AD - Runtime Sequence (Simple)" vertex="1">
+          <mxGeometry height="30" width="780" x="30" as="geometry" />
+        </mxCell>
+        <mxCell id="u" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="User" vertex="1">
+          <mxGeometry height="1320" width="150" x="30" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="s" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="start_agentic.py" vertex="1">
+          <mxGeometry height="1320" width="150" x="210" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="MainAgent&#xa;(Planning + Coordination)" vertex="1">
+          <mxGeometry height="1320" width="180" x="390" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="EventManager" vertex="1">
+          <mxGeometry height="1320" width="150" x="610" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="w" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="Worker A2A Agent(s)&#xa;(WebSearch / SNS / Paper)" vertex="1">
+          <mxGeometry height="1320" width="170" x="800" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="mc" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;" value="MCP Server(s)" vertex="1">
+          <mxGeometry height="1320" width="150" x="1010" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="u" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=1;exitY=0.10;entryX=0;entryY=0.10;" target="s" value="1) user request">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="s" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=1;exitY=0.15;entryX=0;entryY=0.15;" target="m" value="2) run_main_agent(...)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="m" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;dashed=1;exitX=0.5;exitY=0.22;entryX=0.5;entryY=0.22;" target="m" value="3) planning + routing/collaboration plan">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="580" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="m" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=1;exitY=0.28;entryX=0;entryY=0.28;" target="e" value="4) execute_plan(...)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="loopLabel" parent="1" style="shape=mxgraph.basic.bracket;html=1;whiteSpace=wrap;rounded=0;strokeWidth=1.2;" value="Loop: collaboration steps" vertex="1">
+          <mxGeometry height="460" width="25" x="575" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="e" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=1;exitY=0.36;entryX=0;entryY=0.36;" target="w" value="5) step input (context packet)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="w" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=1;exitY=0.43;entryX=0;entryY=0.43;" target="mc" value="6) tool call (if needed)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="mc" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=0;exitY=0.49;entryX=1;entryY=0.49;" target="w" value="7) tool result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="w" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=0;exitY=0.55;entryX=1;entryY=0.55;" target="e" value="8) step result (+ additional needs)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="e" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=0;exitY=0.61;entryX=1;entryY=0.61;" target="m" value="9) review/replan request">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="m" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=1;exitY=0.67;entryX=0;entryY=0.67;" target="e" value="10) decision JSON (continue/update/abort)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="altLabel" parent="1" style="shape=mxgraph.basic.bracket;html=1;whiteSpace=wrap;rounded=0;strokeWidth=1.2;strokeColor=#d79b00;" value="Alt: clarification required" vertex="1">
+          <mxGeometry height="190" width="25" x="575" y="935" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="e" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;strokeColor=#d79b00;exitX=0;exitY=0.73;entryX=1;entryY=0.73;" target="m" value="11) pause workflow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="m" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;strokeColor=#d79b00;exitX=0;exitY=0.79;entryX=1;entryY=0.79;" target="u" value="12) ask user">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="u" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;strokeColor=#d79b00;exitX=1;exitY=0.84;entryX=0;entryY=0.84;" target="m" value="13) user clarification">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="m" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;strokeColor=#d79b00;exitX=1;exitY=0.89;entryX=0;entryY=0.89;" target="e" value="14) resume workflow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="e" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=0;exitY=0.93;entryX=1;entryY=0.93;" target="m" value="15) final synthesis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="m" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=1;exitY=0.96;entryX=0;entryY=0.96;" target="e" value="16) final summary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="e" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=0;exitY=0.985;entryX=1;entryY=0.985;" target="s" value="17) response">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="s" style="endArrow=classic;html=1;rounded=0;strokeWidth=1.2;exitX=0;exitY=1;entryX=1;entryY=1;" target="u" value="18) final output">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

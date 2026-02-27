@@ -6,6 +6,7 @@ import json
 import os
 import re
 import threading
+import time
 from typing import Any, Dict, List
 from uuid import uuid4
 
@@ -57,6 +58,17 @@ def _env_int(name: str, default: int, minimum: int) -> int:
     if value < minimum:
         return minimum
     return value
+
+
+def _resolve_collaboration_max_steps(initial_steps: int) -> int:
+    """
+    Resolve collaboration max-steps with a generous default for complex workflows.
+    Environment override:
+      - COLLAB_MAX_STEPS
+    """
+    base = max(1, int(initial_steps))
+    default_steps = max(40, base * 6 + 12)
+    return _env_int("COLLAB_MAX_STEPS", default_steps, 8)
 
 
 def _a2a_http_timeout(
@@ -146,6 +158,26 @@ def _extract_json_object(text: str) -> Dict[str, Any] | None:
         except json.JSONDecodeError:
             return None
 
+    return None
+
+
+def _extract_strict_json_object(text: str) -> Dict[str, Any] | None:
+    stripped = text.strip()
+    if not stripped:
+        return None
+
+    candidate = stripped
+    fenced = re.fullmatch(r"```(?:json)?\s*(\{.*\})\s*```", stripped, flags=re.DOTALL)
+    if fenced:
+        candidate = fenced.group(1).strip()
+
+    try:
+        parsed = json.loads(candidate)
+    except json.JSONDecodeError:
+        return None
+
+    if isinstance(parsed, dict):
+        return parsed
     return None
 
 
@@ -394,6 +426,7 @@ def _execute_single_a2a_agent(agent_meta: Dict[str, Any], user_input: str) -> Di
     name = str(agent_meta.get("name", "UnknownA2AAgent")).strip() or "UnknownA2AAgent"
     base_url = agent_meta.get("base_url")
     card_url = _a2a_card_url(str(base_url or ""))
+    started_at = time.monotonic()
     if not base_url:
         log_event(
             "event_manager.a2a",
@@ -412,11 +445,13 @@ def _execute_single_a2a_agent(agent_meta: Dict[str, Any], user_input: str) -> Di
         response_text = _extract_a2a_response_text(raw_result)
         if not response_text:
             response_text = json.dumps(raw_result, ensure_ascii=False)
+        elapsed_sec = round(time.monotonic() - started_at, 3)
         result = {
             "ok": True,
             "agent": name,
             "response": response_text,
             "raw_a2a_result": raw_result,
+            "elapsed_sec": elapsed_sec,
         }
         log_event("event_manager.a2a", "request_completed", {"base_url": base_url, "result": result})
         return result
@@ -426,26 +461,28 @@ def _execute_single_a2a_agent(agent_meta: Dict[str, Any], user_input: str) -> Di
         error_lower = error_msg.lower()
         is_timeout = "timeout" in error_type.lower() or "timed out" in error_lower
         is_card_fetch_error = "agent card" in error_lower or "/.well-known/agent-card.json" in error_lower
+        request_timeout_sec = _env_float("A2A_REQUEST_TIMEOUT_SEC", 120.0, 2.0)
+        elapsed_sec = round(time.monotonic() - started_at, 3)
 
         if is_card_fetch_error:
             error_text = (
                 f"A2A agent card fetch failed ({error_type}): {error_msg}. "
                 f"Card endpoint: {card_url}. "
-                "Bridge server may not be ready or has stopped. "
+                "Agent server may not be ready or has stopped. "
                 "Run `python start_agentic.py` again, or `python scripts/start_a2a_agents.py` and verify the card endpoint."
             )
         elif is_timeout:
             error_text = (
                 f"A2A agent request timed out ({error_type}): {error_msg}. "
                 f"Agent base URL: {base_url}. "
-                "The bridge received the request but did not finish within timeout. "
+                "The agent server received the request but did not finish within timeout. "
                 "Increase `A2A_REQUEST_TIMEOUT_SEC` for longer tasks."
             )
         else:
             error_text = (
                 f"A2A agent execution failed ({error_type}): {error_msg}. "
                 f"Agent base URL: {base_url}. "
-                "Check bridge health and network access."
+                "Check agent server health and network access."
             )
         log_exception(
             "event_manager.a2a",
@@ -457,6 +494,11 @@ def _execute_single_a2a_agent(agent_meta: Dict[str, Any], user_input: str) -> Di
             "ok": False,
             "agent": name,
             "error": error_text,
+            "error_type": error_type,
+            "error_kind": "timeout" if is_timeout else ("agent_card_fetch" if is_card_fetch_error else "execution"),
+            "is_timeout": is_timeout,
+            "timeout_sec": request_timeout_sec if is_timeout else None,
+            "elapsed_sec": elapsed_sec,
         }
 
 
@@ -1432,7 +1474,9 @@ def _parse_targeted_need(need: str) -> tuple[str, str]:
 
 def _is_user_clarification_need(need: str) -> bool:
     target_agent, request = _parse_targeted_need(need)
-    if target_agent.strip().lower() != "mainagent":
+    target_lower = target_agent.strip().lower()
+    # If explicitly targeted to another agent, this is not a user clarification request.
+    if target_lower and target_lower != "mainagent":
         return False
 
     text = str(request or need).strip()
@@ -1473,7 +1517,48 @@ def _is_user_clarification_need(need: str) -> bool:
         "언제",
         "어디",
     ]
-    return any(token in lowered for token in clarification_tokens)
+    if any(token in lowered for token in clarification_tokens):
+        # Explicit MainAgent target is enough.
+        if target_lower == "mainagent":
+            return True
+
+        # For untargeted needs, require stronger evidence that user input is needed.
+        user_context_tokens = [
+            "사용자",
+            "유저",
+            "ask user",
+            "ask the user",
+            "user",
+        ]
+        channel_context_tokens = [
+            "슬랙",
+            "slack",
+            "채널",
+            "channel",
+            "channel id",
+            "채널 id",
+        ]
+        wait_or_input_tokens = [
+            "확인",
+            "수신",
+            "입력",
+            "제공",
+            "알려",
+            "받아",
+            "receive",
+            "input",
+            "provide",
+            "confirm",
+        ]
+        has_user_context = any(token in lowered for token in user_context_tokens)
+        has_channel_context = any(token in lowered for token in channel_context_tokens)
+        has_wait_or_input = any(token in lowered for token in wait_or_input_tokens)
+        if has_user_context:
+            return True
+        if has_channel_context and has_wait_or_input:
+            return True
+
+    return False
 
 
 def _first_user_clarification_request(needs: List[str]) -> str:
@@ -1483,7 +1568,11 @@ def _first_user_clarification_request(needs: List[str]) -> str:
         target_agent, request = _parse_targeted_need(need)
         if target_agent and request:
             return request
-        return _normalize_need_text(need)
+        normalized = _normalize_need_text(need)
+        lowered = normalized.lower()
+        if ("슬랙" in normalized or "slack" in lowered) and ("채널" in normalized or "channel" in lowered):
+            return "슬랙 게시를 위해 정확한 채널 이름 또는 채널 ID(예: C12345678)를 알려주세요."
+        return normalized
     return ""
 
 
@@ -2110,6 +2199,310 @@ def _handle_collaboration_failure_with_main_agent(
     )
 
 
+def _default_timeout_control_result(reason: str) -> Dict[str, Any]:
+    return {
+        "decision": "abort",
+        "should_continue": False,
+        "next_step_policy": "resume_pending",
+        "replace_pending": False,
+        "updated_steps": [],
+        "status_summary": "Workflow paused on timeout and could not be safely resumed.",
+        "root_cause": "Timeout control review did not produce a valid decision payload.",
+        "user_message": "작업이 시간 제한을 넘어 중단되었습니다. 현재 상태를 보존하고 실행을 멈췄습니다.",
+        "reason": reason,
+    }
+
+
+def _normalize_timeout_control_result(
+    parsed: Dict[str, Any],
+    available_agents: List[Dict[str, Any]],
+) -> Dict[str, Any] | None:
+    required_keys = {
+        "decision",
+        "next_step_policy",
+        "status_summary",
+        "root_cause",
+        "user_message",
+        "reason",
+        "updated_steps",
+    }
+    if not required_keys.issubset(set(parsed.keys())):
+        return None
+
+    decision = str(parsed.get("decision", "")).strip().lower()
+    next_step_policy = str(parsed.get("next_step_policy", "")).strip().lower()
+    status_summary = str(parsed.get("status_summary", "")).strip()
+    root_cause = str(parsed.get("root_cause", "")).strip()
+    user_message = str(parsed.get("user_message", "")).strip()
+    reason = str(parsed.get("reason", "")).strip()
+    raw_updated_steps = parsed.get("updated_steps")
+
+    if decision not in {"continue", "abort"}:
+        return None
+    if next_step_policy not in {"resume_pending", "replace_pending"}:
+        return None
+    if not all([status_summary, root_cause, user_message, reason]):
+        return None
+    if not isinstance(raw_updated_steps, list):
+        return None
+
+    updated_steps = _normalize_replanned_steps(raw_updated_steps, available_agents)
+
+    if decision == "abort":
+        if next_step_policy != "resume_pending":
+            return None
+        if raw_updated_steps:
+            return None
+        return {
+            "decision": "abort",
+            "should_continue": False,
+            "next_step_policy": next_step_policy,
+            "replace_pending": False,
+            "updated_steps": [],
+            "status_summary": status_summary,
+            "root_cause": root_cause,
+            "user_message": user_message,
+            "reason": reason,
+        }
+
+    if next_step_policy == "resume_pending":
+        if raw_updated_steps:
+            return None
+        return {
+            "decision": "continue",
+            "should_continue": True,
+            "next_step_policy": next_step_policy,
+            "replace_pending": False,
+            "updated_steps": [],
+            "status_summary": status_summary,
+            "root_cause": root_cause,
+            "user_message": user_message,
+            "reason": reason,
+        }
+
+    if not updated_steps:
+        return None
+    return {
+        "decision": "continue",
+        "should_continue": True,
+        "next_step_policy": next_step_policy,
+        "replace_pending": True,
+        "updated_steps": updated_steps,
+        "status_summary": status_summary,
+        "root_cause": root_cause,
+        "user_message": user_message,
+        "reason": reason,
+    }
+
+
+def _build_timeout_control_packet(
+    *,
+    workflow_id: str,
+    step_counter: int,
+    failed_result: Dict[str, Any],
+    completed_results: List[Dict[str, Any]],
+    pending_steps: List[Dict[str, Any]],
+    open_needs: List[str],
+) -> Dict[str, Any]:
+    failed_agent = str(failed_result.get("agent", "UnknownAgent")).strip() or "UnknownAgent"
+    failed_error = str(failed_result.get("error", "Unknown error")).strip()
+    error_type = str(failed_result.get("error_type", "")).strip()
+    timeout_sec = failed_result.get("timeout_sec")
+    elapsed_sec = failed_result.get("elapsed_sec")
+
+    timeout_payload: Dict[str, Any] = {
+        "workflow_id": workflow_id,
+        "failed_step": step_counter,
+        "failed_agent": failed_agent,
+        "error": failed_error,
+        "error_type": error_type,
+        "is_timeout": bool(failed_result.get("is_timeout")),
+        "completed_count": len(completed_results),
+        "pending_count": len(pending_steps),
+        "open_needs_count": len(open_needs),
+        "completed_results_summary": _format_prior_results_for_handoff(completed_results),
+        "pending_steps_summary": _format_remaining_steps(pending_steps),
+        "open_needs": [str(item).strip() for item in open_needs if str(item).strip()][:30],
+    }
+    if isinstance(timeout_sec, (int, float)):
+        timeout_payload["timeout_sec"] = float(timeout_sec)
+    if isinstance(elapsed_sec, (int, float)):
+        timeout_payload["elapsed_sec"] = float(elapsed_sec)
+    return timeout_payload
+
+
+async def _async_handle_timeout_with_main_agent(
+    *,
+    main_agent: Any,
+    available_agents: List[Dict[str, Any]],
+    activated_agent_cards: List[Dict[str, Any]],
+    user_input: str,
+    conversation_history: str,
+    raw_plan: str,
+    timeout_packet: Dict[str, Any],
+) -> Dict[str, Any]:
+    runner = InMemoryRunner(agent=main_agent, app_name="main-timeout-control")
+    log_event(
+        "event_manager.collaboration",
+        "timeout_control_review_started",
+        {
+            "failed_step": timeout_packet.get("failed_step"),
+            "failed_agent": timeout_packet.get("failed_agent"),
+            "pending_count": timeout_packet.get("pending_count"),
+            "open_needs_count": timeout_packet.get("open_needs_count"),
+        },
+        direction="outbound",
+    )
+    try:
+        lines: List[str] = []
+        for agent in available_agents:
+            name = str(agent.get("name", "UnknownAgent"))
+            role = str(agent.get("role", "")).strip() or "worker"
+            desc = str(agent.get("description", "")).strip()
+            caps = ", ".join(str(c) for c in agent.get("capabilities", []))
+            tool_entries: List[str] = []
+            for tool in agent.get("tools", []):
+                if isinstance(tool, dict):
+                    tool_name = str(tool.get("name", "")).strip()
+                    tool_desc = str(tool.get("description", "")).strip()
+                    if tool_name and tool_desc:
+                        tool_entries.append(f"{tool_name}: {tool_desc}")
+                    elif tool_name:
+                        tool_entries.append(tool_name)
+                elif isinstance(tool, str):
+                    token = tool.strip()
+                    if token:
+                        tool_entries.append(token)
+            tools_text = "; ".join(tool_entries) if tool_entries else "(not provided)"
+            instruction_preview = str(agent.get("instruction_preview", "")).strip() or "(not provided)"
+            lines.append(
+                f"- name: {name}\n"
+                f"  role: {role}\n"
+                f"  description: {desc}\n"
+                f"  capabilities: {caps}\n"
+                f"  tools: {tools_text}\n"
+                f"  instruction_preview: {instruction_preview}"
+            )
+        agents_desc = "\n".join(lines) or "(none)"
+        activated_cards_text = _format_agent_card_snapshots(activated_agent_cards)
+        timeout_packet_json = json.dumps(timeout_packet, ensure_ascii=False, indent=2)
+
+        prompt = (
+            "You are the main coordinator handling a timeout pause.\n"
+            "A workflow step exceeded its timeout budget and execution is paused.\n"
+            "Decide whether to continue from current state or abort.\n"
+            "Return JSON only.\n\n"
+            "Strict JSON schema (all fields required):\n"
+            "{\n"
+            '  "decision": "continue" | "abort",\n'
+            '  "next_step_policy": "resume_pending" | "replace_pending",\n'
+            '  "status_summary": "one-sentence status of current workflow",\n'
+            '  "root_cause": "what caused timeout in practical terms",\n'
+            '  "user_message": "concise user-facing status update",\n'
+            '  "reason": "short decision reason",\n'
+            '  "updated_steps": [\n'
+            "    {\n"
+            '      "agent": "AgentName",\n'
+            '      "goal": "what to do next",\n'
+            '      "deliverable": "expected output",\n'
+            '      "tool_hints": ["tool_or_strategy_1", "tool_or_strategy_2"]\n'
+            "    }\n"
+            "  ]\n"
+            "}\n\n"
+            "Rules:\n"
+            "- Use exact field names and allowed enum values.\n"
+            "- If decision=continue and next_step_policy=resume_pending, updated_steps must be [].\n"
+            "- If decision=continue and next_step_policy=replace_pending, updated_steps must be non-empty future steps.\n"
+            "- If decision=abort, next_step_policy must be resume_pending and updated_steps must be [].\n"
+            "- Use only names from Available agents in updated_steps.\n"
+            "- Keep decision grounded in current workflow status packet.\n"
+            "- Respect explicit user constraints.\n\n"
+            f"Conversation context:\n{conversation_history or '(none)'}\n\n"
+            f"User request:\n{user_input}\n\n"
+            f"Original planner text:\n{raw_plan or '(none)'}\n\n"
+            f"Timeout status packet:\n{timeout_packet_json}\n\n"
+            f"Activated agent cards so far:\n{activated_cards_text}\n\n"
+            f"Available agents:\n{agents_desc}\n"
+        )
+
+        session = await runner.session_service.create_session(
+            app_name=runner.app_name,
+            user_id="event-manager-main-timeout-control",
+        )
+        new_message = types.Content(role="user", parts=[types.Part(text=prompt)])
+
+        chunks: List[str] = []
+        async for event in runner.run_async(
+            user_id=session.user_id,
+            session_id=session.id,
+            new_message=new_message,
+        ):
+            if event.content and event.content.parts:
+                text = "".join(part.text or "" for part in event.content.parts).strip()
+                if text:
+                    chunks.append(text)
+
+        raw_text = "\n".join(chunks).strip()
+        parsed = _extract_strict_json_object(raw_text)
+        if not isinstance(parsed, dict):
+            log_event(
+                "event_manager.collaboration",
+                "timeout_control_invalid_json",
+                {"raw_text": raw_text[:2000]},
+                level="ERROR",
+            )
+            return _default_timeout_control_result("invalid_json")
+
+        normalized = _normalize_timeout_control_result(parsed, available_agents)
+        if not isinstance(normalized, dict):
+            log_event(
+                "event_manager.collaboration",
+                "timeout_control_invalid_schema",
+                {"parsed": parsed},
+                level="ERROR",
+            )
+            return _default_timeout_control_result("invalid_schema")
+
+        log_event("event_manager.collaboration", "timeout_control_review_completed", normalized, direction="inbound")
+        return normalized
+    except Exception as e:
+        log_exception(
+            "event_manager.collaboration",
+            "timeout_control_review_failed",
+            e,
+            {
+                "failed_step": timeout_packet.get("failed_step"),
+                "failed_agent": timeout_packet.get("failed_agent"),
+            },
+        )
+        return _default_timeout_control_result("timeout_control_review_failed")
+    finally:
+        await runner.close()
+
+
+def _handle_timeout_with_main_agent(
+    *,
+    main_agent: Any,
+    available_agents: List[Dict[str, Any]],
+    activated_agent_cards: List[Dict[str, Any]],
+    user_input: str,
+    conversation_history: str,
+    raw_plan: str,
+    timeout_packet: Dict[str, Any],
+) -> Dict[str, Any]:
+    return _run_coroutine_sync(
+        _async_handle_timeout_with_main_agent(
+            main_agent=main_agent,
+            available_agents=available_agents,
+            activated_agent_cards=activated_agent_cards,
+            user_input=user_input,
+            conversation_history=conversation_history,
+            raw_plan=raw_plan,
+            timeout_packet=timeout_packet,
+        )
+    )
+
+
 def _run_collaboration_workflow(
     *,
     main_agent: Any,
@@ -2126,7 +2519,7 @@ def _run_collaboration_workflow(
     seen_need_keys: set[str] = set()
     activated_agent_cards_map: Dict[str, Dict[str, Any]] = {}
     step_counter = 0
-    max_steps = max(8, len(steps) + 6)
+    max_steps = _resolve_collaboration_max_steps(len(steps))
 
     while pending_steps and step_counter < max_steps:
         step_counter += 1
@@ -2246,6 +2639,10 @@ def _run_collaboration_workflow(
 
         if enriched.get("ok"):
             clarification_request = _first_user_clarification_request(added_needs)
+            clarification_source = "agent_output_additional_needs"
+            if not clarification_request:
+                clarification_request = _first_user_clarification_request(open_needs)
+                clarification_source = "agent_output_open_needs"
             if clarification_request:
                 enriched["workflow_paused"] = True
                 enriched["pause_reason"] = "awaiting_user_clarification"
@@ -2257,6 +2654,7 @@ def _run_collaboration_workflow(
                         "step": step_counter,
                         "agent": agent_name,
                         "request": clarification_request,
+                        "source": clarification_source,
                     },
                 )
                 break
@@ -2314,6 +2712,126 @@ def _run_collaboration_workflow(
         )
 
         if not enriched.get("ok"):
+            if bool(enriched.get("is_timeout")):
+                timeout_packet = _build_timeout_control_packet(
+                    workflow_id=workflow_id,
+                    step_counter=step_counter,
+                    failed_result=enriched,
+                    completed_results=results,
+                    pending_steps=pending_steps,
+                    open_needs=open_needs,
+                )
+                timeout_packet_json = json.dumps(timeout_packet, ensure_ascii=False, indent=2)
+                log_event(
+                    "event_manager.collaboration",
+                    "workflow_paused_on_timeout",
+                    {
+                        "step": step_counter,
+                        "agent": agent_name,
+                        "timeout_sec": enriched.get("timeout_sec"),
+                        "elapsed_sec": enriched.get("elapsed_sec"),
+                    },
+                )
+                _log_agent_message(
+                    action="sent",
+                    from_agent="WorkflowEngine",
+                    to_agent="MainAgent",
+                    message=timeout_packet_json,
+                    channel="timeout_control",
+                    workflow_id=workflow_id,
+                    workflow_step=step_counter,
+                    direction="outbound",
+                )
+                timeout_review = _handle_timeout_with_main_agent(
+                    main_agent=main_agent,
+                    available_agents=available_agents,
+                    activated_agent_cards=activated_agent_cards,
+                    user_input=user_input,
+                    conversation_history=conversation_history,
+                    raw_plan=raw_plan,
+                    timeout_packet=timeout_packet,
+                )
+                _log_agent_message(
+                    action="received",
+                    from_agent="MainAgent",
+                    to_agent="WorkflowEngine",
+                    message=json.dumps(timeout_review, ensure_ascii=False),
+                    channel="timeout_control",
+                    workflow_id=workflow_id,
+                    workflow_step=step_counter,
+                    ok=bool(timeout_review.get("should_continue")),
+                    direction="inbound",
+                )
+
+                decision = str(timeout_review.get("decision", "abort")).strip().lower() or "abort"
+                reason = str(timeout_review.get("reason", "")).strip()
+                root_cause = str(timeout_review.get("root_cause", "")).strip()
+                user_message = str(timeout_review.get("user_message", "")).strip()
+                status_summary = str(timeout_review.get("status_summary", "")).strip()
+
+                if root_cause:
+                    current_error = str(enriched.get("error", "Unknown error")).strip()
+                    enriched["error"] = f"{current_error}\n\nTimeout Review: {root_cause}"
+
+                enriched["timeout_recovery"] = {
+                    "decision": decision,
+                    "reason": reason,
+                    "root_cause": root_cause,
+                    "user_message": user_message,
+                    "status_summary": status_summary,
+                    "next_step_policy": str(timeout_review.get("next_step_policy", "resume_pending")).strip(),
+                }
+                enriched["failure_recovery"] = dict(enriched["timeout_recovery"])
+
+                if timeout_review.get("should_continue"):
+                    if timeout_review.get("replace_pending") and timeout_review.get("updated_steps"):
+                        pending_steps = list(timeout_review["updated_steps"])
+                        log_event(
+                            "event_manager.collaboration",
+                            "plan_updated_after_timeout",
+                            {
+                                "failed_step": step_counter,
+                                "failed_agent": agent_name,
+                                "reason": reason,
+                                "new_pending_steps": [
+                                    {
+                                        "agent": str(step_meta.get("agent", "")),
+                                        "goal": str(step_meta.get("goal", "")),
+                                    }
+                                    for step_meta in pending_steps
+                                ],
+                            },
+                        )
+                    log_event(
+                        "event_manager.collaboration",
+                        "workflow_resumed_after_timeout",
+                        {
+                            "failed_step": step_counter,
+                            "agent": agent_name,
+                            "decision": decision,
+                            "reason": reason,
+                        },
+                    )
+                    continue
+
+                if user_message:
+                    current_error = str(enriched.get("error", "Unknown error")).strip()
+                    enriched["error"] = f"{current_error}\n\nCoordinator Message: {user_message}"
+
+                log_event(
+                    "event_manager.collaboration",
+                    "workflow_stopped_on_timeout",
+                    {
+                        "failed_step": step_counter,
+                        "agent": agent_name,
+                        "decision": decision,
+                        "reason": reason,
+                        "root_cause": root_cause,
+                    },
+                    level="ERROR",
+                )
+                break
+
             failure_review = _handle_collaboration_failure_with_main_agent(
                 main_agent=main_agent,
                 available_agents=available_agents,
@@ -2414,6 +2932,10 @@ def _run_collaboration_workflow(
             )
 
         clarification_request = _first_user_clarification_request(review_added_needs)
+        clarification_source = "review_additional_needs"
+        if not clarification_request:
+            clarification_request = _first_user_clarification_request(open_needs)
+            clarification_source = "review_open_needs"
         if clarification_request:
             enriched["workflow_paused"] = True
             enriched["pause_reason"] = "awaiting_user_clarification"
@@ -2425,7 +2947,7 @@ def _run_collaboration_workflow(
                     "step": step_counter,
                     "agent": agent_name,
                     "request": clarification_request,
-                    "source": "review_additional_needs",
+                    "source": clarification_source,
                 },
             )
             break
@@ -2527,12 +3049,39 @@ def _run_collaboration_workflow(
                 )
 
     if step_counter >= max_steps and pending_steps:
-        log_event(
-            "event_manager.collaboration",
-            "workflow_stopped_on_max_steps",
-            {"max_steps": max_steps, "remaining_steps": len(pending_steps)},
-            level="ERROR",
-        )
+        clarification_request = _first_user_clarification_request(open_needs)
+        if clarification_request:
+            pause_entry: Dict[str, Any] = {
+                "ok": True,
+                "agent": "MainAgent",
+                "workflow_step": step_counter,
+                "goal": "사용자 입력이 필요한 후속 단계",
+                "response": "추가 정보가 필요하여 진행을 일시 중단하고 사용자 응답을 기다립니다.",
+                "workflow_paused": True,
+                "pause_reason": "awaiting_user_clarification",
+                "pause_request": clarification_request,
+                "parsed_additional_needs": [],
+            }
+            results.append(pause_entry)
+            log_event(
+                "event_manager.collaboration",
+                "workflow_paused_for_user_input",
+                {
+                    "step": step_counter,
+                    "agent": "MainAgent",
+                    "request": clarification_request,
+                    "source": "max_steps_guard_open_needs",
+                    "max_steps": max_steps,
+                    "remaining_steps": len(pending_steps),
+                },
+            )
+        else:
+            log_event(
+                "event_manager.collaboration",
+                "workflow_stopped_on_max_steps",
+                {"max_steps": max_steps, "remaining_steps": len(pending_steps)},
+                level="ERROR",
+            )
 
     return results
 

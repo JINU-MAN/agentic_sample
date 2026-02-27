@@ -1,1 +1,0 @@
-{"ts": "2026-02-24T03:47:55.502589+00:00", "level": "INFO", "component": "event_manager.policy", "action": "step_rerouted_by_owner_policy", "direction": "internal", "details": {"from_agent": "PaperAnalyst", "to_agent": "MainAgent", "tool_hint": "goal_contains_slack", "goal_preview": "Post summary to slack channel"}, "session_seq": 1}
