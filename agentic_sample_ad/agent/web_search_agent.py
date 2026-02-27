@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from google.adk.agents import LlmAgent
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
+from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.system_logger import log_event, log_exception
 
 
@@ -323,7 +324,7 @@ def fetch_web_page_with_mcp(url: str, max_chars: int = DEFAULT_FETCH_MAX_CHARS) 
 
 web_search_agent = LlmAgent(
     name="WebSearchAnalyst",
-    model="gemini-3-flash-preview",
+    model=resolve_agent_model("WebSearchAnalyst"),
     instruction=(
         "You are a web research specialist.\n\n"
         "Specialization-first policy: web/article/news evidence is your primary responsibility.\n"

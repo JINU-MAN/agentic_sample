@@ -6,6 +6,7 @@ from pathlib import Path
 from google.adk.agents import LlmAgent
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
+from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.system_logger import log_event, log_exception
 
 
@@ -48,7 +49,7 @@ def scrape_sns_with_mcp(keyword: str) -> str:
 
 sns_agent = LlmAgent(
     name="SocialMediaAnalyst",
-    model="gemini-3-flash-preview",
+    model=resolve_agent_model("SocialMediaAnalyst"),
     instruction=(
         "You are a social media analysis specialist.\n"
         "Specialization-first policy: SNS/social signal tasks are your primary responsibility.\n"

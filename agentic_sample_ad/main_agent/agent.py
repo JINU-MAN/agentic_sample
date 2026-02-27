@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Mapping
 from google.adk.agents import LlmAgent
 
 from agentic_sample_ad.agent.tool.slack_mcp_tool import slack_post_message
+from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.planner import plan_with_main_agent
 
 from .card_registry import load_sub_agent_cards
@@ -54,9 +55,10 @@ def _load_env_file() -> None:
 
 
 def create_main_agent() -> LlmAgent:
+    model_name = resolve_agent_model("MainAgent")
     agent = LlmAgent(
         name="MainAgent",
-        model="gemini-3-flash-preview",
+        model=model_name,
         instruction=(
             "You are the coordinator of a multi-agent system. "
             "Understand the user request, create practical execution steps, "
@@ -66,7 +68,7 @@ def create_main_agent() -> LlmAgent:
         ),
         tools=[slack_post_message],
     )
-    log_main_event("main_agent_created", {"name": "MainAgent", "model": "gemini-3-flash-preview"})
+    log_main_event("main_agent_created", {"name": "MainAgent", "model": model_name})
     return agent
 
 

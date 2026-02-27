@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 from google.adk.agents import LlmAgent
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
+from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.system_logger import log_event, log_exception
 
 
@@ -814,7 +815,7 @@ def query_paper_memory(
 
 research_agent = LlmAgent(
     name="PaperAnalyst",
-    model="gemini-3-flash-preview",
+    model=resolve_agent_model("PaperAnalyst"),
     instruction=(
         "You are a paper analysis specialist.\n"
         "Specialization-first policy: if the task is paper/research/PDF related, you should lead it.\n"

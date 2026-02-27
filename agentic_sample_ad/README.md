@@ -130,13 +130,16 @@ event_manager
 3. `card_registry`로 서브 에이전트 카드 탐색
 4. `scripts/start_a2a_agents.py::launch_bridges()`로 브리지 기동
 5. `input_loop()`에서 사용자 입력 대기
+6. 실행 중 모델 변경 명령 지원: `/setting {AgentName} -m {ModelName}` 또는 `/setting {AgentName} -model {ModelName}`
+   - `MainAgent`: 다음 턴부터 새 모델 적용 (실행 시마다 재생성되므로 별도 재부팅 불필요)
+   - 서브 에이전트: 해당 A2A 서버 프로세스를 재기동하여 새 모델 적용
 
 ### 4.2 사용자 요청 1턴 처리
 
 `main_agent/agent.py::run_main_agent()` 기준:
 
 1. 세션 메모리 업데이트(user turn 저장)
-2. `MainAgent` 생성 (모델: `gemini-3-flash-preview`)
+2. `MainAgent` 생성 (기본 모델: `gemini-2.5-flash-lite`)
 3. 카드 + 런타임 메타데이터로 통합 에이전트 레지스트리 구성
 4. `planner.plan_with_main_agent(...)`
 5. `event_manager.execute_plan(...)`
@@ -246,10 +249,10 @@ Additional Needs:
 
 | 에이전트 | 역할 | 모델 | 핵심 capability | 직접 도구 |
 |---|---|---|---|---|
-| MainAgent | 코디네이터/재계획/최종전달 | `gemini-3-flash-preview` | coordination, workflow_replanning, user_clarification_routing, comm.slack.post | `slack_post_message` |
-| PaperAnalyst | 로컬 PDF 기반 연구 분석 | `gemini-3-flash-preview` | paper_search, paper_summary, paper_memory_query 등 | `scrape_papers_with_mcp`, `load_paper_memory_with_mcp`, `expand_paper_memory_with_mcp`, `query_paper_memory` |
-| WebSearchAnalyst | 웹 검색/검증 | `gemini-3-flash-preview` | web_search, web_summary, fact_check | `search_web_candidates_with_mcp`, `fetch_web_page_with_mcp` |
-| SocialMediaAnalyst | SNS 신호 수집/요약 | `gemini-3-flash-preview` | sns_search, sns_summary | `scrape_sns_with_mcp` |
+| MainAgent | 코디네이터/재계획/최종전달 | `gemini-2.5-flash-lite` | coordination, workflow_replanning, user_clarification_routing, comm.slack.post | `slack_post_message` |
+| PaperAnalyst | 로컬 PDF 기반 연구 분석 | `gemini-2.5-flash-lite` | paper_search, paper_summary, paper_memory_query 등 | `scrape_papers_with_mcp`, `load_paper_memory_with_mcp`, `expand_paper_memory_with_mcp`, `query_paper_memory` |
+| WebSearchAnalyst | 웹 검색/검증 | `gemini-2.5-flash-lite` | web_search, web_summary, fact_check | `search_web_candidates_with_mcp`, `fetch_web_page_with_mcp` |
+| SocialMediaAnalyst | SNS 신호 수집/요약 | `gemini-2.5-flash-lite` | sns_search, sns_summary | `scrape_sns_with_mcp` |
 
 ---
 
