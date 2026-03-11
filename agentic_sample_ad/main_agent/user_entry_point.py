@@ -8,6 +8,8 @@ from .agent import run_main_agent
 from .session_memory import clear_session
 from .system_logger import finalize_main_logging, initialize_main_logging
 
+SETTING_USAGE = "Usage: /setting {AgentName|all} -m {ModelName}"
+
 
 def _parse_setting_command(user_input: str) -> Tuple[bool, str, str, str]:
     try:
@@ -16,13 +18,13 @@ def _parse_setting_command(user_input: str) -> Tuple[bool, str, str, str]:
         return False, "", "", f"Invalid command: {e}"
 
     if not tokens or tokens[0].lower() != "/setting":
-        return False, "", "", "Usage: /setting {AgentName} -m {ModelName}"
+        return False, "", "", SETTING_USAGE
     if len(tokens) < 4:
-        return False, "", "", "Usage: /setting {AgentName} -m {ModelName}"
+        return False, "", "", SETTING_USAGE
 
     agent_name = str(tokens[1]).strip()
     if not agent_name:
-        return False, "", "", "Usage: /setting {AgentName} -m {ModelName}"
+        return False, "", "", SETTING_USAGE
 
     model_name = ""
     idx = 2
@@ -30,14 +32,14 @@ def _parse_setting_command(user_input: str) -> Tuple[bool, str, str, str]:
         flag = str(tokens[idx]).strip().lower()
         if flag in {"-m", "-model"}:
             if idx + 1 >= len(tokens):
-                return False, "", "", "Usage: /setting {AgentName} -m {ModelName}"
+                return False, "", "", SETTING_USAGE
             model_name = str(tokens[idx + 1]).strip()
             idx += 2
             continue
         return False, "", "", f"Unknown option: {tokens[idx]}"
 
     if not model_name:
-        return False, "", "", "Usage: /setting {AgentName} -m {ModelName}"
+        return False, "", "", SETTING_USAGE
     return True, agent_name, model_name, ""
 
 
@@ -46,7 +48,7 @@ def input_loop(on_model_setting: Callable[[str, str], str] | None = None) -> Non
     session_id = uuid4().hex
     print("agentic_sample_ad main agent started. Type 'exit' or 'quit' to stop.")
     print("Type 'reset' or '/reset' to clear the current session memory.")
-    print("Type '/setting {AgentName} -m {ModelName}' to update agent model and reboot target agent.")
+    print("Type '/setting {AgentName|all} -m {ModelName}' to update one or all agent models.")
 
     while True:
         user_input = input("\nuser> ").strip()

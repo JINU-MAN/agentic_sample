@@ -10,6 +10,7 @@ from typing import Any, Deque, Dict, List
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
 from agentic_sample_ad.system_logger import log_event, log_exception
 
 
@@ -91,10 +92,6 @@ class LocalAgentEventManager:
             direction="outbound",
         )
         try:
-            session = await runner.session_service.create_session(
-                app_name=runner.app_name,
-                user_id="ad-local-agent-event-manager",
-            )
             context_json = json.dumps(event.context, ensure_ascii=False, indent=2).strip() if event.context else "{}"
             prompt = (
                 "Task command:\n"
@@ -103,17 +100,14 @@ class LocalAgentEventManager:
                 f"{context_json}"
             )
             new_message = types.Content(role="user", parts=[types.Part(text=prompt)])
-
-            chunks: List[str] = []
-            async for runtime_event in runner.run_async(
-                user_id=session.user_id,
-                session_id=session.id,
+            chunks = await collect_text_response_with_network_retry(
+                runner=runner,
+                user_id="ad-local-agent-event-manager",
                 new_message=new_message,
-            ):
-                if runtime_event.content and runtime_event.content.parts:
-                    text = "".join(part.text or "" for part in runtime_event.content.parts).strip()
-                    if text:
-                        chunks.append(text)
+                component=self._component,
+                operation_name=f"local_agent_event:{self._agent_name}",
+                retry_details={"agent": self._agent_name, "command": event.command},
+            )
             response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
             result = {
                 "ok": True,

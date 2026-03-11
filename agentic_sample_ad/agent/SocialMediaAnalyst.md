@@ -4,7 +4,7 @@
 `SocialMediaAnalyst`는 SNS/커뮤니티 신호를 수집하고, 사용자 요청과의 관련성을 기준으로 요약하는 에이전트입니다.
 
 ## 구현 위치
-- `agent/sns_agent.py`
+- `sns_agent/_impl.py`
 
 ## 주요 기능
 - SNS 데이터 검색

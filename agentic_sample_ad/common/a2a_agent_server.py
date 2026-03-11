@@ -13,6 +13,7 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
 from agentic_sample_ad.system_logger import (
     finalize_process_logging,
     initialize_process_logging,
@@ -65,6 +66,34 @@ def _jsonrpc_error_response(request_id: Any, code: int, message: str) -> Dict[st
     }
 
 
+def _doc_preview(value: str, max_len: int = 180) -> str:
+    compact = " ".join(str(value or "").split()).strip()
+    if len(compact) <= max_len:
+        return compact
+    return compact[: max_len - 3].rstrip() + "..."
+
+
+def _extract_tool_metadata(agent_obj: LlmAgent) -> List[Dict[str, str]]:
+    extracted: List[Dict[str, str]] = []
+    seen_names: set[str] = set()
+    for tool in getattr(agent_obj, "tools", []) or []:
+        name = str(getattr(tool, "name", "") or getattr(tool, "__name__", "")).strip()
+        if not name:
+            continue
+        key = name.lower()
+        if key in seen_names:
+            continue
+        seen_names.add(key)
+        desc = str(getattr(tool, "description", "") or getattr(tool, "__doc__", "") or "").strip()
+        extracted.append(
+            {
+                "name": name,
+                "description": _doc_preview(desc, max_len=180) if desc else "",
+            }
+        )
+    return extracted
+
+
 def _build_agent_card(
     *,
     agent_name: str,
@@ -72,8 +101,40 @@ def _build_agent_card(
     host: str,
     port: int,
     tags: List[str],
+    tool_metadata: List[Dict[str, str]],
 ) -> Dict[str, Any]:
     base_url = f"http://{host}:{port}"
+    normalized_tags = [str(tag).strip() for tag in tags if str(tag).strip()]
+    skills: List[Dict[str, Any]] = [
+        {
+            "id": "respond",
+            "name": "respond",
+            "description": description or "Handle user message and return agent response.",
+            "tags": normalized_tags,
+            "examples": ["Summarize this request and provide actionable result."],
+            "inputModes": ["text/plain"],
+            "outputModes": ["text/plain"],
+        }
+    ]
+
+    for tool in tool_metadata:
+        tool_name = str(tool.get("name", "")).strip()
+        if not tool_name:
+            continue
+        tool_description = str(tool.get("description", "")).strip() or f"Use `{tool_name}` when this capability is needed."
+        tool_tags = list(dict.fromkeys(normalized_tags + [tool_name]))
+        skills.append(
+            {
+                "id": tool_name,
+                "name": tool_name,
+                "description": tool_description,
+                "tags": tool_tags,
+                "examples": [f"Use {tool_name} when the task requires this capability."],
+                "inputModes": ["text/plain"],
+                "outputModes": ["text/plain"],
+            }
+        )
+
     return {
         "name": agent_name,
         "description": description,
@@ -88,17 +149,7 @@ def _build_agent_card(
         },
         "defaultInputModes": ["text/plain"],
         "defaultOutputModes": ["text/plain"],
-        "skills": [
-            {
-                "id": "respond",
-                "name": "respond",
-                "description": "Handle user message and return agent response.",
-                "tags": tags,
-                "examples": ["Summarize this request and provide actionable result."],
-                "inputModes": ["text/plain"],
-                "outputModes": ["text/plain"],
-            }
-        ],
+        "skills": skills,
     }
 
 
@@ -117,21 +168,15 @@ async def _run_local_agent(
         direction="outbound",
     )
     try:
-        session = await runner.session_service.create_session(
-            app_name=runner.app_name,
-            user_id="a2a-server-user",
-        )
         new_message = types.Content(role="user", parts=[types.Part(text=user_input)])
-        chunks: List[str] = []
-        async for event in runner.run_async(
-            user_id=session.user_id,
-            session_id=session.id,
+        chunks = await collect_text_response_with_network_retry(
+            runner=runner,
+            user_id="a2a-server-user",
             new_message=new_message,
-        ):
-            if event.content and event.content.parts:
-                text = "".join(part.text or "" for part in event.content.parts).strip()
-                if text:
-                    chunks.append(text)
+            component=component,
+            operation_name=f"a2a_server_local_agent:{agent_name}",
+            retry_details={"agent": agent_name, "user_input": user_input},
+        )
         response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
         log_event(
             component,
@@ -155,12 +200,14 @@ def create_app(
     port: int,
     tags: List[str],
 ) -> FastAPI:
+    tool_metadata = _extract_tool_metadata(agent_obj)
     card_payload = _build_agent_card(
         agent_name=agent_name,
         description=description,
         host=host,
         port=port,
         tags=tags,
+        tool_metadata=tool_metadata,
     )
     app = FastAPI(title=f"A2A Server - {agent_name}")
 

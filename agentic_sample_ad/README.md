@@ -104,21 +104,31 @@ agentic_sample_ad/
 |-- main_agent/
 |   |-- start_agentic.py
 |   |-- agent.py
+|   |-- slack_mcp_tool.py
 |   |-- card_registry.py
 |   |-- user_entry_point.py
 |   |-- session_memory.py
 |   `-- system_logger.py
 |
 |-- agent/
-|   |-- paper_agent.py
-|   |-- web_search_agent.py
-|   |-- sns_agent.py
+|   |-- NEW_AGENT_TEMPLATE.md
 |   `-- tool/slack_mcp_tool.py
 |
 |-- paper_agent/
+|   |-- agent.py
+|   |-- _impl.py
+|   |-- a2a_server.py
+|   `-- well_known/agent_card.json
+|
 |-- web_search_agent/
+|   |-- agent.py
+|   |-- _impl.py
+|   |-- a2a_server.py
+|   `-- well_known/agent_card.json
+|
 |-- sns_agent/
 |   |-- agent.py
+|   |-- _impl.py
 |   |-- a2a_server.py
 |   `-- well_known/agent_card.json
 |

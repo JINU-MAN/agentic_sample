@@ -1,14 +1,19 @@
 {
   "name": "WebSearchAnalyst",
   "type": "a2a",
+  "role": "worker",
   "base_url": "http://127.0.0.1:9101",
   "server_module": "agentic_sample_ad.web_search_agent.a2a_server",
-  "module": "agentic_sample_ad.web_search_agent.agent",
-  "attr": "web_search_agent",
-  "description": "Web search candidate discovery, page fetch validation, and evidence summarization.",
+  "description": "Search the web via the Tavily-backed MCP server and synthesize citation-grounded evidence.",
   "capabilities": [
     "web_search",
-    "web_summary",
-    "fact_check"
-  ]
+    "web_evidence_summary"
+  ],
+  "tools": [
+    {
+      "name": "search_web_with_mcp",
+      "description": "Query the Tavily-backed web-search MCP server and return normalized ranked results."
+    }
+  ],
+  "instruction_preview": "Choose search queries from user intent, gather reliable web evidence with citations, and when paper-specific evidence is needed, hand off to PaperAnalyst with candidate URLs, DOI, or arXiv IDs."
 }

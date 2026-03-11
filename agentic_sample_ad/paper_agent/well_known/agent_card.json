@@ -1,15 +1,36 @@
 {
   "name": "PaperAnalyst",
   "type": "a2a",
+  "role": "worker",
   "base_url": "http://127.0.0.1:9102",
   "server_module": "agentic_sample_ad.paper_agent.a2a_server",
-  "module": "agentic_sample_ad.paper_agent.agent",
-  "attr": "paper_agent",
-  "description": "Paper search, full-text memory expansion, and follow-up Q&A from local PDF corpus.",
+  "description": "Search the local PDF corpus, inspect workflow handoff artifacts, fetch external paper references, and answer from paper evidence.",
   "capabilities": [
     "paper_search",
-    "paper_summary",
-    "paper_fulltext_memory",
-    "paper_memory_query"
-  ]
+    "paper_memory",
+    "external_paper_fetch"
+  ],
+  "tools": [
+    {
+      "name": "scrape_papers_with_mcp",
+      "description": "Search PDFs with the MCP paper server and return normalized ranked results."
+    },
+    {
+      "name": "fetch_external_paper_with_mcp",
+      "description": "Fetch external paper metadata or a compact preview from URL, DOI, or arXiv ID."
+    },
+    {
+      "name": "load_paper_memory_with_mcp",
+      "description": "Load workflow-scoped paper memory for the current query."
+    },
+    {
+      "name": "expand_paper_memory_with_mcp",
+      "description": "Expand workflow paper memory with full text for the most relevant papers."
+    },
+    {
+      "name": "query_paper_memory",
+      "description": "Query loaded paper memory and return the most relevant snippets quickly."
+    }
+  ],
+  "instruction_preview": "Inspect input_artifacts first, fetch external paper references when needed, reuse workflow_id across memory tools, and answer from evidence while stating when only metadata is available."
 }

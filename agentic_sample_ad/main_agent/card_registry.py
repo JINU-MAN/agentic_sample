@@ -37,6 +37,11 @@ def sub_agent_dirs() -> List[Path]:
 
 
 def collect_sub_agent_card_files() -> List[Path]:
+    files = _collect_extra_card_files()
+    if files:
+        return files
+
+    # Backward-compatible fallback for legacy layouts without central card catalog.
     card_files: List[Path] = []
     for directory in sub_agent_dirs():
         candidate = directory / "well_known" / "agent_card.json"
@@ -138,7 +143,7 @@ def load_sub_agent_cards() -> List[Dict[str, Any]]:
     loaded: List[Dict[str, Any]] = []
     seen_names: set[str] = set()
     runtime_overrides = _runtime_cards_from_env()
-    source_files: List[Path] = collect_sub_agent_card_files() + _collect_extra_card_files()
+    source_files: List[Path] = collect_sub_agent_card_files()
 
     for card_file in source_files:
         try:
@@ -159,7 +164,7 @@ def load_sub_agent_cards() -> List[Dict[str, Any]]:
             if runtime is not None:
                 if str(runtime.get("base_url", "")).strip():
                     item["base_url"] = str(runtime.get("base_url", "")).strip()
-                for field in ("type", "module", "attr", "server_module", "description", "capabilities"):
+                for field in ("type", "server_module", "description", "capabilities", "tools", "role"):
                     if field not in runtime:
                         continue
                     value = runtime.get(field)

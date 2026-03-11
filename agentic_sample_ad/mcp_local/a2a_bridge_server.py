@@ -14,6 +14,7 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
 from agentic_sample_ad.system_logger import finalize_process_logging, initialize_process_logging, log_event, log_exception
 
 
@@ -73,22 +74,15 @@ async def _run_local_agent(agent_obj: LlmAgent, agent_name: str, user_input: str
         direction="outbound",
     )
     try:
-        session = await runner.session_service.create_session(
-            app_name=runner.app_name,
-            user_id="a2a-bridge-user",
-        )
         new_message = types.Content(role="user", parts=[types.Part(text=user_input)])
-
-        chunks: List[str] = []
-        async for event in runner.run_async(
-            user_id=session.user_id,
-            session_id=session.id,
+        chunks = await collect_text_response_with_network_retry(
+            runner=runner,
+            user_id="a2a-bridge-user",
             new_message=new_message,
-        ):
-            if event.content and event.content.parts:
-                text = "".join(part.text or "" for part in event.content.parts).strip()
-                if text:
-                    chunks.append(text)
+            component="a2a.bridge",
+            operation_name=f"a2a_bridge_local_agent:{agent_name}",
+            retry_details={"agent": agent_name, "user_input": user_input},
+        )
 
         response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
         log_event(

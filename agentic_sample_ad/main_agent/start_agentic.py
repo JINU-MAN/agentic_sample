@@ -187,7 +187,7 @@ def _collect_configured_sub_agent_names() -> Dict[str, str]:
     card_files = collect_sub_agent_card_files()
     for card_file in card_files:
         try:
-            payload = json.loads(card_file.read_text(encoding="utf-8"))
+            payload = json.loads(card_file.read_text(encoding="utf-8-sig"))
         except Exception:
             continue
         cards: List[Dict[str, Any]]
@@ -227,17 +227,72 @@ def _make_model_setting_handler(
     set_runtime_cards: Callable[[List[Dict[str, Any]]], None],
 ) -> Callable[[str, str], str]:
     configured_agents = _collect_configured_sub_agent_names()
+    usage = "Usage: /setting {AgentName|all} -m {ModelName}"
 
     def _handler(agent_name: str, model_name: str) -> str:
         raw_agent = str(agent_name or "").strip()
         raw_model = str(model_name or "").strip()
         if not raw_agent or not raw_model:
-            return "Usage: /setting {AgentName} -m {ModelName}"
+            return usage
 
         target_key = normalize_agent_name(raw_agent)
         default_model = read_default_model()
+        model_overrides = read_model_overrides()
+
+        if target_key in {"all", "*"}:
+            updated_agents: List[str] = ["MainAgent"]
+            model_overrides[normalize_agent_name("MainAgent")] = raw_model
+            for key, name in configured_agents.items():
+                model_overrides[key] = raw_model
+                if name not in updated_agents:
+                    updated_agents.append(name)
+            write_model_overrides(model_overrides)
+
+            servers = list(get_servers())
+            if servers:
+                stop_agent_servers(servers)
+            runtime_cards: List[Dict[str, Any]] = []
+            servers = []
+
+            started, resolved_cards = launch_sub_agent_servers(
+                model_overrides=model_overrides,
+                publish_runtime_cards=False,
+            )
+            servers.extend(started)
+            runtime_cards = _merge_runtime_cards(runtime_cards, resolved_cards)
+            _publish_runtime_agent_cards(runtime_cards)
+
+            set_servers(servers)
+            set_runtime_cards(runtime_cards)
+
+            endpoints = ", ".join(
+                f"{str(item.get('name', '')).strip()}={str(item.get('base_url', '')).strip()}"
+                for item in runtime_cards
+                if str(item.get("name", "")).strip() and str(item.get("base_url", "")).strip()
+            )
+            log_main_event(
+                "agent_model_setting_applied",
+                {
+                    "agent": "all",
+                    "model": raw_model,
+                    "default_model": default_model,
+                    "updated_agents": updated_agents,
+                    "a2a_rebooted_count": len(started),
+                    "resolved_runtime_cards": len(runtime_cards),
+                },
+            )
+            lines = [
+                f"[setting] All agents model updated: {raw_model}",
+                f"Applied to: {', '.join(updated_agents)}",
+                "MainAgent is recreated on each request, so no server reboot was required.",
+            ]
+            if endpoints:
+                lines.append(f"A2A agent servers rebooted: {endpoints}")
+            elif configured_agents:
+                lines.append("A2A agent servers reboot attempted, but no runtime endpoints were resolved.")
+            return "\n".join(lines)
+
         if normalize_agent_name("MainAgent") == target_key:
-            model_overrides = read_model_overrides()
             model_overrides[target_key] = raw_model
             write_model_overrides(model_overrides)
             log_main_event(
@@ -258,10 +313,9 @@ def _make_model_setting_handler(
         if target_key not in configured_agents:
             return (
                 f"[setting] Unknown agent: {raw_agent}\n"
-                "Available: MainAgent, PaperAnalyst, SocialMediaAnalyst, WebSearchAnalyst"
+                "Available: all, MainAgent, PaperAnalyst, SocialMediaAnalyst, WebSearchAnalyst"
             )
 
-        model_overrides = read_model_overrides()
         model_overrides[target_key] = raw_model
         write_model_overrides(model_overrides)
 

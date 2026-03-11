@@ -6,14 +6,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-from google.adk.agents import LlmAgent
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
-from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.system_logger import log_event, log_exception
 
 
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent.parent.parent
 PAPER_MCP_SERVER = BASE_DIR / "mcp_local" / "paper_server.py"
 MAX_MEMORY_PAPERS = 5
 MAX_MEMORY_CHARS_PER_PAPER = 120000
@@ -323,6 +321,77 @@ def scrape_papers_with_mcp(query: str) -> str:
             "call_failed",
             e,
             {"query": safe_query, "server_script_path": str(PAPER_MCP_SERVER)},
+        )
+        raise
+
+
+def fetch_external_paper_with_mcp(
+    reference: str = "",
+    url: str = "",
+    doi: str = "",
+    arxiv_id: str = "",
+    max_chars: int = 12000,
+) -> str:
+    """
+    Fetch external paper metadata or a compact preview from URL / DOI / arXiv ID.
+    """
+    safe_reference = reference.strip()
+    safe_url = url.strip()
+    safe_doi = doi.strip()
+    safe_arxiv_id = arxiv_id.strip()
+    safe_max_chars = max(1000, min(int(max_chars), MAX_MEMORY_CHARS_PER_PAPER))
+    log_event(
+        "tool.fetch_external_paper_with_mcp",
+        "call_started",
+        {
+            "reference": safe_reference,
+            "url": safe_url,
+            "doi": safe_doi,
+            "arxiv_id": safe_arxiv_id,
+            "max_chars": safe_max_chars,
+            "server_script_path": str(PAPER_MCP_SERVER),
+        },
+        direction="outbound",
+    )
+    try:
+        raw = call_mcp_tool(
+            server_script_path=str(PAPER_MCP_SERVER),
+            tool_name="fetch_external_paper",
+            arguments={
+                "reference": safe_reference,
+                "url": safe_url,
+                "doi": safe_doi,
+                "arxiv_id": safe_arxiv_id,
+                "max_chars": safe_max_chars,
+            },
+        )
+        result_obj = _extract_mcp_object_result(raw)
+        result_text = json.dumps(result_obj, ensure_ascii=False, indent=2)
+        log_event(
+            "tool.fetch_external_paper_with_mcp",
+            "call_completed",
+            {
+                "ok": bool(result_obj.get("ok")),
+                "reference_type": str(result_obj.get("reference_type", "")),
+                "title": str(result_obj.get("title", ""))[:160],
+                "doi": str(result_obj.get("doi", ""))[:120],
+                "arxiv_id": str(result_obj.get("arxiv_id", ""))[:40],
+            },
+            direction="inbound",
+        )
+        return result_text
+    except Exception as e:
+        log_exception(
+            "tool.fetch_external_paper_with_mcp",
+            "call_failed",
+            e,
+            {
+                "reference": safe_reference,
+                "url": safe_url,
+                "doi": safe_doi,
+                "arxiv_id": safe_arxiv_id,
+                "max_chars": safe_max_chars,
+            },
         )
         raise
 
@@ -812,49 +881,11 @@ def query_paper_memory(
         )
         raise
 
-
-research_agent = LlmAgent(
-    name="PaperAnalyst",
-    model=resolve_agent_model("PaperAnalyst"),
-    instruction=(
-        "You are a paper analysis specialist.\n"
-        "Specialization-first policy: if the task is paper/research/PDF related, you should lead it.\n"
-        "Use MCP tools to find relevant papers and summarize key points clearly.\n"
-        "Decide search angle and semantic scope yourself; do not rely on fixed keyword templates.\n\n"
-        "Workflow memory rules:\n"
-        "1) Read `Workflow ID` from the task input and pass the same workflow_id to memory tools.\n"
-        "2) Early in the step, call `load_paper_memory_with_mcp(query, workflow_id, ..., load_mode='overview')` first.\n"
-        "   This stores compact title/abstract/introduction-level memory without loading full body text.\n"
-        "3) For detail-heavy follow-up (methods/results/limitations/equations), call\n"
-        "   `expand_paper_memory_with_mcp(question, workflow_id, ...)` to lazily load only relevant full papers.\n"
-        "4) Use `query_paper_memory(question, workflow_id, ...)` for fast memory-based answers.\n\n"
-        "Task rules:\n"
-        "1) Explain why selected papers are relevant to the user goal.\n"
-        "2) Slack posting must be delegated to MainAgent.\n"
-        "   If Slack posting is needed, request it as `[MainAgent] Post this result to Slack ...`.\n"
-        "3) Use indirect delegation only: do not call other agents directly.\n"
-        "4) If local DB coverage is insufficient, request specialist follow-up in `Additional Needs:`.\n"
-        "   Example: `- [WebSearchAnalyst] Find trustworthy web sources and recent reports for <topic>.`\n"
-        "   Example: `- [MainAgent] Ask user to narrow domain, timeframe, or keywords.`\n"
-        "5) Always end with one of these:\n"
-        "   - `Additional Needs: none`\n"
-        "   - `Additional Needs:` followed by bullet lines in format `[TargetAgentName] request`.\n"
-        "6) Keep response concise and actionable."
-    ),
-    tools=[
-        scrape_papers_with_mcp,
-        load_paper_memory_with_mcp,
-        expand_paper_memory_with_mcp,
-        query_paper_memory,
-    ],
-)
-
-
 __all__ = [
     "scrape_papers_with_mcp",
     "load_paper_memory_with_mcp",
     "expand_paper_memory_with_mcp",
     "query_paper_memory",
-    "research_agent",
 ]
+
 

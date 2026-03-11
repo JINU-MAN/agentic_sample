@@ -11,14 +11,13 @@ def main() -> None:
         component="a2a.agent_server.web_search",
         default_name="WebSearchAnalyst",
         default_description=(
-            "Web search candidate discovery, page fetch validation, and evidence summarization."
+            "Search the web via the Tavily-backed MCP server and synthesize citation-grounded evidence."
         ),
         default_tags=[
+            "worker",
             "web_search",
-            "web_summary",
-            "fact_check",
-            "agentic",
-            "local-agent",
+            "web_evidence_summary",
+            "search_web_with_mcp",
         ],
     )
 

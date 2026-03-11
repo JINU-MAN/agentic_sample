@@ -4,7 +4,7 @@
 `WebSearchAnalyst`는 웹/뉴스 소스를 탐색하고, 신뢰 가능한 URL 근거를 정리해 전달하는 에이전트입니다.
 
 ## 구현 위치
-- `agent/web_search_agent.py`
+- `web_search_agent/_impl.py`
 
 ## 주요 기능
 - 질의 후보 다중 생성 후 웹 검색

@@ -51,7 +51,8 @@ def _load_env_file() -> None:
 
 
 def _load_cards(path: Path) -> List[Dict[str, Any]]:
-    with path.open("r", encoding="utf-8") as fh:
+    # Accept BOM-prefixed JSON files produced by Windows editors.
+    with path.open("r", encoding="utf-8-sig") as fh:
         data = json.load(fh)
     if isinstance(data, list):
         return [item for item in data if isinstance(item, dict)]

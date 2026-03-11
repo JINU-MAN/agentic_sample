@@ -4,7 +4,7 @@
 `PaperAnalyst`는 로컬 PDF DB를 기반으로 논문 검색/요약을 수행하고, 워크플로우 메모리를 활용해 후속 질의까지 처리하는 에이전트입니다.
 
 ## 구현 위치
-- `agent/paper_agent.py`
+- `paper_agent/_impl.py`
 
 ## 주요 기능
 - 논문 검색(`search_papers`) 및 후보 선별

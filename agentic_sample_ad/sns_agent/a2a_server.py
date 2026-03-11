@@ -10,14 +10,12 @@ def main() -> None:
         agent_obj=sns_agent,
         component="a2a.agent_server.sns",
         default_name="SocialMediaAnalyst",
-        default_description=(
-            "SNS post collection, relevance filtering, and concise social signal summarization."
-        ),
+        default_description=("Search SNS posts via MCP and summarize relevant social signals."),
         default_tags=[
+            "worker",
             "sns_search",
             "sns_summary",
-            "agentic",
-            "local-agent",
+            "scrape_sns_with_mcp",
         ],
     )
 

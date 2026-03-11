@@ -1,9 +1,14 @@
 ﻿from __future__ import annotations
 
+import html as html_lib
+import io
 import re
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+from urllib.parse import quote
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 
 from agentic_sample_ad.system_logger import log_event, log_exception
@@ -25,11 +30,16 @@ MAX_PREVIEW_CHARS = 300
 MAX_HEAD_SCAN_PAGES = 4
 MAX_HEAD_CONTENT_CHARS = 40000
 MAX_FULL_CONTENT_CHARS = 300000
+MAX_EXTERNAL_METADATA_CHARS = 40000
+EXTERNAL_FETCH_TIMEOUT_SEC = 20.0
+HTTP_USER_AGENT = "agentic-sample-paper-agent/1.0"
 
 # key: absolute path, value: (mtime, extracted_text)
 _TEXT_CACHE: Dict[str, Tuple[float, str]] = {}
 _HEAD_TEXT_CACHE: Dict[str, Tuple[float, str]] = {}
 _FULL_TEXT_CACHE: Dict[str, Tuple[float, str]] = {}
+ARXIV_ID_RE = re.compile(r"(?:arxiv\.org/(?:abs|pdf|html)/|arxiv:)(?P<id>\d{4}\.\d{4,5}(?:v\d+)?)", flags=re.IGNORECASE)
+DOI_RE = re.compile(r"(10\.\d{4,9}/[-._;()/:A-Z0-9]+)", flags=re.IGNORECASE)
 
 
 def _tokenize_query(query: str) -> List[str]:
@@ -233,6 +243,244 @@ def _resolve_paper_path(path_value: str) -> Path | None:
     if path.suffix.lower() != ".pdf":
         return None
     return path
+
+
+def _clean_text(text: str, max_chars: int | None = None) -> str:
+    compact = re.sub(r"\s+", " ", str(text or "")).strip()
+    if max_chars is not None and len(compact) > max_chars:
+        return compact[:max_chars]
+    return compact
+
+
+def _strip_markup(text: str, max_chars: int | None = None) -> str:
+    unescaped = html_lib.unescape(str(text or ""))
+    stripped = re.sub(r"<[^>]+>", " ", unescaped)
+    return _clean_text(stripped, max_chars=max_chars)
+
+
+def _extract_url_from_text(text: str) -> str:
+    match = re.search(r"https?://[^\s<>\"]+", str(text or ""), flags=re.IGNORECASE)
+    if not match:
+        return ""
+    return match.group(0).rstrip(").,]")
+
+
+def _extract_doi_from_text(text: str) -> str:
+    match = DOI_RE.search(str(text or ""))
+    if not match:
+        return ""
+    return match.group(1).strip().rstrip(").,;")
+
+
+def _extract_arxiv_id_from_text(text: str) -> str:
+    match = ARXIV_ID_RE.search(str(text or ""))
+    if not match:
+        return ""
+    return str(match.group("id") or "").strip()
+
+
+def _http_client() -> httpx.Client:
+    return httpx.Client(
+        timeout=EXTERNAL_FETCH_TIMEOUT_SEC,
+        follow_redirects=True,
+        headers={"User-Agent": HTTP_USER_AGENT},
+    )
+
+
+def _extract_pdf_text_from_bytes(data: bytes, max_pages: int = 4, max_chars: int = MAX_EXTERNAL_METADATA_CHARS) -> str:
+    if PdfReader is None or not data:
+        return ""
+    try:
+        reader = PdfReader(io.BytesIO(data))
+    except Exception:
+        return ""
+    parts: List[str] = []
+    total = 0
+    for page in reader.pages[:max_pages]:
+        try:
+            text = page.extract_text() or ""
+        except Exception:
+            text = ""
+        if not text:
+            continue
+        parts.append(text)
+        total += len(text)
+        if total >= max_chars:
+            break
+    return _clean_text(" ".join(parts), max_chars=max_chars)
+
+
+def _meta_value(html_text: str, *patterns: str) -> str:
+    for pattern in patterns:
+        match = re.search(pattern, html_text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return _strip_markup(match.group(1), max_chars=MAX_EXTERNAL_METADATA_CHARS)
+    return ""
+
+
+def _extract_title_from_html(html_text: str) -> str:
+    title = _meta_value(
+        html_text,
+        r'<meta[^>]+name=["\']citation_title["\'][^>]+content=["\'](.*?)["\']',
+        r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\'](.*?)["\']',
+        r"<title>(.*?)</title>",
+    )
+    return _clean_text(title, max_chars=240)
+
+
+def _crossref_date(message: Dict[str, Any]) -> str:
+    for key in ["published-print", "published-online", "created", "issued"]:
+        value = message.get(key)
+        if not isinstance(value, dict):
+            continue
+        parts = value.get("date-parts")
+        if not isinstance(parts, list) or not parts or not isinstance(parts[0], list):
+            continue
+        date_bits = [str(item) for item in parts[0] if item]
+        if date_bits:
+            return "-".join(date_bits[:3])
+    return ""
+
+
+def _fetch_crossref_record(doi: str, max_chars: int) -> Dict[str, Any]:
+    with _http_client() as client:
+        response = client.get(f"https://api.crossref.org/works/{quote(doi, safe='')}")
+        response.raise_for_status()
+        message = response.json().get("message", {})
+
+    title_values = message.get("title") or []
+    title = _clean_text(title_values[0] if title_values else "", max_chars=240)
+    authors: List[str] = []
+    for item in message.get("author", []) or []:
+        if not isinstance(item, dict):
+            continue
+        name = _clean_text(" ".join([str(item.get("given", "")).strip(), str(item.get("family", "")).strip()]), max_chars=80)
+        if name:
+            authors.append(name)
+        if len(authors) >= 12:
+            break
+    abstract = _strip_markup(str(message.get("abstract", "") or ""), max_chars=max_chars)
+    venue_values = message.get("container-title") or []
+    venue = _clean_text(venue_values[0] if venue_values else "", max_chars=180)
+    links = [str(item.get("URL", "")).strip() for item in message.get("link", []) if isinstance(item, dict) and str(item.get("URL", "")).strip()]
+    return {
+        "ok": True,
+        "reference_type": "doi",
+        "doi": doi,
+        "title": title,
+        "authors": authors,
+        "published": _crossref_date(message),
+        "venue": venue,
+        "abstract": abstract,
+        "resolved_url": _clean_text(str(message.get("URL", "") or ""), max_chars=320),
+        "candidate_urls": links[:6],
+    }
+
+
+def _fetch_arxiv_record(arxiv_id: str, max_chars: int) -> Dict[str, Any]:
+    api_url = f"http://export.arxiv.org/api/query?id_list={quote(arxiv_id, safe='')}"
+    with _http_client() as client:
+        response = client.get(api_url)
+        response.raise_for_status()
+        xml_text = response.text
+    root = ET.fromstring(xml_text)
+    ns = {"atom": "http://www.w3.org/2005/Atom"}
+    entry = root.find("atom:entry", ns)
+    if entry is None:
+        return {"ok": False, "error": "arxiv_entry_not_found", "arxiv_id": arxiv_id}
+
+    def _entry_text(path: str, max_len: int) -> str:
+        node = entry.find(path, ns)
+        return _clean_text(node.text if node is not None else "", max_chars=max_len)
+
+    authors = [
+        _clean_text(author.findtext("atom:name", default="", namespaces=ns), max_chars=80)
+        for author in entry.findall("atom:author", ns)
+        if _clean_text(author.findtext("atom:name", default="", namespaces=ns), max_chars=80)
+    ][:12]
+    links: List[str] = []
+    pdf_url = ""
+    for link in entry.findall("atom:link", ns):
+        href = _clean_text(str(link.attrib.get("href", "")).strip(), max_chars=320)
+        rel = str(link.attrib.get("rel", "")).strip().lower()
+        link_type = str(link.attrib.get("type", "")).strip().lower()
+        if href:
+            links.append(href)
+        if (link_type == "application/pdf" or href.endswith(".pdf")) and not pdf_url:
+            pdf_url = href
+        if rel == "alternate" and not pdf_url and href.endswith(".pdf"):
+            pdf_url = href
+
+    return {
+        "ok": True,
+        "reference_type": "arxiv",
+        "arxiv_id": arxiv_id,
+        "title": _entry_text("atom:title", 240),
+        "authors": authors,
+        "published": _entry_text("atom:published", 40),
+        "abstract": _entry_text("atom:summary", max_chars),
+        "resolved_url": _entry_text("atom:id", 320),
+        "pdf_url": pdf_url,
+        "candidate_urls": links[:6],
+    }
+
+
+def _fetch_generic_url_record(url: str, max_chars: int) -> Dict[str, Any]:
+    with _http_client() as client:
+        response = client.get(url)
+        response.raise_for_status()
+        resolved_url = str(response.url)
+        content_type = str(response.headers.get("content-type", "")).lower()
+        body = response.content
+
+    if "application/pdf" in content_type or resolved_url.lower().endswith(".pdf"):
+        content = _extract_pdf_text_from_bytes(body, max_pages=4, max_chars=max_chars)
+        title = ""
+        if content:
+            first_line = content.split(". ")[0]
+            title = _clean_text(first_line, max_chars=240)
+        return {
+            "ok": bool(content),
+            "reference_type": "pdf_url",
+            "title": title or Path(resolved_url).name,
+            "resolved_url": resolved_url,
+            "content": content,
+        }
+
+    html_text = body.decode(response.encoding or "utf-8", errors="ignore")
+    doi = (
+        _meta_value(
+            html_text,
+            r'<meta[^>]+name=["\']citation_doi["\'][^>]+content=["\'](.*?)["\']',
+            r'<meta[^>]+name=["\']dc\.identifier["\'][^>]+content=["\'](.*?)["\']',
+        )
+        or _extract_doi_from_text(html_text)
+    )
+    arxiv_id = _extract_arxiv_id_from_text(resolved_url) or _extract_arxiv_id_from_text(html_text)
+
+    if arxiv_id:
+        record = _fetch_arxiv_record(arxiv_id, max_chars=max_chars)
+        record["source_url"] = resolved_url
+        return record
+
+    if doi:
+        record = _fetch_crossref_record(doi, max_chars=max_chars)
+        record["source_url"] = resolved_url
+        return record
+
+    description = _meta_value(
+        html_text,
+        r'<meta[^>]+name=["\']citation_abstract["\'][^>]+content=["\'](.*?)["\']',
+        r'<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\']',
+        r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\']',
+    )
+    return {
+        "ok": True,
+        "reference_type": "url",
+        "title": _extract_title_from_html(html_text) or Path(resolved_url).name,
+        "resolved_url": resolved_url,
+        "abstract": _clean_text(description, max_chars=max_chars),
+    }
 
 
 @mcp.tool()
@@ -449,6 +697,98 @@ def get_paper_head(path: str, max_chars: int = 12000) -> Dict[str, Any]:
             "tool_failed",
             e,
             {"tool": "get_paper_head", "path": path, "max_chars": safe_max_chars},
+        )
+        raise
+
+
+@mcp.tool()
+def fetch_external_paper(
+    reference: str = "",
+    url: str = "",
+    doi: str = "",
+    arxiv_id: str = "",
+    max_chars: int = 12000,
+) -> Dict[str, Any]:
+    """
+    Fetch external paper metadata or a compact content preview from URL / DOI / arXiv ID.
+
+    Intended for workflow handoff artifacts discovered by other agents.
+    """
+    safe_reference = _clean_text(reference, max_chars=600)
+    safe_url = _clean_text(url, max_chars=600)
+    safe_doi = _clean_text(doi, max_chars=220)
+    safe_arxiv_id = _clean_text(arxiv_id, max_chars=80)
+    safe_max_chars = max(1000, min(int(max_chars), MAX_EXTERNAL_METADATA_CHARS))
+    log_event(
+        "mcp_server.paper",
+        "tool_called",
+        {
+            "tool": "fetch_external_paper",
+            "reference": safe_reference,
+            "url": safe_url,
+            "doi": safe_doi,
+            "arxiv_id": safe_arxiv_id,
+            "max_chars": safe_max_chars,
+        },
+        direction="inbound",
+    )
+    try:
+        resolved_url = safe_url or _extract_url_from_text(safe_reference)
+        resolved_doi = safe_doi or _extract_doi_from_text(safe_reference)
+        resolved_arxiv_id = (
+            safe_arxiv_id
+            or _extract_arxiv_id_from_text(safe_reference)
+            or _extract_arxiv_id_from_text(resolved_url)
+        )
+
+        if resolved_arxiv_id:
+            payload = _fetch_arxiv_record(resolved_arxiv_id, max_chars=safe_max_chars)
+        elif resolved_doi:
+            payload = _fetch_crossref_record(resolved_doi, max_chars=safe_max_chars)
+        elif resolved_url:
+            payload = _fetch_generic_url_record(resolved_url, max_chars=safe_max_chars)
+        else:
+            payload = {
+                "ok": False,
+                "error": "missing_reference",
+            }
+
+        payload["input_reference"] = safe_reference
+        if resolved_url and "source_url" not in payload:
+            payload["source_url"] = resolved_url
+        if resolved_doi and not str(payload.get("doi", "")).strip():
+            payload["doi"] = resolved_doi
+        if resolved_arxiv_id and not str(payload.get("arxiv_id", "")).strip():
+            payload["arxiv_id"] = resolved_arxiv_id
+
+        log_event(
+            "mcp_server.paper",
+            "tool_completed",
+            {
+                "tool": "fetch_external_paper",
+                "ok": bool(payload.get("ok")),
+                "reference_type": str(payload.get("reference_type", "")),
+                "title": str(payload.get("title", ""))[:160],
+                "doi": str(payload.get("doi", ""))[:120],
+                "arxiv_id": str(payload.get("arxiv_id", ""))[:40],
+                "resolved_url": str(payload.get("resolved_url", "") or payload.get("source_url", ""))[:220],
+            },
+            direction="outbound",
+        )
+        return payload
+    except Exception as e:
+        log_exception(
+            "mcp_server.paper",
+            "tool_failed",
+            e,
+            {
+                "tool": "fetch_external_paper",
+                "reference": safe_reference,
+                "url": safe_url,
+                "doi": safe_doi,
+                "arxiv_id": safe_arxiv_id,
+                "max_chars": safe_max_chars,
+            },
         )
         raise
 

@@ -11,15 +11,19 @@ def main() -> None:
         component="a2a.agent_server.paper",
         default_name="PaperAnalyst",
         default_description=(
-            "Paper search, full-text memory expansion, and follow-up Q&A from local PDF corpus."
+            "Search the local PDF corpus, inspect workflow handoff artifacts, fetch external paper references, "
+            "and answer from paper evidence."
         ),
         default_tags=[
+            "worker",
             "paper_search",
-            "paper_summary",
-            "paper_fulltext_memory",
-            "paper_memory_query",
-            "agentic",
-            "local-agent",
+            "paper_memory",
+            "external_paper_fetch",
+            "scrape_papers_with_mcp",
+            "fetch_external_paper_with_mcp",
+            "load_paper_memory_with_mcp",
+            "expand_paper_memory_with_mcp",
+            "query_paper_memory",
         ],
     )
 

@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 
 from google.adk.agents import LlmAgent
 
-from agent.tool.slack_mcp_tool import slack_post_message
+from main_agent.slack_mcp_tool import slack_post_message
 from mcp_local.client import call_mcp_tool
 from system_logger import log_event, log_exception
 
@@ -110,8 +110,8 @@ __all__ = ["search_my_domain_with_mcp", "my_domain_agent"]
 
 ## 4) Registration and discovery
 
-- Preferred: add metadata in `agent_cards/*.json` with fields `name`, `type=local`, `module`, `attr`, `capabilities`.
-- Runtime discovery also scans `agent/*.py` for `LlmAgent` objects, so card is optional but recommended.
+- Preferred: add metadata in `agent_cards/*.json` with fields `name`, `type=a2a`, `base_url`, `server_module`, `capabilities`.
+- Main runtime delegates specialists by A2A endpoint only (`base_url`) and does not import specialist modules directly.
 
 ## 5) Collaboration contract
 

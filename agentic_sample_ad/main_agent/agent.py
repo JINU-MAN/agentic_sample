@@ -1,13 +1,12 @@
 ﻿from __future__ import annotations
 
-import importlib
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Mapping
 
 from google.adk.agents import LlmAgent
 
-from agentic_sample_ad.agent.tool.slack_mcp_tool import slack_post_message
+from agentic_sample_ad.main_agent.slack_mcp_tool import slack_post_message
 from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.planner import plan_with_main_agent
 
@@ -61,10 +60,8 @@ def create_main_agent() -> LlmAgent:
         model=model_name,
         instruction=(
             "You are the coordinator of a multi-agent system. "
-            "Understand the user request, create practical execution steps, "
-            "and orchestrate specialist agents for best quality. "
-            "Slack posting is allowed only from MainAgent. "
-            "If Slack delivery is required, MainAgent must call `slack_post_message` directly."
+            "Understand the user request, decide what can be handled directly, and delegate specialist work when it improves the result. "
+            "Only MainAgent may send Slack messages, so use `slack_post_message` when Slack delivery is needed."
         ),
         tools=[slack_post_message],
     )
@@ -140,65 +137,53 @@ def _derive_capabilities(
     return merged[:40]
 
 
-def _enrich_cards_with_runtime_metadata(cards: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    enriched: List[Dict[str, Any]] = []
+def _normalize_sub_agent_cards_for_remote_execution(cards: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
     for raw in cards:
         item = dict(raw)
-        if not str(item.get("role", "")).strip():
-            item["role"] = "worker"
-        module_name = str(item.get("module", "")).strip()
-        attr_name = str(item.get("attr", "")).strip()
-        if not module_name or not attr_name:
-            enriched.append(item)
+        name = str(item.get("name", "")).strip()
+        if not name:
+            continue
+        item["name"] = name
+        if name.lower() == "mainagent":
             continue
 
-        try:
-            module = importlib.import_module(module_name)
-            if not hasattr(module, attr_name):
-                enriched.append(item)
-                continue
-            agent_obj = getattr(module, attr_name)
-            instruction = str(getattr(agent_obj, "instruction", "") or "").strip()
-            tools = _extract_tool_metadata(agent_obj)
-            tool_names = [
-                str(tool.get("name", "")).strip()
-                for tool in tools
-                if isinstance(tool, Mapping) and str(tool.get("name", "")).strip()
-            ]
+        if not str(item.get("role", "")).strip():
+            item["role"] = "worker"
+        item["type"] = "a2a"
 
-            if not str(item.get("name", "")).strip():
-                item["name"] = str(getattr(agent_obj, "name", "")).strip() or attr_name
-            if not str(item.get("description", "")).strip():
-                item["description"] = _doc_preview(instruction, max_len=180)
-            if tools:
-                item["tools"] = tools
+        # Main runtime must delegate sub-agents through A2A only.
+        item.pop("agent_obj", None)
+        item.pop("module", None)
+        item.pop("attr", None)
 
-            existing_caps = [str(cap).strip() for cap in item.get("capabilities", []) if str(cap).strip()]
-            item["capabilities"] = _derive_capabilities(
-                existing=existing_caps,
-                agent_name=str(item.get("name", "")),
-                tool_names=tool_names,
-            )
-            if instruction:
-                item["instruction_preview"] = _doc_preview(instruction, max_len=320)
+        tool_names: List[str] = []
+        for tool in item.get("tools", []):
+            if isinstance(tool, Mapping):
+                token = str(tool.get("name", "")).strip()
+            else:
+                token = str(tool).strip()
+            if token:
+                tool_names.append(token)
 
-            log_main_event(
-                "agent_runtime_metadata_enriched",
-                {
-                    "name": str(item.get("name", "")),
-                    "module": module_name,
-                    "attr": attr_name,
-                    "tool_names": tool_names,
-                },
-            )
-        except Exception as e:
-            log_main_exception(
-                "agent_runtime_metadata_enrich_failed",
-                e,
-                {"module": module_name, "attr": attr_name},
-            )
-        enriched.append(item)
-    return enriched
+        existing_caps = [str(cap).strip() for cap in item.get("capabilities", []) if str(cap).strip()]
+        item["capabilities"] = _derive_capabilities(
+            existing=existing_caps,
+            agent_name=name,
+            tool_names=tool_names,
+        )
+        normalized.append(item)
+
+        log_main_event(
+            "sub_agent_card_registered_for_a2a",
+            {
+                "name": name,
+                "type": "a2a",
+                "base_url": str(item.get("base_url", "")).strip(),
+                "source_card_path": str(item.get("source_card_path", "")).strip(),
+            },
+        )
+    return normalized
 
 
 def _build_main_agent_registry_entry(main_agent: LlmAgent) -> Dict[str, Any]:
@@ -271,7 +256,7 @@ def run_main_agent(user_input: str, session_id: str = "default") -> str:
         session.add_user_turn(user_input)
 
         main_agent = create_main_agent()
-        sub_agents = _enrich_cards_with_runtime_metadata(load_sub_agent_cards())
+        sub_agents = _normalize_sub_agent_cards_for_remote_execution(load_sub_agent_cards())
         available_agents = _build_unified_agent_registry(
             main_agent=main_agent,
             sub_agents=sub_agents,
