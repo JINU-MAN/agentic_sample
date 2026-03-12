@@ -1,139 +1,155 @@
 # agentic_sample_ad
 
-## 0) Quick Start From Scratch (Windows PowerShell)
+`agentic_sample_ad`는 `MainAgent`가 작업을 계획하고, specialist 에이전트를 A2A로 호출하며, 실제 외부 기능은 MCP 도구로 수행하는 멀티에이전트 샘플입니다.
 
-Use this section when you start from an empty environment.
+현재 기본 구조는 다음과 같습니다.
 
-1. Check Python installation (recommended: 3.11+)
+- 공개 계약: `agent_cards/*.json`, `*/well_known/agent_card.json`
+- coordinator: `main_agent/`
+- worker: `paper_agent/`, `web_search_agent/`, `sns_agent/`
+- 계획과 실행: `planner.py`, `event_manager.py`
+- A2A 서버 런처: `scripts/start_a2a_agents.py`
+- MCP 서버: `mcp_local/`
+- 정적 agent memory: `*/memory/session_memory.json`
+- 동적 workflow memory: `workflow_memory_runtime.py`
 
-```powershell
-python --version
-```
+## 빠른 시작
 
-2. Move to project root
+### 1. 환경 준비
 
 ```powershell
 cd C:\agentic_sample_api\agentic_sample_ad
-```
-
-3. Create and activate virtual environment
-
-```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-```
-
-4. Install dependencies
-
-```powershell
 pip install -r requirements.txt
-```
-
-5. Create env file
-
-```powershell
 Copy-Item .env.example .env
 ```
 
-6. Set minimum `.env` values
+최소 `.env` 값:
 
 ```env
 GOOGLE_API_KEY=your_google_api_key
-SLACK_MCP_SERVER_PATH=./mcp_local/slack_server.py
+TAVILY_API_KEY=your_tavily_api_key
+OPENAI_API_KEY=your_openai_api_key
 SLACK_BOT_TOKEN=your_slack_bot_token
 ```
 
-- `GOOGLE_API_KEY` is required.
-- `SLACK_BOT_TOKEN` is required only when you use Slack posting.
-- You can run the app without Slack posting even if `SLACK_BOT_TOKEN` is empty.
+설명:
 
-7. Run
+- `GOOGLE_API_KEY`: 필수
+- `TAVILY_API_KEY`: 웹 검색 사용 시 필요
+- `SLACK_BOT_TOKEN`: Slack 전송 사용 시 필요
+- `OPENAI_API_KEY` : openai 모델 사용 시 필요, 모델명 앞에 openai/ 붙여줘야함 (ex. openai/gpt_5.2)
+### 2. 실행
 
 ```powershell
 python start_agentic.py
 ```
 
-8. Exit
+CLI 명령:
 
-- In CLI, type `exit` or `quit`.
+- `exit`, `quit`: CLI 종료
+- `reset`, `/reset`: 현재 세션 메모리 초기화
+- `/setting {AgentName|all} -m {ModelName}`: 특정 agent 또는 전체 agent 모델 변경
 
----
+예시:
 
-`agentic_sample_ad`는 `MainAgent`가 여러 specialist 에이전트를 오케스트레이션하는 멀티 에이전트 시스템입니다.
+```text
+/setting WebSearchAnalyst -m gemini-2.5-flash
+/setting all -m gemini-2.5-flash-lite
+```
 
-- `PaperAnalyst`
-- `WebSearchAnalyst`
-- `SocialMediaAnalyst`
+## 에이전트 구조
 
-이 문서는 현재 코드 구현 기준으로 다음 내용을 설명합니다.
+### Coordinator와 worker
 
-1. 전체 아키텍처와 실행 흐름
-2. 에이전트 역할과 도구 소유권
-3. MCP, A2A 상호작용 구조
-4. 로그/세션 아카이브 동작
-5. 운영, 설정, 확장 방법
+| Agent | 역할 | 주요 callable tool |
+|---|---|---|
+| `MainAgent` | 계획, 재계획, 사용자 확인, 최종 전달 | `slack_post_message`, `read_workflow_memory`, `load_session_memory` |
+| `PaperAnalyst` | 로컬 PDF 검색, paper memory, 외부 논문 참조 처리 | `scrape_papers_with_mcp`, `load_paper_memory_with_mcp`, `query_paper_memory`, `expand_paper_memory_with_mcp`, `fetch_external_paper_with_mcp`, `load_session_memory` |
+| `WebSearchAnalyst` | 웹 검색과 citation-grounded evidence synthesis | `search_web_with_mcp`, `load_session_memory` |
+| `SocialMediaAnalyst` | SNS 검색과 social signal 요약 | `scrape_sns_with_mcp`, `load_session_memory` |
 
----
+중요한 원칙:
 
-## 1) 핵심 구조
+- planner는 raw tool 이름이 아니라 `role`, `capabilities`, `ownership` 기준으로 step을 고릅니다.
+- Slack 전달은 `MainAgent`만 직접 소유합니다.
+- specialist는 다른 agent를 직접 호출하지 않고, 구조화된 `needs`와 `artifacts`로 handoff를 요청합니다.
 
-- 사용자 입력은 `MainAgent`가 처리합니다.
-- `planner.py`가 아래 3가지를 생성합니다.
-  - `raw_plan`
-  - `routing_hint`
-  - `collaboration_plan`
-- `event_manager.py`가 단계 실행, 재계획, 실패 복구, 일시중단(pause)을 담당합니다.
-- specialist 실행은 **A2A HTTP JSON-RPC** 직접 호출로 이루어집니다.
-- 외부 기능(웹/논문/SNS/Slack)은 MCP 서버를 통해 실행됩니다.
-- Slack 전송 기능은 정책상 `MainAgent` 전용입니다.
+### 공개 계약과 내부 구현 분리
 
----
+- 공개 계약: agent card
+  - `planner.py`와 `MainAgent`는 여기 있는 `description`, `capabilities`, `ownership`을 기준으로 판단합니다.
+- 내부 구현: 각 agent 내부의 tool과 skill
+  - 각 agent는 내부적으로 `load_skill`, `load_skill_resource`, `load_session_memory`를 사용합니다.
 
-## 2) 저장소 구조
+## 디렉터리 구조
 
 ```text
 agentic_sample_ad/
 |-- start_agentic.py
 |-- planner.py
 |-- event_manager.py
+|-- network_retry.py
+|-- skill_runtime.py
+|-- agent_session_memory_runtime.py
+|-- workflow_memory_runtime.py
 |-- system_logger.py
 |-- model_settings.py
-|-- .env / .env.example
+|-- .env.example
 |
 |-- main_agent/
-|   |-- start_agentic.py
 |   |-- agent.py
-|   |-- slack_mcp_tool.py
-|   |-- card_registry.py
+|   |-- start_agentic.py
 |   |-- user_entry_point.py
+|   |-- card_registry.py
+|   |-- slack_mcp_tool.py
+|   |-- workflow_memory_tool.py
 |   |-- session_memory.py
-|   `-- system_logger.py
-|
-|-- agent/
-|   |-- NEW_AGENT_TEMPLATE.md
-|   `-- tool/slack_mcp_tool.py
+|   |-- memory/session_memory.json
+|   `-- skills/coordinator-operations/
 |
 |-- paper_agent/
 |   |-- agent.py
-|   |-- _impl.py
 |   |-- a2a_server.py
+|   |-- event_manager.py
+|   |-- session_memory.py
+|   |-- user_entry_point.py
+|   |-- tool/
+|   |-- memory/session_memory.json
+|   |-- skills/paper-research-operations/
 |   `-- well_known/agent_card.json
 |
 |-- web_search_agent/
 |   |-- agent.py
-|   |-- _impl.py
 |   |-- a2a_server.py
+|   |-- event_manager.py
+|   |-- session_memory.py
+|   |-- user_entry_point.py
+|   |-- tool/
+|   |-- memory/session_memory.json
+|   |-- skills/web-research-operations/
 |   `-- well_known/agent_card.json
 |
 |-- sns_agent/
 |   |-- agent.py
-|   |-- _impl.py
 |   |-- a2a_server.py
+|   |-- event_manager.py
+|   |-- session_memory.py
+|   |-- user_entry_point.py
+|   |-- tool/
+|   |-- memory/session_memory.json
+|   |-- skills/social-media-research-operations/
 |   `-- well_known/agent_card.json
 |
-|-- common/a2a_agent_server.py
-|-- scripts/start_a2a_agents.py
+|-- common/
+|   `-- a2a_agent_server.py
+|
+|-- scripts/
+|   |-- start_a2a_agents.py
+|   `-- refresh_agent_session_memory.py
+|
 |-- agent_cards/agent_card.json
 |
 |-- mcp_local/
@@ -142,343 +158,320 @@ agentic_sample_ad/
 |   |-- paper_server.py
 |   |-- sns_server.py
 |   |-- slack_server.py
-|   `-- a2a_bridge_server.py   # 레거시 브리지 구현 (기본 경로 아님)
+|   `-- a2a_bridge_server.py
 |
-|-- db/paper
-|-- db/sns
 `-- log/
     |-- session_log.jsonl
     |-- system_events.jsonl
-    |-- components/*.jsonl
-    `-- session_log_ex_XXXXXXXXXX/
+    `-- components/
 ```
 
----
+보조 디렉터리:
 
-## 3) 실행 흐름
+- `agent/`: 레거시 문서와 템플릿
+- `db/`: paper와 SNS 데이터 저장소
 
-## 3.1 시작 (`python start_agentic.py`)
+## 실행 흐름
 
-`main_agent/start_agentic.py::main()` 동작:
+### 부팅
 
-1. 로그 세션을 새로 시작하고(reset) 이전 세션을 아카이브합니다.
-2. `.env`를 로드합니다.
-3. 에이전트 카드를 탐색합니다.
-4. specialist A2A 서버를 실행합니다.
-5. 런타임 엔드포인트를 `AGENTIC_RUNTIME_AGENT_CARDS`에 게시합니다.
-6. CLI 입력 루프에 진입합니다.
+`python start_agentic.py`는 내부적으로 `main_agent/start_agentic.py`를 실행합니다.
 
-## 3.2 사용자 요청 1턴 처리
+부팅 순서:
 
-1. `MainAgent` 생성
-2. planner 실행으로 계획 생성
-3. event_manager 실행으로 협업 워크플로우 진행
-4. 필요 시 A2A specialist 호출 + MCP 도구 호출
-5. 결과 합성 후 사용자에게 반환
+1. `.env` 로드
+2. sub-agent card 수집
+3. specialist A2A 서버 자동 기동
+4. 런타임 endpoint를 `AGENTIC_RUNTIME_AGENT_CARDS`에 게시
+5. CLI 루프 진입
 
-## 3.3 종료
+### 요청 처리
 
-- `exit` 또는 `quit` 입력 시 종료
-- 시작 시 띄운 A2A specialist 서버 종료
-- 로깅 finalize
+`run_main_agent()`의 동작:
 
----
+1. 세션 로드
+2. `MainAgent` 생성
+3. unified agent registry 구성
+4. `planner.py`에서 다음 생성
+   - `raw_plan`
+   - `routing_hint`
+   - `collaboration_plan`
+5. `event_manager.py`가 collaboration workflow 실행
+6. 계획과 결과를 세션과 로그에 저장
 
-## 4) Planner + EventManager 동작
+### Step 실행
 
-## 4.1 Planner 산출물
+각 workflow step은 다음 정보를 포함한 context packet으로 실행됩니다.
 
-- `raw_plan`: 사람이 읽는 계획 텍스트
-- `routing_hint`: 선택 에이전트, 키워드, 이유
-- `collaboration_plan`: 실제 실행 step 목록
+- 사용자 요청 요약
+- 이전 step 결과
+- input artifacts
+- open needs
+- 남은 step 힌트
+- delegation target 요약
 
-Planner는 하드코딩보다 카드/런타임 메타데이터(capability/tool)를 우선 사용합니다.
+worker는 이 context를 바탕으로:
 
-## 4.2 Event Manager 실행
+- 자신의 tool로 바로 처리하거나
+- 구조화된 `artifacts`를 남기거나
+- 구조화된 `needs`를 `MainAgent`로 올립니다
 
-`event_manager.execute_plan()`:
+## Memory 구조
 
-1. 실행 가능한 에이전트(local/a2a) 선별
-2. collaboration step 정규화
-3. step 루프 실행
-4. step 결과를 기반으로 재계획 여부 판단
-5. 필요 시 실패 복구 시도
-6. 최종 결과 합성
+현재 memory는 3계층으로 분리돼 있습니다.
 
-## 4.3 Additional Needs 위임
+### 1. Skill
 
-specialist는 다른 에이전트를 직접 호출하지 않고 handoff 요청을 발행합니다.
+용도:
 
-JSON 예시:
+- 정적 작업 지침
+- tool 사용 원칙
+- handoff 스타일
 
-```json
-{"needs":[{"target":"WebSearchAnalyst","request":"..."}]}
+사용 도구:
+
+- `load_skill`
+- `load_skill_resource`
+
+파일 위치:
+
+- `*/skills/*/SKILL.md`
+- `*/skills/*/references/`
+
+### 2. Session memory
+
+용도:
+
+- 현재 agent의 정적 tool inventory
+- ownership, capabilities, handoff contract
+- coordinator가 아는 sub-agent 계약
+
+사용 도구:
+
+- `load_session_memory(section="", query="", max_items=6)`
+
+파일 위치:
+
+- `main_agent/memory/session_memory.json`
+- `paper_agent/memory/session_memory.json`
+- `web_search_agent/memory/session_memory.json`
+- `sns_agent/memory/session_memory.json`
+
+다음 변경 후 재생성해야 합니다.
+
+- agent card 변경
+- tool 추가 또는 삭제
+- ownership 문구 변경
+
+재생성 명령:
+
+```powershell
+python scripts/refresh_agent_session_memory.py
 ```
 
-텍스트 예시:
+### 3. Workflow memory
+
+용도:
+
+- 이전 step 출력
+- 현재 artifacts
+- open needs
+- pending steps
+- activated agent snapshots
+
+사용 도구:
+
+- `read_workflow_memory(query="", max_items=6)`
+
+특징:
+
+- 정적 파일이 아니라 실행 중 유지되는 동적 상태입니다.
+- `MainAgent`가 막힌 specialist를 도와주거나 현재 workflow 상태를 다시 읽을 때 사용합니다.
+
+## 재계획과 점검
+
+현재 구조는 매 step마다 무조건 재계획하지 않습니다. `event_manager.py`가 필요한 경우에만 coordinator review를 호출합니다.
+
+대표 트리거:
+
+- `open_needs` 존재
+- pending step 소진
+- 최신 step이 빈 응답 반환
+- blocker 문구 감지
+- worker가 유효한 `artifacts`나 `needs` 없이 종료
+- 같은 작업이 반복 임계값 초과
+
+### 같은 작업 반복 임계값
+
+- 기준 키: `agent|goal`
+- 환경 변수: `AGENTIC_SAME_TASK_REVIEW_THRESHOLD`
+- 기본값: `2`
+
+의미:
+
+- 동일 작업 2회까지 허용
+- 3회째부터 이상 징후로 보고 coordinator review 트리거
+
+## A2A와 MCP
+
+### A2A
+
+기본 실행 경로:
 
 ```text
-Additional Needs:
-- [WebSearchAnalyst] ...
-- [MainAgent] ...
-```
-
-`event_manager.py`가 이를 파싱해 후속 step으로 반영합니다.
-
-## 4.4 사용자 확인 필요 시 pause
-
-사용자 확인이 필요한 상황에서는 워크플로우를 일시중단합니다.
-
-- `workflow_paused = true`
-- `pause_reason = awaiting_user_clarification`
-
-사용자 응답이 들어오기 전까지 실행을 계속하지 않습니다.
-
-## 4.5 Slack 도구 소유권
-
-Slack 전달 capability는 `MainAgent` 소유입니다.
-
-- `comm.slack.post`
-- `slack_post_message`
-
-다른 에이전트 단계에서 Slack 전송이 필요하더라도 `MainAgent`로 재라우팅됩니다.
-
----
-
-## 5) 에이전트 구성
-
-| Agent | 역할 | 기본 모델 | 핵심 capability | 도구 |
-|---|---|---|---|---|
-| MainAgent | 조정자/재계획/최종 전달 | `gemini-2.5-flash-lite` | coordination, workflow_replanning, user_clarification_routing, comm.slack.post | `slack_post_message` |
-| PaperAnalyst | 로컬 PDF 연구 분석 | `gemini-2.5-flash-lite` | paper_search, paper_summary, paper_memory_query | `scrape_papers_with_mcp`, `load_paper_memory_with_mcp`, `expand_paper_memory_with_mcp`, `query_paper_memory` |
-| WebSearchAnalyst | 웹 탐색/검증 | `gemini-2.5-flash-lite` | web_search, web_summary, fact_check | `search_web_candidates_with_mcp`, `fetch_web_page_with_mcp` |
-| SocialMediaAnalyst | SNS 수집/요약 | `gemini-2.5-flash-lite` | sns_search, sns_summary | `scrape_sns_with_mcp` |
-
-모델 해석은 `model_settings.py`의 `resolve_agent_model()`이 담당합니다.
-
----
-
-## 6) A2A 통신 구조 (현재 기본 경로)
-
-현재 기본 실행은 브리지 경유가 아니라 specialist 서버 직접 호출입니다.
-
-```text
-event_manager
-  -> A2AClient (HTTP JSON-RPC)
-  -> http://127.0.0.1:{dynamic_port}/
-  -> specialist a2a_server (FastAPI)
-  -> InMemoryRunner(local LlmAgent)
+MainAgent / event_manager
+  -> A2AClient
+  -> http://127.0.0.1:{port}/
+  -> specialist a2a_server
+  -> specialist LlmAgent
   -> text response
 ```
 
-- 카드 endpoint: `GET /.well-known/agent-card.json`
-- 메시지 endpoint: `POST /` (`message/send`)
-- 런처가 카드 health를 확인해 launch/skip 결정
-- 기본값은 동적 포트 사용 (`A2A_DYNAMIC_PORTS=true`)
+관련 파일:
 
-`mcp_local/a2a_bridge_server.py`는 레거시 코드이며 `start_agentic` 기본 경로에서 사용되지 않습니다.
+- `scripts/start_a2a_agents.py`
+- `common/a2a_agent_server.py`
+- `paper_agent/a2a_server.py`
+- `web_search_agent/a2a_server.py`
+- `sns_agent/a2a_server.py`
 
----
+### MCP
 
-## 7) MCP 도구 호출 구조
-
-도구 호출 경로:
+실제 외부 기능은 MCP를 통해 수행됩니다.
 
 ```text
-Agent tool function
-  -> mcp_local/client.py::call_mcp_tool
-  -> MCP server process (stdio)
+Agent tool wrapper
+  -> mcp_local/client.py
+  -> MCP server process
   -> JSON result
 ```
 
 주요 MCP 서버:
 
-| 서버 | 주요 tool | 역할 |
-|---|---|---|
-| `mcp_local/web_search_server.py` | `search_web`, `fetch_page` | 웹 후보 검색 + 본문 추출 |
-| `mcp_local/paper_server.py` | `search_papers`, `get_paper_head`, `get_paper_content` | 로컬 PDF 검색/본문 추출 |
-| `mcp_local/sns_server.py` | `search_sns_posts` | 로컬 SNS JSON 검색 |
-| `mcp_local/slack_server.py` | `post_message` | Slack `chat.postMessage` |
+| Server | 역할 |
+|---|---|
+| `mcp_local/web_search_server.py` | Tavily 기반 웹 검색 |
+| `mcp_local/paper_server.py` | 로컬 PDF 검색과 paper memory |
+| `mcp_local/sns_server.py` | SNS 검색 |
+| `mcp_local/slack_server.py` | Slack 전송 |
 
----
-
-## 8) 실행 중 모델 변경 명령
-
-CLI 명령:
-
-```text
-/setting {AgentName} -m {ModelName}
-/setting {AgentName} -model {ModelName}
-```
-
-동작:
-
-- `MainAgent`: 다음 턴부터 즉시 적용 (턴마다 재생성)
-- specialist: 대상 A2A 서버 프로세스 재기동 후 적용
-
-관련 환경변수:
-
-- `AGENTIC_DEFAULT_MODEL`
-- `AGENTIC_AGENT_MODEL_OVERRIDES` (JSON map)
-
----
-
-## 9) 로그와 세션 아카이브
-
-`system_logger.py`는 이벤트를 다음 파일에 동시에 기록합니다.
-
-- `log/system_events.jsonl`
-- `log/components/<component>.jsonl`
-- `log/session_log.jsonl`
-
-모든 이벤트는 증가하는 `session_seq`를 포함합니다.
-
-## 9.1 시작 시 세션 아카이브
-
-`start_new_logging_session(reset_files=True)` 실행 시:
-
-1. 기존 `session_log.jsonl` 읽기
-2. `log/session_log_ex_{num}` 폴더 생성
-3. JSONL 한 줄을 JSON 파일 1개로 분해 저장
-4. active `session_log.jsonl` 및 sequence 상태 초기화
-
-파일명 규칙:
-
-```text
-{seq:010d}_{component}_{action}_{YYYYMMDDTHHMMSS_microZ}.json
-```
-
-## 9.2 function trace
-
-`function_trace`는 현재 의도적으로 비활성화되어 있습니다.
-
-## 9.3 ExceptionGroup 기록
-
-`log_exception()`은 traceback뿐 아니라 `sub_exceptions`도 함께 기록합니다.
-
-## 9.4 Git 로그 추적 정책
-
-Git에는 `log/session_log.jsonl`만 추적하고, 나머지 `log/*`는 `.gitignore`로 제외합니다.
-
----
-
-## 10) 에이전트 간 메시지 로그
-
-컴포넌트: `event_manager.agent_message`
-
-action 종류:
-
-- `sent`
-- `received`
-- `need_requested`
-
-주요 필드:
-
-- `from_agent`, `to_agent`
-- `channel` (예: `collaboration`, `direct_a2a`)
-- `workflow_id`, `workflow_step`
-- `message_preview`, `message_length`
-
----
-
-## 11) 실행 명령
-
-## 11.1 메인 시스템 실행
-
-```bash
-pip install -r requirements.txt
-python start_agentic.py
-```
-
-또는:
-
-```bash
-python -m agentic_sample_ad.start_agentic
-```
-
-## 11.2 specialist 단독 실행
-
-```bash
-python -m agentic_sample_ad.paper_agent.user_entry_point
-python -m agentic_sample_ad.web_search_agent.user_entry_point
-python -m agentic_sample_ad.sns_agent.user_entry_point
-```
-
----
-
-## 12) 환경변수
+## 환경 변수
 
 필수:
 
 - `GOOGLE_API_KEY`
 
-모델:
+주요 선택 항목:
 
-- `AGENTIC_DEFAULT_MODEL` (기본 `gemini-2.5-flash-lite`)
-- `AGENTIC_AGENT_MODEL_OVERRIDES` (JSON)
-
-Slack:
-
-- `SLACK_MCP_SERVER_PATH` (예: `./mcp_local/slack_server.py`)
+- `TAVILY_API_KEY`
 - `SLACK_BOT_TOKEN`
-
-A2A/협업 제어:
-
+- `SLACK_MCP_SERVER_PATH`
+- `AGENTIC_DEFAULT_MODEL`
+- `AGENTIC_AGENT_MODEL_OVERRIDES`
 - `A2A_DYNAMIC_PORTS`
 - `A2A_AGENT_SERVER_READY_TIMEOUT_SEC`
-- `A2A_REQUEST_TIMEOUT_SEC`
-- `A2A_CARD_TIMEOUT_SEC`
 - `A2A_CONNECT_TIMEOUT_SEC`
+- `A2A_CARD_TIMEOUT_SEC`
+- `A2A_REQUEST_TIMEOUT_SEC`
+- `A2A_WRITE_TIMEOUT_SEC`
+- `A2A_POOL_TIMEOUT_SEC`
+- `A2A_CARD_RETRY_COUNT`
+- `A2A_CARD_RETRY_DELAY_SEC`
 - `COLLAB_MAX_STEPS`
+- `AGENTIC_SAME_TASK_REVIEW_THRESHOLD`
+- `AGENTIC_NETWORK_RETRY_ATTEMPTS`
+- `AGENTIC_NETWORK_RETRY_BASE_DELAY_SEC`
+- `AGENTIC_NETWORK_RETRY_MAX_DELAY_SEC`
 
----
+## 로그
 
-## 13) 확장 가이드
+주요 로그 파일:
 
-## 13.1 새 에이전트 추가
+- `log/session_log.jsonl`
+- `log/system_events.jsonl`
+- `log/components/*.jsonl`
 
-1. `new_agent/agent.py`에 agent 정의
-2. `new_agent/well_known/agent_card.json` 작성
-3. `new_agent/a2a_server.py`에서 `common/a2a_agent_server.py::run_server` 사용
-4. `start_agentic.py` 실행 후 카드 탐색/서버 실행 확인
+특징:
 
-## 13.2 새 도구 추가
+- 모든 이벤트에 `session_seq`가 붙습니다.
+- agent 간 메시지는 `event_manager.agent_message`로 기록됩니다.
+- step 시작, 완료, pause, review, timeout control, recovery가 개별 이벤트로 남습니다.
 
-1. 에이전트에 tool 함수 추가
-2. MCP server tool 구현(또는 기존 재사용)
-3. agent card capability 갱신
-4. 런타임 메타데이터와 planner 라우팅 검증
-
-capability 소유권 정책은 `event_manager.py`의 `CAPABILITY_POLICIES`에서 관리합니다.
-
----
-
-## 14) 트러블슈팅
-
-## Slack 실패
-
-1. `SLACK_MCP_SERVER_PATH` 경로 확인
-2. `SLACK_BOT_TOKEN` 유효성 확인
-3. 채널명 및 봇 권한 확인
-
-## A2A 실패
-
-1. `/.well-known/agent-card.json` health 확인
-2. 포트 충돌 확인
-3. timeout 조정 (`A2A_REQUEST_TIMEOUT_SEC`, `A2A_CARD_TIMEOUT_SEC`)
-
-## 워크플로우 pause
-
-`awaiting_user_clarification` 상태는 사용자 확인이 필요한 정상 동작일 수 있습니다.
-
-## 로그 중심 디버깅 순서
+문제 분석 시 우선 볼 파일:
 
 1. `log/session_log.jsonl`
 2. `log/components/event_manager.collaboration.jsonl`
 3. `log/components/event_manager.agent_message.jsonl`
 
----
+## 운영 명령
 
-## 15) 한 줄 요약
+### A2A 서버만 별도 실행
 
-`MainAgent`가 계획/정책/최종 전달을 책임지고, specialist는 직접 A2A 통신으로 실행되며, 도구는 MCP로 호출되고, 전체 상호작용은 `session_seq` 기반 JSONL 로그로 추적되는 구조입니다.
+```powershell
+python scripts/start_a2a_agents.py
+python scripts/start_a2a_agents.py --only WebSearchAnalyst
+```
+
+### 정적 session memory 재생성
+
+```powershell
+python scripts/refresh_agent_session_memory.py
+```
+
+### 동작이 바뀌었을 때 같이 봐야 하는 파일
+
+- planning 규칙: `planner.py`
+- workflow 실행과 복구 규칙: `event_manager.py`
+- 공개 계약: `agent_cards/agent_card.json`, `*/well_known/agent_card.json`
+- skill 로딩: `skill_runtime.py`
+- session memory 로딩: `agent_session_memory_runtime.py`
+- workflow memory 로딩: `workflow_memory_runtime.py`
+
+## 트러블슈팅
+
+### `GOOGLE_API_KEY`가 없음
+
+CLI가 키 입력을 요청하고, 입력된 값을 `.env`에 저장하려고 시도합니다.
+
+### 웹 검색이 안 되는 것처럼 보임
+
+다음 순서로 확인합니다.
+
+1. `TAVILY_API_KEY`
+2. `WebSearchAnalyst` A2A 서버 기동 여부
+3. `log/session_log.jsonl`에 `tool.search_web_with_mcp` 호출이 찍혔는지
+4. worker가 `artifacts`나 `needs`를 남겼는지
+
+### Slack 전송 실패
+
+다음 항목을 확인합니다.
+
+1. `SLACK_BOT_TOKEN`
+2. 채널 이름
+3. `MainAgent`가 실제로 `slack_post_message`를 호출했는지
+
+### 재계획이 너무 자주 도는 경우
+
+다음 값을 조정합니다.
+
+- `AGENTIC_SAME_TASK_REVIEW_THRESHOLD`
+- `COLLAB_MAX_STEPS`
+- A2A timeout 관련 변수
+
+### Session memory가 오래된 경우
+
+다음 명령으로 다시 생성합니다.
+
+```powershell
+python scripts/refresh_agent_session_memory.py
+```
+
+## 요약
+
+현재 시스템의 핵심 규칙:
+
+- planner는 capability와 ownership 중심으로 step을 만든다.
+- worker는 specialist 작업만 수행하고 peer agent를 직접 호출하지 않는다.
+- 정적 지침은 skill, 정적 계약은 session memory, 동적 상태는 workflow memory로 분리한다.
+- `MainAgent`가 orchestration과 Slack delivery를 소유한다.
+- A2A는 agent 간 계약을, MCP는 실제 외부 기능 실행을 담당한다.
