@@ -1,0 +1,211 @@
+{
+  "memory_kind": "agent_session_memory",
+  "agent": {
+    "name": "MainAgent",
+    "type": "local",
+    "role": "coordinator",
+    "description": "Coordinator for planning, replanning, and cross-agent handoff execution.",
+    "capabilities": [
+      "coordination",
+      "workflow_replanning",
+      "user_clarification_routing",
+      "workflow_memory_read",
+      "comm.slack.post"
+    ],
+    "ownership": "Own planning, coordination, replanning, user clarification, and coordinator-controlled delivery actions.",
+    "instruction_preview": "You are the coordinator of a multi-agent system. Understand the user request, decide what can be handled directly, and delegate specialist work when it improves the result. Own orchestration, replanning, user clarification, and final delivery actions that belong to the coordinator."
+  },
+  "usage_rules": [
+    "Call load_session_memory when you need the current coordinator tool inventory or the latest known sub-agent contracts.",
+    "Only MainAgent may call tools listed under own_tools.",
+    "Treat sub-agent tools as private implementation detail. Use them only to understand ownership and route work."
+  ],
+  "own_tools": [
+    {
+      "name": "slack_post_message",
+      "kind": "callable_tool",
+      "description": "Send a message through a Slack MCP server."
+    },
+    {
+      "name": "read_workflow_memory",
+      "kind": "callable_tool",
+      "description": "Read the shared workflow memory for the current run. Use this when you need prior step outputs, reusable artifacts, open needs, or pending-step context before deciding the next coordinator action...."
+    },
+    {
+      "name": "load_session_memory",
+      "kind": "callable_tool",
+      "description": "Load static session memory for MainAgent. Use this when you need the current tool inventory, owned capabilities, known agent contracts, or handoff schema. Use `section=\"tools\"`, `\"contracts\"`, or `..."
+    },
+    {
+      "name": "load_skill",
+      "kind": "skill_runtime_tool",
+      "description": "Load the active skill instructions before using specialized guidance."
+    },
+    {
+      "name": "load_skill_resource",
+      "kind": "skill_runtime_tool",
+      "description": "Load a file from references/ or assets/ inside an active skill."
+    }
+  ],
+  "known_sub_agents": [
+    {
+      "name": "PaperAnalyst",
+      "public_contract": {
+        "name": "PaperAnalyst",
+        "type": "a2a",
+        "role": "worker",
+        "description": "Search the local PDF corpus, inspect workflow handoff artifacts, fetch external paper references, and answer from paper evidence.",
+        "capabilities": [
+          "paper_search",
+          "paper_memory",
+          "external_paper_fetch",
+          "paper_evidence"
+        ],
+        "ownership": "Own paper-specific retrieval from the local corpus, workflow-scoped paper memory, and external paper identifier resolution.",
+        "instruction_preview": "Inspect workflow artifacts first, prefer lightweight evidence paths, reuse workflow memory when possible, and state when the answer depends only on metadata."
+      },
+      "private_tool_inventory": [
+        {
+          "name": "scrape_papers_with_mcp",
+          "kind": "callable_tool",
+          "description": "Search PDFs with MCP paper server and return normalized JSON text."
+        },
+        {
+          "name": "fetch_external_paper_with_mcp",
+          "kind": "callable_tool",
+          "description": "Fetch external paper metadata or a compact preview from URL / DOI / arXiv ID."
+        },
+        {
+          "name": "load_paper_memory_with_mcp",
+          "kind": "callable_tool",
+          "description": "Load workflow-scoped paper memory."
+        },
+        {
+          "name": "expand_paper_memory_with_mcp",
+          "kind": "callable_tool",
+          "description": "Lazily expand workflow paper memory with full text for the most relevant papers."
+        },
+        {
+          "name": "query_paper_memory",
+          "kind": "callable_tool",
+          "description": "Query loaded paper memory and return the most relevant snippets quickly."
+        },
+        {
+          "name": "load_session_memory",
+          "kind": "callable_tool",
+          "description": "Load static session memory for PaperAnalyst. Use this when you need the current tool inventory, owned capabilities, known agent contracts, or handoff schema. Use `section=\"tools\"`, `\"contracts\"`, o..."
+        },
+        {
+          "name": "load_skill",
+          "kind": "skill_runtime_tool",
+          "description": "Load the active skill instructions before using specialized guidance."
+        },
+        {
+          "name": "load_skill_resource",
+          "kind": "skill_runtime_tool",
+          "description": "Load a file from references/ or assets/ inside an active skill."
+        }
+      ],
+      "callable_by_main_agent": false,
+      "usage_rule": "Use this inventory only to understand specialization and ownership. Never call these tools directly from MainAgent."
+    },
+    {
+      "name": "SocialMediaAnalyst",
+      "public_contract": {
+        "name": "SocialMediaAnalyst",
+        "type": "a2a",
+        "role": "worker",
+        "description": "Search SNS posts via MCP and summarize relevant social signals.",
+        "capabilities": [
+          "sns_search",
+          "sns_summary",
+          "social_signal_analysis"
+        ],
+        "ownership": "Own SNS post collection, signal extraction, and social evidence summarization.",
+        "instruction_preview": "Choose focused SNS queries, surface the strongest signals, and say clearly when the social evidence is weak or noisy."
+      },
+      "private_tool_inventory": [
+        {
+          "name": "scrape_sns_with_mcp",
+          "kind": "callable_tool",
+          "description": "Search SNS JSON posts via MCP server and return normalized JSON text."
+        },
+        {
+          "name": "load_session_memory",
+          "kind": "callable_tool",
+          "description": "Load static session memory for SocialMediaAnalyst. Use this when you need the current tool inventory, owned capabilities, known agent contracts, or handoff schema. Use `section=\"tools\"`, `\"contract..."
+        },
+        {
+          "name": "load_skill",
+          "kind": "skill_runtime_tool",
+          "description": "Load the active skill instructions before using specialized guidance."
+        },
+        {
+          "name": "load_skill_resource",
+          "kind": "skill_runtime_tool",
+          "description": "Load a file from references/ or assets/ inside an active skill."
+        }
+      ],
+      "callable_by_main_agent": false,
+      "usage_rule": "Use this inventory only to understand specialization and ownership. Never call these tools directly from MainAgent."
+    },
+    {
+      "name": "WebSearchAnalyst",
+      "public_contract": {
+        "name": "WebSearchAnalyst",
+        "type": "a2a",
+        "role": "worker",
+        "description": "Search the web via the Tavily-backed MCP server and synthesize citation-grounded evidence.",
+        "capabilities": [
+          "web_search",
+          "web_evidence_summary",
+          "web_research"
+        ],
+        "ownership": "Own web-source discovery and citation-grounded web evidence synthesis, and hand off paper-specific retrieval to PaperAnalyst.",
+        "instruction_preview": "Choose focused web queries, gather citable evidence, and pass candidate URLs, DOI, or arXiv IDs downstream when paper retrieval is needed."
+      },
+      "private_tool_inventory": [
+        {
+          "name": "search_web_with_mcp",
+          "kind": "callable_tool",
+          "description": "Query the web-search MCP server and return normalized ranked results."
+        },
+        {
+          "name": "load_session_memory",
+          "kind": "callable_tool",
+          "description": "Load static session memory for WebSearchAnalyst. Use this when you need the current tool inventory, owned capabilities, known agent contracts, or handoff schema. Use `section=\"tools\"`, `\"contracts\"..."
+        },
+        {
+          "name": "load_skill",
+          "kind": "skill_runtime_tool",
+          "description": "Load the active skill instructions before using specialized guidance."
+        },
+        {
+          "name": "load_skill_resource",
+          "kind": "skill_runtime_tool",
+          "description": "Load a file from references/ or assets/ inside an active skill."
+        }
+      ],
+      "callable_by_main_agent": false,
+      "usage_rule": "Use this inventory only to understand specialization and ownership. Never call these tools directly from MainAgent."
+    }
+  ],
+  "handoff_contract": {
+    "structured_output_fields": [
+      "summary",
+      "artifacts",
+      "needs"
+    ],
+    "artifact_fields": [
+      "type",
+      "title",
+      "summary",
+      "url",
+      "identifiers"
+    ],
+    "notes": [
+      "Prefer delegation when specialist evidence gathering is needed.",
+      "Use direct delivery actions only after the required content already exists."
+    ]
+  }
+}

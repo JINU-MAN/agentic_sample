@@ -1,0 +1,82 @@
+{
+  "memory_kind": "agent_session_memory",
+  "agent": {
+    "name": "PaperAnalyst",
+    "type": "a2a",
+    "role": "worker",
+    "description": "Search the local PDF corpus, inspect workflow handoff artifacts, fetch external paper references, and answer from paper evidence.",
+    "capabilities": [
+      "paper_search",
+      "paper_memory",
+      "external_paper_fetch",
+      "paper_evidence"
+    ],
+    "ownership": "Own paper-specific retrieval from the local corpus, workflow-scoped paper memory, and external paper identifier resolution.",
+    "instruction_preview": "Inspect workflow artifacts first, prefer lightweight evidence paths, reuse workflow memory when possible, and state when the answer depends only on metadata."
+  },
+  "usage_rules": [
+    "Call load_session_memory when you need the current private tool inventory or handoff contract without re-reading long prompts.",
+    "Use only the tools listed under runtime_tools for direct execution in this agent.",
+    "If another agent owns the next step, emit a structured handoff instead of inventing unsupported behavior."
+  ],
+  "runtime_tools": [
+    {
+      "name": "scrape_papers_with_mcp",
+      "kind": "callable_tool",
+      "description": "Search PDFs with MCP paper server and return normalized JSON text."
+    },
+    {
+      "name": "fetch_external_paper_with_mcp",
+      "kind": "callable_tool",
+      "description": "Fetch external paper metadata or a compact preview from URL / DOI / arXiv ID."
+    },
+    {
+      "name": "load_paper_memory_with_mcp",
+      "kind": "callable_tool",
+      "description": "Load workflow-scoped paper memory."
+    },
+    {
+      "name": "expand_paper_memory_with_mcp",
+      "kind": "callable_tool",
+      "description": "Lazily expand workflow paper memory with full text for the most relevant papers."
+    },
+    {
+      "name": "query_paper_memory",
+      "kind": "callable_tool",
+      "description": "Query loaded paper memory and return the most relevant snippets quickly."
+    },
+    {
+      "name": "load_session_memory",
+      "kind": "callable_tool",
+      "description": "Load static session memory for PaperAnalyst. Use this when you need the current tool inventory, owned capabilities, known agent contracts, or handoff schema. Use `section=\"tools\"`, `\"contracts\"`, o..."
+    },
+    {
+      "name": "load_skill",
+      "kind": "skill_runtime_tool",
+      "description": "Load the active skill instructions before using specialized guidance."
+    },
+    {
+      "name": "load_skill_resource",
+      "kind": "skill_runtime_tool",
+      "description": "Load a file from references/ or assets/ inside an active skill."
+    }
+  ],
+  "handoff_contract": {
+    "structured_output_fields": [
+      "summary",
+      "artifacts",
+      "needs"
+    ],
+    "artifact_fields": [
+      "type",
+      "title",
+      "summary",
+      "url",
+      "identifiers"
+    ],
+    "notes": [
+      "Keep handoff output compact and evidence-oriented.",
+      "Include stable identifiers when available."
+    ]
+  }
+}

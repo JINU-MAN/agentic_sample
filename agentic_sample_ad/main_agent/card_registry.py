@@ -164,7 +164,15 @@ def load_sub_agent_cards() -> List[Dict[str, Any]]:
             if runtime is not None:
                 if str(runtime.get("base_url", "")).strip():
                     item["base_url"] = str(runtime.get("base_url", "")).strip()
-                for field in ("type", "server_module", "description", "capabilities", "tools", "role"):
+                for field in (
+                    "type",
+                    "server_module",
+                    "description",
+                    "capabilities",
+                    "role",
+                    "ownership",
+                    "instruction_preview",
+                ):
                     if field not in runtime:
                         continue
                     value = runtime.get(field)

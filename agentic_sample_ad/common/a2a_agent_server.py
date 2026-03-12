@@ -66,34 +66,6 @@ def _jsonrpc_error_response(request_id: Any, code: int, message: str) -> Dict[st
     }
 
 
-def _doc_preview(value: str, max_len: int = 180) -> str:
-    compact = " ".join(str(value or "").split()).strip()
-    if len(compact) <= max_len:
-        return compact
-    return compact[: max_len - 3].rstrip() + "..."
-
-
-def _extract_tool_metadata(agent_obj: LlmAgent) -> List[Dict[str, str]]:
-    extracted: List[Dict[str, str]] = []
-    seen_names: set[str] = set()
-    for tool in getattr(agent_obj, "tools", []) or []:
-        name = str(getattr(tool, "name", "") or getattr(tool, "__name__", "")).strip()
-        if not name:
-            continue
-        key = name.lower()
-        if key in seen_names:
-            continue
-        seen_names.add(key)
-        desc = str(getattr(tool, "description", "") or getattr(tool, "__doc__", "") or "").strip()
-        extracted.append(
-            {
-                "name": name,
-                "description": _doc_preview(desc, max_len=180) if desc else "",
-            }
-        )
-    return extracted
-
-
 def _build_agent_card(
     *,
     agent_name: str,
@@ -101,7 +73,6 @@ def _build_agent_card(
     host: str,
     port: int,
     tags: List[str],
-    tool_metadata: List[Dict[str, str]],
 ) -> Dict[str, Any]:
     base_url = f"http://{host}:{port}"
     normalized_tags = [str(tag).strip() for tag in tags if str(tag).strip()]
@@ -116,24 +87,6 @@ def _build_agent_card(
             "outputModes": ["text/plain"],
         }
     ]
-
-    for tool in tool_metadata:
-        tool_name = str(tool.get("name", "")).strip()
-        if not tool_name:
-            continue
-        tool_description = str(tool.get("description", "")).strip() or f"Use `{tool_name}` when this capability is needed."
-        tool_tags = list(dict.fromkeys(normalized_tags + [tool_name]))
-        skills.append(
-            {
-                "id": tool_name,
-                "name": tool_name,
-                "description": tool_description,
-                "tags": tool_tags,
-                "examples": [f"Use {tool_name} when the task requires this capability."],
-                "inputModes": ["text/plain"],
-                "outputModes": ["text/plain"],
-            }
-        )
 
     return {
         "name": agent_name,
@@ -200,14 +153,12 @@ def create_app(
     port: int,
     tags: List[str],
 ) -> FastAPI:
-    tool_metadata = _extract_tool_metadata(agent_obj)
     card_payload = _build_agent_card(
         agent_name=agent_name,
         description=description,
         host=host,
         port=port,
         tags=tags,
-        tool_metadata=tool_metadata,
     )
     app = FastAPI(title=f"A2A Server - {agent_name}")
 

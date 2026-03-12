@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from google.adk.agents import LlmAgent
 
+from agentic_sample_ad.agent_session_memory_runtime import build_load_session_memory_tool
 from agentic_sample_ad.model_settings import resolve_agent_model
+from agentic_sample_ad.skill_runtime import build_skill_toolset
 
 from .tool import (
     expand_paper_memory_with_mcp,
@@ -13,28 +17,36 @@ from .tool import (
 )
 
 
+load_session_memory = build_load_session_memory_tool(
+    agent_name="PaperAnalyst",
+    memory_path=Path(__file__).resolve().parent / "memory" / "session_memory.json",
+)
+_TOOLS = [
+    scrape_papers_with_mcp,
+    fetch_external_paper_with_mcp,
+    load_paper_memory_with_mcp,
+    expand_paper_memory_with_mcp,
+    query_paper_memory,
+    load_session_memory,
+]
+_SKILL_TOOLSET = build_skill_toolset(Path(__file__).resolve().parent / "skills")
+if _SKILL_TOOLSET is not None:
+    _TOOLS.append(_SKILL_TOOLSET)
+
+
 paper_agent = LlmAgent(
     name="PaperAnalyst",
     model=resolve_agent_model("PaperAnalyst"),
     instruction=(
         "You are a paper research specialist. "
-        "Decide your own search queries from user intent and use the paper MCP tools to gather evidence from the local PDF corpus. "
-        "You own paper-specific retrieval when another agent requests paper evidence or passes candidate paper identifiers in `input_artifacts` or `needs`. "
-        "If the workflow context includes `input_artifacts`, inspect them first and use them as candidate papers or references before starting a fresh search. "
-        "When an input artifact refers to an external paper by URL, DOI, or arXiv ID, use `fetch_external_paper_with_mcp` before concluding the local corpus is insufficient. "
-        "Reuse the task's `workflow_id` for every memory tool call, load paper memory before querying it, and expand full text only when deeper detail is needed. "
-        "When your analysis depends only on metadata or artifact summaries rather than full paper text, say that explicitly. "
+        "Own paper-specific retrieval from the local corpus, workflow-scoped paper memory, and external paper identifiers. "
+        "Inspect workflow artifacts before starting a fresh search, prefer the lightest evidence path that can answer the question, and state clearly when the result relies only on metadata or partial context. "
+        "If prior workflow context is missing, request the missing workflow memory from MainAgent through structured `needs` instead of asking the user to repeat internal step data. "
         "If you identify reusable paper candidates for downstream work, prefer a compact structured handoff with `summary`, `artifacts`, and `needs`. "
         "Cite the most relevant papers, explain why they matter, and do not invent facts. "
         "If the local corpus is insufficient, clearly say so and state what is needed next."
     ),
-    tools=[
-        scrape_papers_with_mcp,
-        fetch_external_paper_with_mcp,
-        load_paper_memory_with_mcp,
-        expand_paper_memory_with_mcp,
-        query_paper_memory,
-    ],
+    tools=_TOOLS,
 )
 
 agent = paper_agent
@@ -48,4 +60,5 @@ __all__ = [
     "load_paper_memory_with_mcp",
     "expand_paper_memory_with_mcp",
     "query_paper_memory",
+    "load_session_memory",
 ]

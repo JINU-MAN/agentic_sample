@@ -14,6 +14,14 @@ from agentic_sample_ad.network_retry import collect_text_response_with_network_r
 from agentic_sample_ad.system_logger import log_event, log_exception
 
 
+def _build_planning_agent_view(agent: LlmAgent) -> LlmAgent:
+    return LlmAgent(
+        name=str(getattr(agent, "name", "")).strip() or "PlanningAgent",
+        model=getattr(agent, "model", ""),
+        instruction=str(getattr(agent, "instruction", "") or "").strip(),
+    )
+
+
 def _run_coroutine_sync(coro: Any) -> Any:
     """
     Run an async coroutine from sync code.
@@ -46,7 +54,7 @@ def _run_coroutine_sync(coro: Any) -> Any:
 
 
 async def _async_run_agent_prompt(agent: LlmAgent, prompt: str, task: str) -> str:
-    runner = InMemoryRunner(agent=agent, app_name="main-planner")
+    runner = InMemoryRunner(agent=_build_planning_agent_view(agent), app_name="main-planner")
     agent_name = getattr(agent, "name", "unknown")
     log_event(
         "planner",
@@ -254,17 +262,6 @@ def _normalize_collaboration_plan(
             or ""
         ).strip()
         deliverable = str(item.get("deliverable") or item.get("output") or "").strip()
-        tool_hints: List[str] = []
-        raw_tool_hints = item.get("tool_hints")
-        if isinstance(raw_tool_hints, list):
-            for hint in raw_tool_hints:
-                if not isinstance(hint, str):
-                    continue
-                token = hint.strip()
-                if token and token not in tool_hints:
-                    tool_hints.append(token)
-                if len(tool_hints) >= 8:
-                    break
         if not goal:
             goal = "Handle this step with your specialization and provide a handoff-ready output."
 
@@ -273,7 +270,7 @@ def _normalize_collaboration_plan(
                 "agent": normalized_agent,
                 "goal": goal[:800],
                 "deliverable": deliverable[:800],
-                "tool_hints": tool_hints,
+                "tool_hints": [],
             }
         )
         if len(steps) >= 8:
@@ -289,43 +286,89 @@ def _format_available_agents_for_prompt(available_agents: List[Dict[str, Any]]) 
     if not available_agents:
         return "No sub-agents are currently configured."
 
+    capability_labels = {
+        "coordination": "coordination and orchestration",
+        "workflow_replanning": "workflow replanning",
+        "user_clarification_routing": "user clarification and routing",
+        "comm.slack.post": "Slack channel delivery",
+        "paper_search": "paper search in the local PDF corpus",
+        "paper_memory": "workflow-scoped paper memory analysis",
+        "external_paper_fetch": "external paper reference lookup",
+        "sns_search": "SNS post collection",
+        "sns_summary": "social signal summarization",
+        "web_search": "web research and current-information lookup",
+        "web_evidence_summary": "citation-grounded web evidence synthesis",
+    }
+
+    def _tool_name_keys(agent: Dict[str, Any]) -> set[str]:
+        keys: set[str] = set()
+        for tool in agent.get("tools", []):
+            if isinstance(tool, dict):
+                token = str(tool.get("name", "")).strip().lower()
+            else:
+                token = str(tool).strip().lower()
+            if token:
+                keys.add(token)
+        return keys
+
+    def _humanize_capability(token: str) -> str:
+        lowered = token.strip().lower()
+        if lowered in capability_labels:
+            return capability_labels[lowered]
+        return " ".join(part for part in re.split(r"[._]+", token.strip()) if part)
+
     lines: List[str] = []
     for agent in available_agents:
         name = str(agent.get("name", "UnknownAgent")).strip() or "UnknownAgent"
         agent_type = str(agent.get("type", "")).strip() or "unknown"
         role = str(agent.get("role", "")).strip() or "worker"
         desc = str(agent.get("description", "")).strip()
+        tool_name_keys = _tool_name_keys(agent)
+        name_key = re.sub(r"[^a-z0-9]+", "", name.lower())
 
-        capabilities = [str(item).strip() for item in agent.get("capabilities", []) if str(item).strip()]
-        caps_text = ", ".join(capabilities) if capabilities else "(none)"
+        capability_summaries: List[str] = []
+        seen_caps: set[str] = set()
+        for raw in agent.get("capabilities", []):
+            token = str(raw).strip()
+            lowered = token.lower()
+            compact = re.sub(r"[^a-z0-9]+", "", lowered)
+            if (
+                not token
+                or lowered in tool_name_keys
+                or lowered.endswith("_with_mcp")
+                or compact == name_key
+            ):
+                continue
+            summary = _humanize_capability(token).strip()
+            key = summary.lower()
+            if not summary or key in seen_caps:
+                continue
+            seen_caps.add(key)
+            capability_summaries.append(summary)
 
-        tool_entries: List[str] = []
-        for tool in agent.get("tools", []):
-            if isinstance(tool, dict):
-                tool_name = str(tool.get("name", "")).strip()
-                tool_desc = str(tool.get("description", "")).strip()
-                if tool_name and tool_desc:
-                    tool_entries.append(f"{tool_name}: {tool_desc}")
-                elif tool_name:
-                    tool_entries.append(tool_name)
-            elif isinstance(tool, str):
-                token = tool.strip()
-                if token:
-                    tool_entries.append(token)
-        tools_text = "; ".join(tool_entries) if tool_entries else "(unknown or not provided)"
+        capability_text = "; ".join(capability_summaries) if capability_summaries else (desc or "(not provided)")
 
-        instruction_preview = str(agent.get("instruction_preview", "")).strip()
-        if not instruction_preview:
-            instruction_preview = "(not provided)"
+        explicit_ownership = str(agent.get("ownership", "")).strip()
+        if explicit_ownership:
+            ownership = explicit_ownership
+        elif role.lower() == "coordinator":
+            ownership = (
+                "Own coordinator-only work such as orchestration, replanning, direct user handling, "
+                "and delivery actions that belong to this agent."
+            )
+        else:
+            ownership = (
+                "Use this agent when the request needs its specialization. "
+                "Do not assign unrelated coordination or final delivery work here."
+            )
 
         lines.append(
             f"- name: {name}\n"
             f"  type: {agent_type}\n"
             f"  role: {role}\n"
             f"  description: {desc}\n"
-            f"  capabilities: {caps_text}\n"
-            f"  tools: {tools_text}\n"
-            f"  instruction_preview: {instruction_preview}"
+            f"  capability_summary: {capability_text}\n"
+            f"  ownership: {ownership}"
         )
     return "\n".join(lines)
 
@@ -486,8 +529,9 @@ def _derive_routing_hint(
         "- selected_agents must be names from Available agents.\n"
         "- keywords must be short routing terms for this turn.\n"
         "- Select only agents that materially improve the result.\n"
-        "- Use capabilities, tools, and descriptions from metadata.\n"
+        "- Use role, capability, ownership, and description metadata.\n"
         "- Include the coordinator only when coordination or channel delivery is needed.\n"
+        "- This phase is routing only. Do not execute tools or steps.\n"
         "- Avoid hardcoded assumptions about specific agent names.\n\n"
         f"Recent conversation context summary:\n{conversation_summary}\n\n"
         f"User request:\n{user_input}\n\n"
@@ -531,7 +575,7 @@ def _derive_collaboration_plan(
         '      "agent": "AgentName",\n'
         '      "goal": "what this agent should do in this step",\n'
         '      "deliverable": "output format for handoff",\n'
-        '      "tool_hints": ["tool_or_strategy_1", "tool_or_strategy_2"]\n'
+        '      "tool_hints": []\n'
         "    }\n"
         "  ],\n"
         '  "notes": "short note"\n'
@@ -541,8 +585,8 @@ def _derive_collaboration_plan(
         "- Create 0 to 5 practical future steps.\n"
         "- Each step should be useful on its own and easy for the assigned agent to execute.\n"
         "- Respect explicit user constraints.\n"
-        "- Choose agents from capabilities/tools metadata.\n"
-        "- Leave tool_hints empty unless they are genuinely helpful.\n"
+        "- Choose agents from role, capability, ownership, and description metadata.\n"
+        "- Always return an empty array for tool_hints.\n"
         "- Use the coordinator only for coordination or owned delivery actions.\n\n"
         f"Recent conversation context summary:\n{conversation_summary}\n\n"
         f"User request:\n{user_input}\n\n"
@@ -599,10 +643,11 @@ def plan_with_main_agent(
         "Requirements:\n"
         "1) Summarize the user goal in one sentence.\n"
         "2) Write a 'Plan:' section with short numbered steps.\n"
-        "3) Mention which agent should handle each step when a specialist is useful.\n"
+        "3) Assign each step to the agent that owns the work or best matches the specialization.\n"
         "4) If no sub-agent is needed, say so briefly.\n"
-        "5) Choose agents from available capabilities/tools metadata.\n"
-        "6) Include the coordinator only when direct handling, coordination, or channel delivery is needed.\n\n"
+        "5) Choose from role, capability, and ownership metadata below, not by raw tool names.\n"
+        "6) Keep work with the coordinator only when the coordinator directly owns the action or coordination is required.\n"
+        "7) This phase is planning only. Do not execute tools or perform the plan.\n\n"
         f"Recent conversation context summary:\n{conversation_summary}\n\n"
         f"User request:\n{user_input}\n\n"
         f"Available agents:\n{agents_desc}\n"

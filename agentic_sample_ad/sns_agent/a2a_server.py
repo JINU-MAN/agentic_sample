@@ -15,7 +15,7 @@ def main() -> None:
             "worker",
             "sns_search",
             "sns_summary",
-            "scrape_sns_with_mcp",
+            "social_signal_analysis",
         ],
     )
 

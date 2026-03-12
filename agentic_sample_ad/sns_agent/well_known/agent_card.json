@@ -7,13 +7,9 @@
   "description": "Search SNS posts via MCP and summarize relevant social signals.",
   "capabilities": [
     "sns_search",
-    "sns_summary"
+    "sns_summary",
+    "social_signal_analysis"
   ],
-  "tools": [
-    {
-      "name": "scrape_sns_with_mcp",
-      "description": "Search SNS JSON posts via the MCP server and return normalized results."
-    }
-  ],
-  "instruction_preview": "Choose search queries from user intent, collect relevant SNS posts, summarize the strongest signals, and clearly state when evidence is weak."
+  "ownership": "Own SNS post collection, signal extraction, and social evidence summarization.",
+  "instruction_preview": "Choose focused SNS queries, surface the strongest signals, and say clearly when the social evidence is weak or noisy."
 }

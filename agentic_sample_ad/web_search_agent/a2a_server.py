@@ -17,7 +17,7 @@ def main() -> None:
             "worker",
             "web_search",
             "web_evidence_summary",
-            "search_web_with_mcp",
+            "web_research",
         ],
     )
 

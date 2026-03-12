@@ -19,11 +19,7 @@ def main() -> None:
             "paper_search",
             "paper_memory",
             "external_paper_fetch",
-            "scrape_papers_with_mcp",
-            "fetch_external_paper_with_mcp",
-            "load_paper_memory_with_mcp",
-            "expand_paper_memory_with_mcp",
-            "query_paper_memory",
+            "paper_evidence",
         ],
     )
 

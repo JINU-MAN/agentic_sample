@@ -2,13 +2,16 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List
 
 from google.adk.agents import LlmAgent
 
+from agentic_sample_ad.agent_session_memory_runtime import build_load_session_memory_tool
 from agentic_sample_ad.main_agent.slack_mcp_tool import slack_post_message
+from agentic_sample_ad.main_agent.workflow_memory_tool import read_workflow_memory
 from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.planner import plan_with_main_agent
+from agentic_sample_ad.skill_runtime import build_skill_toolset
 
 from .card_registry import load_sub_agent_cards
 from .event_manager import execute_plan
@@ -22,10 +25,12 @@ from .system_logger import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SESSION_MEMORY_PATH = PROJECT_ROOT / "main_agent" / "memory" / "session_memory.json"
 MAIN_AGENT_CORE_CAPABILITIES = [
     "coordination",
     "workflow_replanning",
     "user_clarification_routing",
+    "workflow_memory_read",
     "comm.slack.post",
 ]
 
@@ -55,15 +60,23 @@ def _load_env_file() -> None:
 
 def create_main_agent() -> LlmAgent:
     model_name = resolve_agent_model("MainAgent")
+    load_session_memory = build_load_session_memory_tool(
+        agent_name="MainAgent",
+        memory_path=SESSION_MEMORY_PATH,
+    )
+    tools: List[Any] = [slack_post_message, read_workflow_memory, load_session_memory]
+    skill_toolset = build_skill_toolset(PROJECT_ROOT / "main_agent" / "skills")
+    if skill_toolset is not None:
+        tools.append(skill_toolset)
     agent = LlmAgent(
         name="MainAgent",
         model=model_name,
         instruction=(
             "You are the coordinator of a multi-agent system. "
             "Understand the user request, decide what can be handled directly, and delegate specialist work when it improves the result. "
-            "Only MainAgent may send Slack messages, so use `slack_post_message` when Slack delivery is needed."
+            "Own orchestration, replanning, user clarification, and final delivery actions that belong to the coordinator."
         ),
-        tools=[slack_post_message],
+        tools=tools,
     )
     log_main_event("main_agent_created", {"name": "MainAgent", "model": model_name})
     return agent
@@ -101,31 +114,12 @@ def _extract_tool_metadata(agent_obj: Any) -> List[Dict[str, str]]:
 def _derive_capabilities(
     *,
     existing: List[str] | None = None,
-    agent_name: str = "",
-    tool_names: List[str] | None = None,
 ) -> List[str]:
     merged: List[str] = []
     seen: set[str] = set()
 
     for token in existing or []:
         value = str(token).strip()
-        if not value:
-            continue
-        key = value.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        merged.append(value)
-
-    if agent_name:
-        normalized = "".join(ch.lower() if ch.isalnum() else "_" for ch in agent_name)
-        normalized = "_".join(part for part in normalized.split("_") if part)
-        if normalized and normalized not in seen:
-            seen.add(normalized)
-            merged.append(normalized)
-
-    for name in tool_names or []:
-        value = str(name).strip()
         if not value:
             continue
         key = value.lower()
@@ -156,21 +150,11 @@ def _normalize_sub_agent_cards_for_remote_execution(cards: List[Dict[str, Any]])
         item.pop("agent_obj", None)
         item.pop("module", None)
         item.pop("attr", None)
-
-        tool_names: List[str] = []
-        for tool in item.get("tools", []):
-            if isinstance(tool, Mapping):
-                token = str(tool.get("name", "")).strip()
-            else:
-                token = str(tool).strip()
-            if token:
-                tool_names.append(token)
+        item.pop("tools", None)
 
         existing_caps = [str(cap).strip() for cap in item.get("capabilities", []) if str(cap).strip()]
         item["capabilities"] = _derive_capabilities(
             existing=existing_caps,
-            agent_name=name,
-            tool_names=tool_names,
         )
         normalized.append(item)
 
@@ -190,11 +174,6 @@ def _build_main_agent_registry_entry(main_agent: LlmAgent) -> Dict[str, Any]:
     name = str(getattr(main_agent, "name", "")).strip() or "MainAgent"
     instruction = str(getattr(main_agent, "instruction", "") or "").strip()
     tools = _extract_tool_metadata(main_agent)
-    tool_names = [
-        str(tool.get("name", "")).strip()
-        for tool in tools
-        if isinstance(tool, Mapping) and str(tool.get("name", "")).strip()
-    ]
     return {
         "name": name,
         "type": "local",
@@ -202,9 +181,8 @@ def _build_main_agent_registry_entry(main_agent: LlmAgent) -> Dict[str, Any]:
         "description": "Coordinator for planning, replanning, and cross-agent handoff execution.",
         "capabilities": _derive_capabilities(
             existing=list(MAIN_AGENT_CORE_CAPABILITIES),
-            agent_name=name,
-            tool_names=tool_names,
         ),
+        "ownership": "Own planning, coordination, replanning, user clarification, and coordinator-controlled delivery actions.",
         "tools": tools,
         "instruction_preview": _doc_preview(instruction, max_len=320) if instruction else "",
         # Runtime object reference for local execution in event_manager.

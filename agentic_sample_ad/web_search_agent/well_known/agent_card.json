@@ -7,13 +7,9 @@
   "description": "Search the web via the Tavily-backed MCP server and synthesize citation-grounded evidence.",
   "capabilities": [
     "web_search",
-    "web_evidence_summary"
+    "web_evidence_summary",
+    "web_research"
   ],
-  "tools": [
-    {
-      "name": "search_web_with_mcp",
-      "description": "Query the Tavily-backed web-search MCP server and return normalized ranked results."
-    }
-  ],
-  "instruction_preview": "Choose search queries from user intent, gather reliable web evidence with citations, and when paper-specific evidence is needed, hand off to PaperAnalyst with candidate URLs, DOI, or arXiv IDs."
+  "ownership": "Own web-source discovery and citation-grounded web evidence synthesis, and hand off paper-specific retrieval to PaperAnalyst.",
+  "instruction_preview": "Choose focused web queries, gather citable evidence, and pass candidate URLs, DOI, or arXiv IDs downstream when paper retrieval is needed."
 }

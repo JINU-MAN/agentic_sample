@@ -17,6 +17,10 @@ from google.genai import types
 
 from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
 from agentic_sample_ad.system_logger import log_event, log_exception
+from agentic_sample_ad.workflow_memory_runtime import (
+    reset_active_workflow_memory,
+    set_active_workflow_memory,
+)
 
 
 CAPABILITY_POLICIES: List[Dict[str, str]] = [
@@ -32,6 +36,36 @@ TOOL_OWNER_OVERRIDES: Dict[str, str] = {
     if str(item.get("tool", "")).strip() and str(item.get("owner", "")).strip()
 }
 AGENT_MESSAGE_COMPONENT = "event_manager.agent_message"
+CAPABILITY_LABELS: Dict[str, str] = {
+    "coordination": "coordination and orchestration",
+    "workflow_replanning": "workflow replanning",
+    "user_clarification_routing": "user clarification and routing",
+    "workflow_memory_read": "shared workflow memory lookup",
+    "comm.slack.post": "Slack channel delivery",
+    "paper_search": "paper search in the local PDF corpus",
+    "paper_memory": "workflow-scoped paper memory analysis",
+    "external_paper_fetch": "external paper reference lookup",
+    "paper_evidence": "paper evidence synthesis",
+    "sns_search": "SNS post collection",
+    "sns_summary": "social signal summarization",
+    "social_signal_analysis": "social signal analysis",
+    "web_search": "web research and current-information lookup",
+    "web_evidence_summary": "citation-grounded web evidence synthesis",
+    "web_research": "web research workflow ownership",
+}
+EMPTY_RESPONSE_SENTINELS = {
+    "",
+    "(No text response emitted.)",
+}
+PROGRESS_REVIEW_BLOCKER_PATTERNS = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"\b(?:cannot|can't|unable to|do not have|don't have|missing|not found|insufficient)\b",
+        r"\b(?:need(?:s)?|require(?:s|d)?)\b.{0,60}\b(?:context|results|artifacts|workflow memory|channel|clarification|access)\b",
+        r"\bchannel_not_found\b",
+        r"\bskills?\b.{0,40}\bnot found\b",
+    )
+]
 
 
 def _env_float(name: str, default: float, minimum: float) -> float:
@@ -58,6 +92,89 @@ def _env_int(name: str, default: int, minimum: int) -> int:
     if value < minimum:
         return minimum
     return value
+
+
+def _resolve_same_task_review_threshold() -> int:
+    return _env_int("AGENTIC_SAME_TASK_REVIEW_THRESHOLD", default=2, minimum=1)
+
+
+def _humanize_capability(token: str) -> str:
+    lowered = str(token).strip().lower()
+    if lowered in CAPABILITY_LABELS:
+        return CAPABILITY_LABELS[lowered]
+    return " ".join(part for part in re.split(r"[._]+", str(token).strip()) if part)
+
+
+def _tool_name_keys(agent_meta: Dict[str, Any]) -> set[str]:
+    keys: set[str] = set()
+    for tool in agent_meta.get("tools", []):
+        if isinstance(tool, dict):
+            token = str(tool.get("name", "")).strip().lower()
+        else:
+            token = str(tool).strip().lower()
+        if token:
+            keys.add(token)
+    return keys
+
+
+def _agent_capability_summary_text(agent_meta: Dict[str, Any]) -> str:
+    desc = str(agent_meta.get("description", "")).strip()
+    tool_keys = _tool_name_keys(agent_meta)
+    name_key = re.sub(r"[^a-z0-9]+", "", str(agent_meta.get("name", "")).lower())
+    seen: set[str] = set()
+    labels: List[str] = []
+    for raw in agent_meta.get("capabilities", []):
+        token = str(raw).strip()
+        lowered = token.lower()
+        compact = re.sub(r"[^a-z0-9]+", "", lowered)
+        if not token or lowered in tool_keys or lowered.endswith("_with_mcp") or compact == name_key:
+            continue
+        label = _humanize_capability(token).strip()
+        key = label.lower()
+        if not label or key in seen:
+            continue
+        seen.add(key)
+        labels.append(label)
+    return "; ".join(labels) if labels else (desc or "(not provided)")
+
+
+def _agent_ownership_text(agent_meta: Dict[str, Any]) -> str:
+    explicit = str(agent_meta.get("ownership", "")).strip()
+    if explicit:
+        return explicit
+    role = str(agent_meta.get("role", "")).strip().lower()
+    if role == "coordinator":
+        return (
+            "Own coordinator-only work such as orchestration, replanning, direct user handling, "
+            "and delivery actions that belong to this agent."
+        )
+    return (
+        "Use this agent when the request needs its specialization. "
+        "Do not assign unrelated coordination or final delivery work here."
+    )
+
+
+def _format_available_agents_for_review(available_agents: List[Dict[str, Any]]) -> str:
+    if not available_agents:
+        return "(none)"
+
+    lines: List[str] = []
+    for agent in available_agents:
+        name = str(agent.get("name", "UnknownAgent")).strip() or "UnknownAgent"
+        role = str(agent.get("role", "")).strip() or "worker"
+        desc = str(agent.get("description", "")).strip()
+        capability_summary = _agent_capability_summary_text(agent)
+        ownership = _agent_ownership_text(agent)
+        instruction_preview = str(agent.get("instruction_preview", "")).strip()
+        lines.append(
+            f"- name: {name}\n"
+            f"  role: {role}\n"
+            f"  description: {desc}\n"
+            f"  capability_summary: {capability_summary}\n"
+            f"  ownership: {ownership}\n"
+            f"  instruction_preview: {instruction_preview or '(not provided)'}"
+        )
+    return "\n".join(lines) or "(none)"
 
 
 def _resolve_collaboration_max_steps(initial_steps: int) -> int:
@@ -904,7 +1021,12 @@ def _ensure_summary_agent_sections(summary: str, results: List[Dict[str, Any]]) 
     return text + "\n\nAgent Coverage:\n" + "\n".join(notes)
 
 
-def _execute_single_local_agent(agent_meta: Dict[str, Any], user_input: str) -> Dict[str, Any]:
+def _execute_single_local_agent(
+    agent_meta: Dict[str, Any],
+    user_input: str,
+    *,
+    workflow_memory_snapshot: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
     name = str(agent_meta.get("name", "UnknownLocalAgent")).strip() or "UnknownLocalAgent"
     runtime_agent_obj = agent_meta.get("agent_obj")
     log_event(
@@ -925,6 +1047,7 @@ def _execute_single_local_agent(agent_meta: Dict[str, Any], user_input: str) -> 
             "error": error,
         }
 
+    workflow_memory_token = set_active_workflow_memory(workflow_memory_snapshot)
     try:
         result = _run_coroutine_sync(
             _async_run_local_agent(agent_obj=runtime_agent_obj, agent_name=name, user_input=user_input)
@@ -947,11 +1070,22 @@ def _execute_single_local_agent(agent_meta: Dict[str, Any], user_input: str) -> 
             "agent": name,
             "error": str(e),
         }
+    finally:
+        reset_active_workflow_memory(workflow_memory_token)
 
 
-def _execute_single_agent(agent_meta: Dict[str, Any], user_input: str) -> Dict[str, Any]:
+def _execute_single_agent(
+    agent_meta: Dict[str, Any],
+    user_input: str,
+    *,
+    workflow_memory_snapshot: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
     if _is_local_agent(agent_meta):
-        return _execute_single_local_agent(agent_meta, user_input)
+        return _execute_single_local_agent(
+            agent_meta,
+            user_input,
+            workflow_memory_snapshot=workflow_memory_snapshot,
+        )
     if _is_a2a_agent(agent_meta):
         return _execute_single_a2a_agent(agent_meta, user_input)
 
@@ -1110,16 +1244,6 @@ def _extract_collaboration_steps(
         goal = str(item.get("goal", "")).strip()
         deliverable = str(item.get("deliverable", "")).strip()
         tool_hints: List[str] = []
-        raw_tool_hints = item.get("tool_hints", [])
-        if isinstance(raw_tool_hints, list):
-            for hint in raw_tool_hints:
-                if not isinstance(hint, str):
-                    continue
-                token = hint.strip()
-                if token and token not in tool_hints:
-                    tool_hints.append(token)
-                if len(tool_hints) >= 8:
-                    break
         resolved_agent_name, resolved_agent_meta = _apply_step_owner_policy(
             step_agent_name=agent_name,
             step_goal=goal,
@@ -1591,28 +1715,13 @@ def _build_agent_card_snapshot(agent_meta: Dict[str, Any]) -> Dict[str, Any]:
     if not name:
         return {}
 
-    capabilities = [str(item).strip() for item in agent_meta.get("capabilities", []) if str(item).strip()]
-    tool_entries: List[str] = []
-    for tool in agent_meta.get("tools", []):
-        if isinstance(tool, dict):
-            tool_name = str(tool.get("name", "")).strip()
-            tool_desc = str(tool.get("description", "")).strip()
-            if tool_name and tool_desc:
-                tool_entries.append(f"{tool_name}: {tool_desc}")
-            elif tool_name:
-                tool_entries.append(tool_name)
-        elif isinstance(tool, str):
-            token = tool.strip()
-            if token:
-                tool_entries.append(token)
-
     return {
         "name": name,
         "type": str(agent_meta.get("type", "")).strip() or "a2a",
         "role": str(agent_meta.get("role", "")).strip() or "worker",
         "description": str(agent_meta.get("description", "")).strip(),
-        "capabilities": capabilities,
-        "tools": tool_entries,
+        "capability_summary": _agent_capability_summary_text(agent_meta),
+        "ownership": _agent_ownership_text(agent_meta),
         "instruction_preview": str(agent_meta.get("instruction_preview", "")).strip(),
     }
 
@@ -1628,19 +1737,83 @@ def _format_agent_card_snapshots(cards: List[Dict[str, Any]]) -> str:
         agent_type = str(card.get("type", "a2a")).strip() or "a2a"
         role = str(card.get("role", "worker")).strip() or "worker"
         desc = str(card.get("description", "")).strip()
-        caps = ", ".join(str(item) for item in card.get("capabilities", []) if str(item).strip()) or "(none)"
-        tools = "; ".join(str(item) for item in card.get("tools", []) if str(item).strip()) or "(none)"
+        caps = str(card.get("capability_summary", "")).strip() or "(none)"
+        ownership = str(card.get("ownership", "")).strip() or "(not provided)"
         instruction_preview = str(card.get("instruction_preview", "")).strip() or "(not provided)"
         lines.append(
             f"- name: {name}\n"
             f"  type: {agent_type}\n"
             f"  role: {role}\n"
             f"  description: {desc}\n"
-            f"  capabilities: {caps}\n"
-            f"  tools: {tools}\n"
+            f"  capability_summary: {caps}\n"
+            f"  ownership: {ownership}\n"
             f"  instruction_preview: {instruction_preview}"
         )
     return "\n".join(lines).strip() or "(none)"
+
+
+def _build_workflow_memory_result_entry(item: Dict[str, Any]) -> Dict[str, Any]:
+    response = str(item.get("raw_response") or item.get("response") or item.get("error") or "").strip()
+    entry: Dict[str, Any] = {
+        "workflow_step": item.get("workflow_step"),
+        "agent": str(item.get("agent", "")).strip(),
+        "goal": _compact_text(str(item.get("goal", "")).strip(), max_chars=220),
+        "ok": bool(item.get("ok")),
+    }
+    if response:
+        entry["response"] = _compact_text(response, max_chars=2800)
+    artifact_ids = item.get("artifact_ids")
+    if isinstance(artifact_ids, list) and artifact_ids:
+        entry["artifact_ids"] = [str(value).strip() for value in artifact_ids[:8] if str(value).strip()]
+    return entry
+
+
+def _build_workflow_memory_snapshot(
+    *,
+    workflow_id: str,
+    user_input: str,
+    current_agent: str,
+    current_step: int,
+    results: List[Dict[str, Any]],
+    artifact_store: List[Dict[str, Any]],
+    open_needs: List[str],
+    pending_steps: List[Dict[str, Any]],
+    activated_agent_cards: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    return {
+        "workflow_id": workflow_id,
+        "current_step": current_step,
+        "current_agent": str(current_agent).strip(),
+        "user_request": _compact_text(user_input, max_chars=500),
+        "completed_steps": [
+            _build_workflow_memory_result_entry(item)
+            for item in results[-8:]
+            if isinstance(item, dict)
+        ],
+        "artifacts": _select_input_artifacts_for_step(
+            artifact_store=artifact_store,
+            max_items=10,
+        ),
+        "open_needs": [
+            _compact_text(str(item).strip(), max_chars=220)
+            for item in open_needs
+            if str(item).strip()
+        ][:10],
+        "pending_steps": [
+            {
+                "agent": str(step.get("agent", "")).strip(),
+                "goal": _compact_text(str(step.get("goal", "")).strip(), max_chars=220),
+                "deliverable": _compact_text(str(step.get("deliverable", "")).strip(), max_chars=180),
+            }
+            for step in pending_steps[:6]
+            if isinstance(step, dict)
+        ],
+        "activated_agents": [
+            _build_agent_card_snapshot(card)
+            for card in activated_agent_cards[:8]
+            if isinstance(card, dict)
+        ],
+    }
 
 
 def _normalize_need_text(value: str) -> str:
@@ -1966,21 +2139,12 @@ def _format_delegate_agent_profiles(
         if current_lower and name.lower() == current_lower:
             continue
 
-        caps = [str(item).strip() for item in agent.get("capabilities", []) if str(item).strip()]
-        cap_text = ", ".join(caps) if caps else "(none)"
-        tool_names: List[str] = []
-        for tool in agent.get("tools", []):
-            if isinstance(tool, dict):
-                token = str(tool.get("name", "")).strip()
-            else:
-                token = str(tool).strip()
-            if token and token not in tool_names:
-                tool_names.append(token)
-        tool_text = ", ".join(tool_names) if tool_names else "(none)"
-        lines.append(f"- {name}: capabilities={cap_text}; tools={tool_text}")
+        cap_text = _agent_capability_summary_text(agent)
+        ownership = _agent_ownership_text(agent)
+        lines.append(f"- {name}: capabilities={cap_text}; ownership={ownership}")
 
     if "mainagent" not in {line.lower().split(":")[0].replace("- ", "").strip() for line in lines}:
-        lines.append("- MainAgent: coordination, replanning, user-clarification routing")
+        lines.append("- MainAgent: capabilities=coordination and orchestration; ownership=Own coordinator-only work.")
     return "\n".join(lines).strip() or "(none)"
 
 
@@ -1996,7 +2160,6 @@ def _build_agent_catalog_for_context(
         if not name:
             continue
         caps = [str(item).strip() for item in agent.get("capabilities", []) if str(item).strip()][:6]
-        tools = _agent_tool_names(agent)[:4]
         catalog.append(
             {
                 "name": name,
@@ -2005,7 +2168,7 @@ def _build_agent_catalog_for_context(
                 "is_current": bool(current_key and name.lower() == current_key),
                 "description": _compact_text(str(agent.get("description", "")).strip(), max_chars=180),
                 "capabilities": caps,
-                "tools": tools,
+                "ownership": _compact_text(_agent_ownership_text(agent), max_chars=220),
             }
         )
     return catalog
@@ -2088,10 +2251,73 @@ def _build_collaboration_step_input(
         "Work autonomously and choose the concrete approach yourself.\n"
         "Treat goal, deliverable, tool_hints, and runtime_hints as guidance rather than rigid instructions.\n"
         "Do not call other agents directly.\n"
+        "If internal workflow context is missing, do not ask the user for prior step data first. "
+        "Return structured `needs` targeted to `MainAgent` so the coordinator can provide shared workflow memory or the missing handoff context.\n"
         "Return the best handoff-ready result you can for this step.\n\n"
         "Workflow Context Packet:\n"
         f"{context_json}"
     )
+
+
+def _result_text_for_progress_review(latest_result: Dict[str, Any]) -> str:
+    raw = str(latest_result.get("raw_response") or latest_result.get("response") or latest_result.get("error") or "").strip()
+    if raw in EMPTY_RESPONSE_SENTINELS:
+        return raw
+    return " ".join(raw.split()).strip()
+
+
+def _collect_progress_review_reasons(
+    *,
+    latest_result: Dict[str, Any],
+    pending_steps: List[Dict[str, Any]],
+    open_needs: List[str],
+) -> List[str]:
+    reasons: List[str] = []
+
+    if open_needs:
+        reasons.append("open_needs")
+    if not pending_steps:
+        reasons.append("pending_exhausted")
+    if bool(latest_result.get("workflow_paused")):
+        reasons.append("workflow_paused")
+    if not bool(latest_result.get("ok")):
+        reasons.append("latest_step_failed")
+
+    response_text = _result_text_for_progress_review(latest_result)
+    if response_text in EMPTY_RESPONSE_SENTINELS:
+        reasons.append("empty_output")
+    else:
+        for pattern in PROGRESS_REVIEW_BLOCKER_PATTERNS:
+            if pattern.search(response_text):
+                reasons.append("blocker_language")
+                break
+
+    emitted_artifacts = latest_result.get("artifacts_emitted")
+    additional_needs = latest_result.get("parsed_additional_needs")
+    if (
+        bool(latest_result.get("ok"))
+        and pending_steps
+        and str(latest_result.get("agent", "")).strip().lower() != "mainagent"
+        and not emitted_artifacts
+        and not additional_needs
+        and response_text in EMPTY_RESPONSE_SENTINELS
+    ):
+        reasons.append("missing_handoff_material")
+
+    repeat_count = latest_result.get("same_task_attempt_count")
+    repeat_threshold = latest_result.get("same_task_attempt_threshold")
+    if isinstance(repeat_count, int) and isinstance(repeat_threshold, int) and repeat_count > repeat_threshold:
+        reasons.append(f"same_task_threshold_exceeded:{repeat_count}>{repeat_threshold}")
+
+    seen: set[str] = set()
+    deduped: List[str] = []
+    for reason in reasons:
+        key = str(reason).strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(str(reason).strip())
+    return deduped
 
 
 async def _async_review_collaboration_progress_with_main_agent(
@@ -2106,6 +2332,7 @@ async def _async_review_collaboration_progress_with_main_agent(
     latest_result: Dict[str, Any],
     pending_steps: List[Dict[str, Any]],
     open_needs: List[str],
+    trigger_reasons: List[str],
 ) -> Dict[str, Any]:
     runner = InMemoryRunner(agent=main_agent, app_name="main-collaboration-replanner")
     log_event(
@@ -2115,40 +2342,12 @@ async def _async_review_collaboration_progress_with_main_agent(
             "completed_count": len(completed_results),
             "pending_count": len(pending_steps),
             "open_needs_count": len(open_needs),
+            "trigger_reasons": trigger_reasons,
         },
         direction="outbound",
     )
     try:
-        lines: List[str] = []
-        for agent in available_agents:
-            name = str(agent.get("name", "UnknownAgent"))
-            role = str(agent.get("role", "")).strip() or "worker"
-            desc = str(agent.get("description", "")).strip()
-            caps = ", ".join(str(c) for c in agent.get("capabilities", []))
-            tool_entries: List[str] = []
-            for tool in agent.get("tools", []):
-                if isinstance(tool, dict):
-                    tool_name = str(tool.get("name", "")).strip()
-                    tool_desc = str(tool.get("description", "")).strip()
-                    if tool_name and tool_desc:
-                        tool_entries.append(f"{tool_name}: {tool_desc}")
-                    elif tool_name:
-                        tool_entries.append(tool_name)
-                elif isinstance(tool, str):
-                    token = tool.strip()
-                    if token:
-                        tool_entries.append(token)
-            tools_text = "; ".join(tool_entries) if tool_entries else "(not provided)"
-            instruction_preview = str(agent.get("instruction_preview", "")).strip() or "(not provided)"
-            lines.append(
-                f"- name: {name}\n"
-                f"  role: {role}\n"
-                f"  description: {desc}\n"
-                f"  capabilities: {caps}\n"
-                f"  tools: {tools_text}\n"
-                f"  instruction_preview: {instruction_preview}"
-            )
-        agents_desc = "\n".join(lines) or "(none)"
+        agents_desc = _format_available_agents_for_review(available_agents)
 
         latest_step = latest_result.get("workflow_step")
         latest_agent = str(latest_result.get("agent", "UnknownAgent"))
@@ -2164,6 +2363,7 @@ async def _async_review_collaboration_progress_with_main_agent(
         activated_cards_text = _format_agent_card_snapshots(activated_agent_cards)
         conversation_summary = _summarize_conversation_history(conversation_history, max_turn_lines=8, max_chars=1200)
         planner_summary = _compact_text(raw_plan or "(none)", max_chars=1200)
+        trigger_text = ", ".join(trigger_reasons) if trigger_reasons else "(none)"
 
         prompt = (
             "You are the main coordinator reviewing multi-agent progress.\n"
@@ -2178,7 +2378,7 @@ async def _async_review_collaboration_progress_with_main_agent(
             '      "agent": "AgentName",\n'
             '      "goal": "what to do next",\n'
             '      "deliverable": "expected output",\n'
-            '      "tool_hints": ["tool_or_strategy_1", "tool_or_strategy_2"]\n'
+            '      "tool_hints": []\n'
             "    }\n"
             "  ],\n"
             '  "reason": "short reason"\n'
@@ -2188,11 +2388,13 @@ async def _async_review_collaboration_progress_with_main_agent(
             "- additional_needs should include only unresolved concrete needs.\n"
             "- If no plan update is needed, set should_update_plan=false and updated_steps=[].\n"
             "- updated_steps should contain only future steps.\n"
-            "- Leave tool_hints empty unless they are clearly useful.\n"
+            "- Always return an empty array for tool_hints.\n"
+            "- Use role, capability_summary, ownership, and description to choose agents.\n"
             "- Respect explicit user constraints.\n\n"
             f"Conversation context summary:\n{conversation_summary}\n\n"
             f"User request:\n{user_input}\n\n"
             f"Original planner text summary:\n{planner_summary}\n\n"
+            f"Review was triggered because:\n{trigger_text}\n\n"
             f"Latest completed step: {latest_step} ({latest_agent}, {latest_status})\n"
             f"Latest step output:\n{latest_text or '(none)'}\n\n"
             f"Completed outputs so far:\n{completed_text}\n\n"
@@ -2272,6 +2474,7 @@ def _review_collaboration_progress_with_main_agent(
     latest_result: Dict[str, Any],
     pending_steps: List[Dict[str, Any]],
     open_needs: List[str],
+    trigger_reasons: List[str],
 ) -> Dict[str, Any]:
     return _run_coroutine_sync(
         _async_review_collaboration_progress_with_main_agent(
@@ -2285,6 +2488,7 @@ def _review_collaboration_progress_with_main_agent(
             latest_result=latest_result,
             pending_steps=pending_steps,
             open_needs=open_needs,
+            trigger_reasons=trigger_reasons,
         )
     )
 
@@ -2318,36 +2522,7 @@ async def _async_handle_collaboration_failure_with_main_agent(
         direction="outbound",
     )
     try:
-        lines: List[str] = []
-        for agent in available_agents:
-            name = str(agent.get("name", "UnknownAgent"))
-            role = str(agent.get("role", "")).strip() or "worker"
-            desc = str(agent.get("description", "")).strip()
-            caps = ", ".join(str(c) for c in agent.get("capabilities", []))
-            tool_entries: List[str] = []
-            for tool in agent.get("tools", []):
-                if isinstance(tool, dict):
-                    tool_name = str(tool.get("name", "")).strip()
-                    tool_desc = str(tool.get("description", "")).strip()
-                    if tool_name and tool_desc:
-                        tool_entries.append(f"{tool_name}: {tool_desc}")
-                    elif tool_name:
-                        tool_entries.append(tool_name)
-                elif isinstance(tool, str):
-                    token = tool.strip()
-                    if token:
-                        tool_entries.append(token)
-            tools_text = "; ".join(tool_entries) if tool_entries else "(not provided)"
-            instruction_preview = str(agent.get("instruction_preview", "")).strip() or "(not provided)"
-            lines.append(
-                f"- name: {name}\n"
-                f"  role: {role}\n"
-                f"  description: {desc}\n"
-                f"  capabilities: {caps}\n"
-                f"  tools: {tools_text}\n"
-                f"  instruction_preview: {instruction_preview}"
-            )
-        agents_desc = "\n".join(lines) or "(none)"
+        agents_desc = _format_available_agents_for_review(available_agents)
 
         completed_text = _format_prior_results_for_handoff(results_so_far)
         pending_text = _format_remaining_steps(pending_steps)
@@ -2370,7 +2545,7 @@ async def _async_handle_collaboration_failure_with_main_agent(
             '      "agent": "AgentName",\n'
             '      "goal": "what to do next",\n'
             '      "deliverable": "expected output",\n'
-            '      "tool_hints": ["tool_or_strategy_1", "tool_or_strategy_2"]\n'
+            '      "tool_hints": []\n'
             "    }\n"
             "  ],\n"
             '  "reason": "short reason for decision"\n'
@@ -2380,7 +2555,8 @@ async def _async_handle_collaboration_failure_with_main_agent(
             "- If replan is feasible this turn, set decision=replan and provide updated_steps.\n"
             "- If not feasible, set decision=abort and provide a clear user_message.\n"
             "- updated_steps must contain only future steps.\n"
-            "- Leave tool_hints empty unless they are clearly useful.\n"
+            "- Always return an empty array for tool_hints.\n"
+            "- Use role, capability_summary, ownership, and description to choose agents.\n"
             "- Respect explicit user constraints.\n\n"
             f"Conversation context summary:\n{conversation_summary}\n\n"
             f"User request:\n{user_input}\n\n"
@@ -2621,36 +2797,7 @@ async def _async_handle_timeout_with_main_agent(
         direction="outbound",
     )
     try:
-        lines: List[str] = []
-        for agent in available_agents:
-            name = str(agent.get("name", "UnknownAgent"))
-            role = str(agent.get("role", "")).strip() or "worker"
-            desc = str(agent.get("description", "")).strip()
-            caps = ", ".join(str(c) for c in agent.get("capabilities", []))
-            tool_entries: List[str] = []
-            for tool in agent.get("tools", []):
-                if isinstance(tool, dict):
-                    tool_name = str(tool.get("name", "")).strip()
-                    tool_desc = str(tool.get("description", "")).strip()
-                    if tool_name and tool_desc:
-                        tool_entries.append(f"{tool_name}: {tool_desc}")
-                    elif tool_name:
-                        tool_entries.append(tool_name)
-                elif isinstance(tool, str):
-                    token = tool.strip()
-                    if token:
-                        tool_entries.append(token)
-            tools_text = "; ".join(tool_entries) if tool_entries else "(not provided)"
-            instruction_preview = str(agent.get("instruction_preview", "")).strip() or "(not provided)"
-            lines.append(
-                f"- name: {name}\n"
-                f"  role: {role}\n"
-                f"  description: {desc}\n"
-                f"  capabilities: {caps}\n"
-                f"  tools: {tools_text}\n"
-                f"  instruction_preview: {instruction_preview}"
-            )
-        agents_desc = "\n".join(lines) or "(none)"
+        agents_desc = _format_available_agents_for_review(available_agents)
         activated_cards_text = _format_agent_card_snapshots(activated_agent_cards)
         timeout_packet_json = json.dumps(timeout_packet, ensure_ascii=False, indent=2)
         conversation_summary = _summarize_conversation_history(conversation_history, max_turn_lines=8, max_chars=1200)
@@ -2674,14 +2821,15 @@ async def _async_handle_timeout_with_main_agent(
             '      "agent": "AgentName",\n'
             '      "goal": "what to do next",\n'
             '      "deliverable": "expected output",\n'
-            '      "tool_hints": ["tool_or_strategy_1", "tool_or_strategy_2"]\n'
+            '      "tool_hints": []\n'
             "    }\n"
             "  ]\n"
             "}\n\n"
             "Guidelines:\n"
             "- Use only names from Available agents in updated_steps.\n"
             "- Use replace_pending only when the current pending steps should be replaced.\n"
-            "- Leave tool_hints empty unless they are clearly useful.\n"
+            "- Always return an empty array for tool_hints.\n"
+            "- Use role, capability_summary, ownership, and description to choose agents.\n"
             "- Keep the decision grounded in the current workflow status packet.\n"
             "- Respect explicit user constraints.\n\n"
             f"Conversation context summary:\n{conversation_summary}\n\n"
@@ -2781,15 +2929,20 @@ def _run_collaboration_workflow(
     pending_steps: List[Dict[str, Any]] = list(steps)
     open_needs: List[str] = []
     seen_need_keys: set[str] = set()
+    step_attempt_counts: Dict[str, int] = {}
     activated_agent_cards_map: Dict[str, Dict[str, Any]] = {}
     step_counter = 0
     max_steps = _resolve_collaboration_max_steps(len(steps))
+    same_task_review_threshold = _resolve_same_task_review_threshold()
 
     while pending_steps and step_counter < max_steps:
         step_counter += 1
         step = pending_steps.pop(0)
         agent_name = str(step.get("agent", "UnknownAgent"))
         goal = str(step.get("goal", "")).strip()
+        step_signature = _step_signature(step)
+        same_task_attempt_count = step_attempt_counts.get(step_signature, 0) + 1
+        step_attempt_counts[step_signature] = same_task_attempt_count
         tool_hints = [str(item).strip() for item in step.get("tool_hints", []) if isinstance(item, str) and str(item).strip()]
         pre_step_open_needs = list(open_needs)
         current_agent_meta = step.get("agent_meta", {})
@@ -2823,6 +2976,9 @@ def _run_collaboration_workflow(
                 "total_steps_hint": total_steps_hint,
                 "agent": agent_name,
                 "goal": goal,
+                "task_signature": step_signature,
+                "same_task_attempt_count": same_task_attempt_count,
+                "same_task_attempt_threshold": same_task_review_threshold,
                 "tool_hints": tool_hints,
                 "open_needs": open_needs,
                 "input_artifact_count": len(input_artifacts),
@@ -2842,10 +2998,28 @@ def _run_collaboration_workflow(
             direction="outbound",
         )
 
-        result = _execute_single_agent(step["agent_meta"], step_input)
+        workflow_memory_snapshot = _build_workflow_memory_snapshot(
+            workflow_id=workflow_id,
+            user_input=user_input,
+            current_agent=agent_name,
+            current_step=step_counter,
+            results=results,
+            artifact_store=artifact_store,
+            open_needs=open_needs,
+            pending_steps=pending_steps,
+            activated_agent_cards=activated_agent_cards,
+        )
+        result = _execute_single_agent(
+            step["agent_meta"],
+            step_input,
+            workflow_memory_snapshot=workflow_memory_snapshot,
+        )
         enriched = dict(result)
         enriched["workflow_step"] = step_counter
         enriched["goal"] = goal
+        enriched["task_signature"] = step_signature
+        enriched["same_task_attempt_count"] = same_task_attempt_count
+        enriched["same_task_attempt_threshold"] = same_task_review_threshold
         enriched["tool_hints"] = tool_hints
         enriched["input_artifacts"] = input_artifacts
         raw_agent_output = (
@@ -3018,9 +3192,27 @@ def _run_collaboration_workflow(
                 "total_steps_hint": total_steps_hint,
                 "agent": agent_name,
                 "ok": bool(enriched.get("ok")),
+                "task_signature": step_signature,
+                "same_task_attempt_count": same_task_attempt_count,
+                "same_task_attempt_threshold": same_task_review_threshold,
             },
             direction="inbound",
         )
+
+        if same_task_attempt_count > same_task_review_threshold:
+            log_event(
+                "event_manager.collaboration",
+                "same_task_threshold_exceeded",
+                {
+                    "step": step_counter,
+                    "agent": agent_name,
+                    "goal": goal,
+                    "task_signature": step_signature,
+                    "same_task_attempt_count": same_task_attempt_count,
+                    "same_task_attempt_threshold": same_task_review_threshold,
+                },
+                level="WARNING",
+            )
 
         if not enriched.get("ok"):
             if bool(enriched.get("is_timeout")):
@@ -3210,7 +3402,12 @@ def _run_collaboration_workflow(
             )
             break
 
-        should_review = bool(open_needs or not pending_steps)
+        review_trigger_reasons = _collect_progress_review_reasons(
+            latest_result=enriched,
+            pending_steps=pending_steps,
+            open_needs=open_needs,
+        )
+        should_review = bool(review_trigger_reasons)
         if should_review:
             review = _review_collaboration_progress_with_main_agent(
                 main_agent=main_agent,
@@ -3223,13 +3420,14 @@ def _run_collaboration_workflow(
                 latest_result=enriched,
                 pending_steps=pending_steps,
                 open_needs=open_needs,
+                trigger_reasons=review_trigger_reasons,
             )
         else:
             review = {
                 "additional_needs": [],
                 "should_update_plan": False,
                 "updated_steps": [],
-                "reason": "review_skipped_no_open_needs",
+                "reason": "review_skipped_no_trigger",
             }
             log_event(
                 "event_manager.collaboration",
@@ -3239,6 +3437,7 @@ def _run_collaboration_workflow(
                     "agent": agent_name,
                     "pending_count": len(pending_steps),
                     "open_needs_count": len(open_needs),
+                    "trigger_reasons": review_trigger_reasons,
                 },
             )
 
