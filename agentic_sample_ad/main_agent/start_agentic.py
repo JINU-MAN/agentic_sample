@@ -8,9 +8,10 @@ from typing import Any, Callable, Dict, List, Tuple
 from agentic_sample_ad.scripts.start_a2a_agents import launch_agent_servers, stop_agent_servers
 from agentic_sample_ad.model_settings import (
     normalize_agent_name,
+    persist_default_model,
+    persist_model_overrides,
     read_default_model,
     read_model_overrides,
-    write_model_overrides,
 )
 
 from .card_registry import collect_sub_agent_card_files
@@ -239,14 +240,24 @@ def _make_model_setting_handler(
         default_model = read_default_model()
         model_overrides = read_model_overrides()
 
+        def _apply_agent_override(agent_key: str, model_name: str) -> str:
+            if model_name == default_model:
+                model_overrides.pop(agent_key, None)
+                persist_model_overrides(model_overrides)
+                return "default"
+            model_overrides[agent_key] = model_name
+            persist_model_overrides(model_overrides)
+            return "override"
+
         if target_key in {"all", "*"}:
             updated_agents: List[str] = ["MainAgent"]
-            model_overrides[normalize_agent_name("MainAgent")] = raw_model
-            for key, name in configured_agents.items():
-                model_overrides[key] = raw_model
+            for _, name in configured_agents.items():
                 if name not in updated_agents:
                     updated_agents.append(name)
-            write_model_overrides(model_overrides)
+
+            persist_default_model(raw_model)
+            model_overrides = {}
+            persist_model_overrides(model_overrides)
 
             servers = list(get_servers())
             if servers:
@@ -276,14 +287,17 @@ def _make_model_setting_handler(
                     "agent": "all",
                     "model": raw_model,
                     "default_model": default_model,
+                    "new_default_model": raw_model,
                     "updated_agents": updated_agents,
+                    "overrides_cleared": True,
                     "a2a_rebooted_count": len(started),
                     "resolved_runtime_cards": len(runtime_cards),
                 },
             )
             lines = [
-                f"[setting] All agents model updated: {raw_model}",
-                f"Applied to: {', '.join(updated_agents)}",
+                f"[setting] Default model updated: {raw_model}",
+                f"Applied by fallback to: {', '.join(updated_agents)}",
+                "Per-agent model overrides were cleared.",
                 "MainAgent is recreated on each request, so no server reboot was required.",
             ]
             if endpoints:
@@ -293,19 +307,24 @@ def _make_model_setting_handler(
             return "\n".join(lines)
 
         if normalize_agent_name("MainAgent") == target_key:
-            model_overrides[target_key] = raw_model
-            write_model_overrides(model_overrides)
+            resolution = _apply_agent_override(target_key, raw_model)
             log_main_event(
                 "agent_model_setting_applied",
                 {
                     "agent": "MainAgent",
                     "model": raw_model,
                     "default_model": default_model,
+                    "resolution": resolution,
                     "reboot": "not_required",
                 },
             )
+            if resolution == "default":
+                return (
+                    f"[setting] MainAgent now follows the default model: {default_model}\n"
+                    "MainAgent override was removed. MainAgent is recreated on each request, so no server reboot was required."
+                )
             return (
-                f"[setting] MainAgent model updated: {raw_model}\n"
+                f"[setting] MainAgent model override updated: {raw_model}\n"
                 "MainAgent is recreated on each request, so no server reboot was required."
             )
 
@@ -316,8 +335,7 @@ def _make_model_setting_handler(
                 "Available: all, MainAgent, PaperAnalyst, SocialMediaAnalyst, WebSearchAnalyst"
             )
 
-        model_overrides[target_key] = raw_model
-        write_model_overrides(model_overrides)
+        resolution = _apply_agent_override(target_key, raw_model)
 
         servers = list(get_servers())
         runtime_cards = list(get_runtime_cards())
@@ -348,10 +366,16 @@ def _make_model_setting_handler(
         if not resolved_cards:
             log_main_event(
                 "agent_model_setting_failed",
-                {"agent": configured_name, "model": raw_model, "reason": "restart_failed"},
+                {
+                    "agent": configured_name,
+                    "model": raw_model,
+                    "default_model": default_model,
+                    "resolution": resolution,
+                    "reason": "restart_failed",
+                },
             )
             return (
-                f"[setting] {configured_name} model override saved: {raw_model}\n"
+                f"[setting] {configured_name} model setting saved: {raw_model}\n"
                 "But agent reboot failed. Check logs and retry."
             )
 
@@ -363,11 +387,17 @@ def _make_model_setting_handler(
                 "model": raw_model,
                 "base_url": base_url,
                 "default_model": default_model,
+                "resolution": resolution,
                 "reboot": "completed",
             },
         )
+        if resolution == "default":
+            return (
+                f"[setting] {configured_name} now follows the default model: {default_model}\n"
+                f"Agent server rebooted at {base_url}"
+            )
         return (
-            f"[setting] {configured_name} model updated: {raw_model}\n"
+            f"[setting] {configured_name} model override updated: {raw_model}\n"
             f"Agent server rebooted at {base_url}"
         )
 
