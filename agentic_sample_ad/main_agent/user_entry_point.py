@@ -6,7 +6,7 @@ from typing import Callable, Tuple
 
 from .agent import run_main_agent
 from .session_memory import clear_session
-from .system_logger import finalize_main_logging, initialize_main_logging
+from .system_logger import finalize_main_logging, initialize_main_logging, start_main_logging_session
 
 SETTING_USAGE = "Usage: /setting {AgentName|all} -m {ModelName}"
 
@@ -44,6 +44,7 @@ def _parse_setting_command(user_input: str) -> Tuple[bool, str, str, str]:
 
 
 def input_loop(on_model_setting: Callable[[str, str], str] | None = None) -> None:
+    start_main_logging_session(reset_files=True)
     initialize_main_logging()
     session_id = uuid4().hex
     print("agentic_sample_ad main agent started. Type 'exit' or 'quit' to stop.")

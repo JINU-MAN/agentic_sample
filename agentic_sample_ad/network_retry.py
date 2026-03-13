@@ -139,6 +139,7 @@ async def run_with_network_retry(
     component: str,
     operation_name: str,
     retry_details: Mapping[str, Any] | None = None,
+    log_event_fn: Callable[..., None] = log_event,
     max_attempts: int | None = None,
     base_delay_sec: float | None = None,
     max_delay_sec: float | None = None,
@@ -156,7 +157,7 @@ async def run_with_network_retry(
                 raise
 
             delay_sec = min(max_delay, base_delay * (2 ** (attempt - 1)))
-            log_event(
+            log_event_fn(
                 component,
                 "network_retry_scheduled",
                 {
@@ -186,6 +187,7 @@ async def collect_text_response_with_network_retry(
     operation_name: str,
     retry_details: Mapping[str, Any] | None = None,
     on_text: Callable[[str, Any], None] | None = None,
+    log_event_fn: Callable[..., None] = log_event,
 ) -> List[str]:
     async def _run_once() -> List[str]:
         session = await runner.session_service.create_session(
@@ -211,4 +213,5 @@ async def collect_text_response_with_network_retry(
         component=component,
         operation_name=operation_name,
         retry_details=retry_details,
+        log_event_fn=log_event_fn,
     )

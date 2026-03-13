@@ -8,12 +8,15 @@ from agentic_sample_ad.agent_session_memory_runtime import build_load_session_me
 from agentic_sample_ad.model_settings import resolve_agent_model
 from agentic_sample_ad.skill_runtime import build_skill_toolset
 
+from .system_logger import log_event, log_exception
 from .tool import search_web_with_mcp
 
 
 load_session_memory = build_load_session_memory_tool(
     agent_name="WebSearchAnalyst",
     memory_path=Path(__file__).resolve().parent / "memory" / "session_memory.json",
+    log_event_fn=log_event,
+    log_exception_fn=log_exception,
 )
 _TOOLS = [search_web_with_mcp, load_session_memory]
 _SKILL_TOOLSET = build_skill_toolset(Path(__file__).resolve().parent / "skills")

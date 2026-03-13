@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from .system_logger import finalize_process_logging, initialize_process_logging, start_new_logging_session
+
 from .event_manager import run_single_task
 from .session_memory import clear_session, get_or_create_session
 
 
 def input_loop() -> None:
+    start_new_logging_session(reset_files=True)
+    initialize_process_logging()
     session_id = uuid4().hex
     print("SocialMediaAnalyst standalone mode. Type 'exit' or 'quit' to stop.")
     print("Type 'reset' or '/reset' to clear the local session memory.")
@@ -37,5 +41,7 @@ def input_loop() -> None:
 
 
 if __name__ == "__main__":
-    input_loop()
-
+    try:
+        input_loop()
+    finally:
+        finalize_process_logging()

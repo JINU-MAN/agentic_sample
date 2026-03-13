@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
-from agentic_sample_ad.system_logger import log_event, log_exception
+from agentic_sample_ad.main_agent.system_logger import log_event, log_exception
 
 
 def _resolve_slack_server_path() -> str:
@@ -65,4 +65,3 @@ def slack_post_message(channel: str, text: str) -> str:
 
 
 __all__ = ["slack_post_message"]
-

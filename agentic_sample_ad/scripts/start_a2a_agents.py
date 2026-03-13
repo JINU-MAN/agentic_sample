@@ -84,6 +84,14 @@ def _env_flag(name: str, default: bool) -> bool:
     return raw not in {"0", "false", "no", "off", "disable", "disabled"}
 
 
+def _child_process_env() -> Dict[str, str]:
+    env = os.environ.copy()
+    prepend = str(PACKAGE_PARENT_DIR)
+    current = str(env.get("PYTHONPATH", "")).strip()
+    env["PYTHONPATH"] = os.pathsep.join([prepend, current]) if current else prepend
+    return env
+
+
 def _pick_dynamic_port(host: str) -> int:
     bind_host = str(host).strip() or "127.0.0.1"
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -310,7 +318,11 @@ def launch_agent_servers(
             ]
             if model_name:
                 cmd.extend(["--model", model_name])
-            process = subprocess.Popen(cmd, cwd=str(PACKAGE_PARENT_DIR))
+            process = subprocess.Popen(
+                cmd,
+                cwd=str(ROOT_DIR),
+                env=_child_process_env(),
+            )
             print(f"[starting] {name} -> {host}:{port} (pid={process.pid})")
 
             if not _wait_for_agent_card_ready(runtime_base_url, ready_timeout_sec=ready_timeout_sec):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 from uuid import uuid4
 
 import uvicorn
@@ -15,10 +15,10 @@ from google.genai import types
 
 from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
 from agentic_sample_ad.system_logger import (
-    finalize_process_logging,
-    initialize_process_logging,
-    log_event,
-    log_exception,
+    finalize_process_logging as default_finalize_process_logging,
+    initialize_process_logging as default_initialize_process_logging,
+    log_event as default_log_event,
+    log_exception as default_log_exception,
 )
 
 
@@ -112,9 +112,10 @@ async def _run_local_agent(
     agent_name: str,
     user_input: str,
     component: str,
+    log_event_fn: Callable[..., None],
 ) -> str:
     runner = InMemoryRunner(agent=agent_obj, app_name=f"a2a-server-{agent_name}")
-    log_event(
+    log_event_fn(
         component,
         "agent_execution_started",
         {"agent": agent_name, "user_input": user_input},
@@ -129,9 +130,10 @@ async def _run_local_agent(
             component=component,
             operation_name=f"a2a_server_local_agent:{agent_name}",
             retry_details={"agent": agent_name, "user_input": user_input},
+            log_event_fn=log_event_fn,
         )
         response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
-        log_event(
+        log_event_fn(
             component,
             "agent_execution_completed",
             {"agent": agent_name, "response": response_text},
@@ -152,6 +154,8 @@ def create_app(
     host: str,
     port: int,
     tags: List[str],
+    log_event_fn: Callable[..., None],
+    log_exception_fn: Callable[..., None],
 ) -> FastAPI:
     card_payload = _build_agent_card(
         agent_name=agent_name,
@@ -164,7 +168,7 @@ def create_app(
 
     @app.get("/.well-known/agent-card.json")
     async def get_agent_card() -> Dict[str, Any]:
-        log_event(
+        log_event_fn(
             component,
             "agent_card_requested",
             {"agent": agent_name, "module": module_name},
@@ -201,7 +205,7 @@ def create_app(
         if not user_input:
             return JSONResponse(_jsonrpc_error_response(request_id, -32602, "No text part found in message."))
 
-        log_event(
+        log_event_fn(
             component,
             "rpc_request_received",
             {
@@ -209,6 +213,7 @@ def create_app(
                 "request_id": request_id,
                 "method": method,
                 "input_chars": len(user_input),
+                "user_input": user_input,
             },
             direction="inbound",
         )
@@ -218,6 +223,7 @@ def create_app(
                 agent_name=agent_name,
                 user_input=user_input,
                 component=component,
+                log_event_fn=log_event_fn,
             )
             result_message: Dict[str, Any] = {
                 "kind": "message",
@@ -233,15 +239,20 @@ def create_app(
             if isinstance(task_id, str) and task_id.strip():
                 result_message["taskId"] = task_id
 
-            log_event(
+            log_event_fn(
                 component,
                 "rpc_request_completed",
-                {"agent": agent_name, "request_id": request_id},
+                {
+                    "agent": agent_name,
+                    "request_id": request_id,
+                    "response_chars": len(response_text),
+                    "response": response_text,
+                },
                 direction="outbound",
             )
             return JSONResponse({"jsonrpc": "2.0", "id": request_id, "result": result_message})
         except Exception as e:
-            log_exception(
+            log_exception_fn(
                 component,
                 "rpc_request_failed",
                 e,
@@ -272,9 +283,16 @@ def run_server(
     default_name: str = "",
     default_description: str = "",
     default_tags: List[str] | None = None,
+    initialize_logging_fn: Callable[[], None] = default_initialize_process_logging,
+    finalize_logging_fn: Callable[[], None] = default_finalize_process_logging,
+    start_logging_session_fn: Callable[..., Any] | None = None,
+    log_event_fn: Callable[..., None] = default_log_event,
+    log_exception_fn: Callable[..., None] = default_log_exception,
 ) -> None:
     try:
-        initialize_process_logging()
+        if start_logging_session_fn is not None:
+            start_logging_session_fn(reset_files=True)
+        initialize_logging_fn()
         load_env_file()
         args = _parse_server_args(description=f"Run {default_name or 'local'} A2A agent server.")
 
@@ -286,7 +304,7 @@ def run_server(
             try:
                 setattr(agent_obj, "model", requested_model)
                 applied_model = str(getattr(agent_obj, "model", "")).strip()
-                log_event(
+                log_event_fn(
                     component,
                     "agent_model_overridden",
                     {
@@ -297,7 +315,7 @@ def run_server(
                     },
                 )
             except Exception as e:
-                log_exception(
+                log_exception_fn(
                     component,
                     "agent_model_override_failed",
                     e,
@@ -327,8 +345,10 @@ def run_server(
             host=args.host,
             port=args.port,
             tags=tags,
+            log_event_fn=log_event_fn,
+            log_exception_fn=log_exception_fn,
         )
-        log_event(
+        log_event_fn(
             component,
             "server_starting",
             {
@@ -340,4 +360,4 @@ def run_server(
         )
         uvicorn.run(app, host=args.host, port=args.port, log_level=str(args.log_level).lower())
     finally:
-        finalize_process_logging()
+        finalize_logging_fn()

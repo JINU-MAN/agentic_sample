@@ -5,12 +5,15 @@ from typing import Any, Dict, List
 from agentic_sample_ad.common.local_agent_event_manager import LocalAgentEventManager
 
 from .agent import paper_agent
+from .system_logger import log_event, log_exception
 
 
 _MANAGER = LocalAgentEventManager(
     agent_name="PaperAnalyst",
     agent_obj=paper_agent,
     component="ad.paper_agent.event_manager",
+    log_event_fn=log_event,
+    log_exception_fn=log_exception,
 )
 
 
@@ -29,4 +32,3 @@ def run_all_tasks() -> List[Dict[str, Any]]:
 def run_single_task(command: str, context: Dict[str, Any] | None = None) -> Dict[str, Any]:
     enqueue_task(command, context=context)
     return run_next_task()
-

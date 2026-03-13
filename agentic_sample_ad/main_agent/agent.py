@@ -19,6 +19,8 @@ from .session_memory import get_or_create_session
 from .system_logger import (
     enable_a2a_package_logging,
     initialize_main_logging,
+    log_event,
+    log_exception,
     log_main_event,
     log_main_exception,
 )
@@ -63,6 +65,8 @@ def create_main_agent() -> LlmAgent:
     load_session_memory = build_load_session_memory_tool(
         agent_name="MainAgent",
         memory_path=SESSION_MEMORY_PATH,
+        log_event_fn=log_event,
+        log_exception_fn=log_exception,
     )
     tools: List[Any] = [slack_post_message, read_workflow_memory, load_session_memory]
     skill_toolset = build_skill_toolset(PROJECT_ROOT / "main_agent" / "skills")
@@ -272,7 +276,6 @@ def run_main_agent(user_input: str, session_id: str = "default") -> str:
         session.add_workflow_context(
             {
                 "raw_plan": str(plan.get("raw_plan", "")),
-                "routing_hint": plan.get("meta", {}).get("routing_hint", {}),
                 "collaboration_plan": plan.get("meta", {}).get("collaboration_plan", {}),
                 "execution_output": result_text,
             }

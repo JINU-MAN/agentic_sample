@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
-from agentic_sample_ad.system_logger import log_event, log_exception
+from agentic_sample_ad.web_search_agent.system_logger import log_event, log_exception
 
 
 BASE_DIR = Path(__file__).parent.parent.parent

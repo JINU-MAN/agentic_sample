@@ -13,6 +13,8 @@ from mcp.client.stdio import stdio_client
 
 from agentic_sample_ad.system_logger import log_event, log_exception
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 
 def _child_process_env(*, pythonpath_prepend: Path | None = None) -> Dict[str, str]:
     env = os.environ.copy()
@@ -23,11 +25,18 @@ def _child_process_env(*, pythonpath_prepend: Path | None = None) -> Dict[str, s
     return env
 
 
+def _resolve_server_script_path(server_script_path: str) -> Path:
+    candidate = Path(str(server_script_path or "").strip())
+    if candidate.is_absolute():
+        return candidate.resolve()
+    return (PROJECT_ROOT / candidate).resolve()
+
+
 def _server_params(server_script_path: str) -> StdioServerParameters:
     """
     Build stdio server params from an MCP server path.
     """
-    server_path = Path(server_script_path).resolve()
+    server_path = _resolve_server_script_path(server_script_path)
 
     if server_path.parent.name == "mcp_local" and server_path.name.endswith("_server.py"):
         # Standalone-friendly execution:

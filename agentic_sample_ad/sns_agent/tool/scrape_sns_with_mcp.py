@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
-from agentic_sample_ad.system_logger import log_event, log_exception
+from agentic_sample_ad.sns_agent.system_logger import log_event, log_exception
 
 
 BASE_DIR = Path(__file__).parent.parent.parent
@@ -45,4 +45,3 @@ def scrape_sns_with_mcp(keyword: str) -> str:
 
 
 __all__ = ["scrape_sns_with_mcp"]
-

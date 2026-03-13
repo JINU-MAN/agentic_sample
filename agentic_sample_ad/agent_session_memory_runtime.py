@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 
 def _compact_text(value: Any, *, max_chars: int) -> str:
@@ -166,7 +166,13 @@ def render_session_memory(memory_path: str | Path, *, section: str = "", query: 
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 
-def build_load_session_memory_tool(*, agent_name: str, memory_path: str | Path):
+def build_load_session_memory_tool(
+    *,
+    agent_name: str,
+    memory_path: str | Path,
+    log_event_fn: Callable[..., None] | None = None,
+    log_exception_fn: Callable[..., None] | None = None,
+):
     resolved_path = Path(memory_path).resolve()
 
     def load_session_memory(section: str = "", query: str = "", max_items: int = 6) -> str:
@@ -182,12 +188,52 @@ def build_load_session_memory_tool(*, agent_name: str, memory_path: str | Path):
             normalized_max_items = max(1, min(int(max_items or 6), 12))
         except (TypeError, ValueError):
             normalized_max_items = 6
-        return render_session_memory(
-            resolved_path,
-            section=section,
-            query=query,
-            max_items=normalized_max_items,
-        )
+        if log_event_fn is not None:
+            log_event_fn(
+                "tool.load_session_memory",
+                "call_started",
+                {
+                    "agent": agent_name,
+                    "section": section,
+                    "query": query,
+                    "max_items": normalized_max_items,
+                },
+                direction="outbound",
+            )
+        try:
+            rendered = render_session_memory(
+                resolved_path,
+                section=section,
+                query=query,
+                max_items=normalized_max_items,
+            )
+            if log_event_fn is not None:
+                log_event_fn(
+                    "tool.load_session_memory",
+                    "call_completed",
+                    {
+                        "agent": agent_name,
+                        "section": section,
+                        "query": query,
+                        "max_items": normalized_max_items,
+                    },
+                    direction="inbound",
+                )
+            return rendered
+        except Exception as e:
+            if log_exception_fn is not None:
+                log_exception_fn(
+                    "tool.load_session_memory",
+                    "call_failed",
+                    e,
+                    {
+                        "agent": agent_name,
+                        "section": section,
+                        "query": query,
+                        "max_items": normalized_max_items,
+                    },
+                )
+            raise
 
     load_session_memory.__name__ = "load_session_memory"
     load_session_memory.__qualname__ = "load_session_memory"

@@ -335,9 +335,7 @@ def start_new_logging_session(*, reset_files: bool = True) -> str:
         return normalized
 
 
-def _next_session_event_sequence() -> int:
-    seq_file = SESSION_SEQ_FILE
-    lock_file = SESSION_SEQ_LOCK_FILE
+def _next_file_sequence(seq_file: Path, lock_file: Path) -> int:
     deadline = time.monotonic() + SESSION_SEQ_LOCK_TIMEOUT_SEC
     lock_fd: int | None = None
 
@@ -354,7 +352,6 @@ def _next_session_event_sequence() -> int:
             except Exception:
                 pass
             if time.monotonic() >= deadline:
-                # Fallback to timestamp-based sequence token when lock acquisition fails.
                 return int(datetime.now(timezone.utc).timestamp() * 1_000_000)
             time.sleep(0.01)
 
@@ -380,6 +377,10 @@ def _next_session_event_sequence() -> int:
                 pass
 
 
+def _next_session_event_sequence() -> int:
+    return _next_file_sequence(SESSION_SEQ_FILE, SESSION_SEQ_LOCK_FILE)
+
+
 def _finalize_logging_on_exit() -> None:
     try:
         finalize_process_logging()
@@ -400,14 +401,13 @@ def initialize_process_logging() -> None:
     Initialize per-process logging artifacts once.
     - prepares shared session jsonl + sequence state under log/.
     """
-    global _PROCESS_LOG_INITIALIZED
+    global _PROCESS_LOG_INITIALIZED, _PROCESS_LOG_FINALIZED
     with _LOCK:
-        if _PROCESS_LOG_INITIALIZED:
-            return
         ensure_log_dirs()
         _ensure_session_id()
         _register_exit_hook_if_needed()
         _enable_function_call_tracing_if_needed()
+        _PROCESS_LOG_FINALIZED = False
         _PROCESS_LOG_INITIALIZED = True
 
 
@@ -484,6 +484,138 @@ def _write_line(path: Path, payload: Mapping[str, Any]) -> None:
         fh.write(line)
 
 
+def _should_write_global_session_event(component: str, action: str) -> bool:
+    component_key = _sanitize_component_name(component)
+    action_key = str(action or "").strip().lower()
+    if component_key == "ad.main_agent" and action_key in {"run_started", "run_completed", "run_failed"}:
+        return True
+    if component_key == "event_manager.agent_message":
+        return True
+    if component_key.startswith("tool."):
+        return True
+    return False
+
+
+class ScopedSessionLogger:
+    def __init__(self, log_dir: str | Path) -> None:
+        self._log_dir = Path(log_dir).resolve()
+        self._session_log_file = self._log_dir / "session_log.jsonl"
+        self._seq_file = self._log_dir / ".session_sequence"
+        self._lock_file = self._log_dir / ".session_sequence.lock"
+        self._archive_prefix = "session_log_ex_"
+        self._lock = threading.Lock()
+        self._initialized = False
+        self._finalized = False
+
+    def _ensure_dirs(self) -> None:
+        self._log_dir.mkdir(parents=True, exist_ok=True)
+
+    def _next_archive_dir(self) -> Path:
+        max_seq = 0
+        for candidate in self._log_dir.glob(f"{self._archive_prefix}*"):
+            if not candidate.is_dir():
+                continue
+            suffix = candidate.name[len(self._archive_prefix):]
+            if suffix.isdigit():
+                max_seq = max(max_seq, int(suffix))
+        return self._log_dir / f"{self._archive_prefix}{max_seq + 1:010d}"
+
+    def _archive_previous_session_log(self) -> None:
+        if not self._session_log_file.exists():
+            return
+        try:
+            if not self._session_log_file.read_text(encoding="utf-8").strip():
+                return
+        except Exception:
+            return
+
+        archive_dir = self._next_archive_dir()
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        target = archive_dir / self._session_log_file.name
+        suffix = 1
+        while target.exists():
+            target = archive_dir / f"session_log_{suffix}.jsonl"
+            suffix += 1
+        self._session_log_file.replace(target)
+
+    def _reset_active_session_log(self) -> None:
+        self._session_log_file.write_text("", encoding="utf-8")
+        self._seq_file.write_text("0", encoding="utf-8")
+        try:
+            self._lock_file.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    def start_new_session(self, *, reset_files: bool = True) -> None:
+        with self._lock:
+            self._ensure_dirs()
+            self._finalized = False
+            if reset_files:
+                self._archive_previous_session_log()
+                self._reset_active_session_log()
+
+    def initialize(self) -> None:
+        with self._lock:
+            self._ensure_dirs()
+            self._finalized = False
+            self._initialized = True
+
+    def finalize(self) -> None:
+        with self._lock:
+            self._finalized = True
+
+    def log_event(
+        self,
+        component: str,
+        action: str,
+        details: Mapping[str, Any] | None = None,
+        *,
+        direction: str = "internal",
+        level: str = "INFO",
+    ) -> None:
+        try:
+            self._ensure_dirs()
+            payload = {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "level": str(level).upper(),
+                "component": _sanitize_component_name(component),
+                "action": action,
+                "direction": direction,
+                "details": _normalize_value(details or {}, depth=0),
+            }
+            with self._lock:
+                if self._finalized:
+                    return
+                self._initialized = True
+                payload["session_seq"] = int(_next_file_sequence(self._seq_file, self._lock_file))
+                _write_line(self._session_log_file, payload)
+        except Exception:
+            return
+
+    def log_exception(
+        self,
+        component: str,
+        action: str,
+        error: Exception,
+        details: Mapping[str, Any] | None = None,
+    ) -> None:
+        merged = dict(details or {})
+        snapshot = _exception_snapshot(error)
+        merged["error_type"] = str(snapshot.get("error_type", type(error).__name__))
+        merged["error"] = str(snapshot.get("error", str(error)))
+
+        traceback_text = snapshot.get("traceback")
+        if isinstance(traceback_text, str) and traceback_text.strip():
+            merged["traceback"] = traceback_text
+
+        sub_exceptions = snapshot.get("sub_exceptions")
+        if isinstance(sub_exceptions, list) and sub_exceptions:
+            merged["sub_exceptions"] = sub_exceptions
+            merged["is_exception_group"] = True
+
+        self.log_event(component, action, merged, direction="internal", level="ERROR")
+
+
 def log_event(
     component: str,
     action: str,
@@ -515,7 +647,8 @@ def log_event(
             payload["session_seq"] = int(session_seq)
             _write_line(SYSTEM_LOG_FILE, payload)
             _write_line(component_file, payload)
-            _write_line(SESSION_LOG_FILE, payload)
+            if _should_write_global_session_event(safe_component, action):
+                _write_line(SESSION_LOG_FILE, payload)
     except Exception:
         # Logging must never break primary execution.
         return
