@@ -1,3 +1,0 @@
-{"ts": "2026-03-13T02:01:01.031636+00:00", "level": "INFO", "component": "a2a.agent_server.paper_agent", "action": "rpc_request_received", "direction": "inbound", "details": {"user_input": "hello paper", "request_id": "req-1"}, "session_seq": 1}
-{"ts": "2026-03-13T02:01:01.033807+00:00", "level": "INFO", "component": "a2a.agent_server.paper_agent", "action": "rpc_request_completed", "direction": "outbound", "details": {"response": "paper done", "request_id": "req-1"}, "session_seq": 2}
-{"ts": "2026-03-13T02:01:01.034819+00:00", "level": "INFO", "component": "tool.load_session_memory", "action": "call_started", "direction": "internal", "details": {"section": "tools"}, "session_seq": 3}

@@ -14,7 +14,8 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
-from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
+from agentic_sample_ad.network_retry import collect_response_parts_with_network_retry
+from agentic_sample_ad.runtime_utils import finalize_text_response
 from agentic_sample_ad.system_logger import finalize_process_logging, initialize_process_logging, log_event, log_exception
 
 
@@ -65,7 +66,7 @@ def _extract_user_text(message_payload: Dict[str, Any]) -> str:
     return "\n".join(chunks).strip()
 
 
-async def _run_local_agent(agent_obj: LlmAgent, agent_name: str, user_input: str) -> str:
+async def _run_local_agent(agent_obj: LlmAgent, agent_name: str, user_input: str) -> Dict[str, Any]:
     runner = InMemoryRunner(agent=agent_obj, app_name=f"a2a-bridge-{agent_name}")
     log_event(
         "a2a.bridge",
@@ -75,7 +76,7 @@ async def _run_local_agent(agent_obj: LlmAgent, agent_name: str, user_input: str
     )
     try:
         new_message = types.Content(role="user", parts=[types.Part(text=user_input)])
-        chunks = await collect_text_response_with_network_retry(
+        collected = await collect_response_parts_with_network_retry(
             runner=runner,
             user_id="a2a-bridge-user",
             new_message=new_message,
@@ -83,15 +84,27 @@ async def _run_local_agent(agent_obj: LlmAgent, agent_name: str, user_input: str
             operation_name=f"a2a_bridge_local_agent:{agent_name}",
             retry_details={"agent": agent_name, "user_input": user_input},
         )
+        chunks = list(collected.get("chunks", []))
 
-        response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
+        response_text = finalize_text_response(chunks)
         log_event(
             "a2a.bridge",
             "agent_execution_completed",
-            {"agent": agent_name, "response": response_text},
+            {
+                "agent": agent_name,
+                "response": response_text,
+                "normalized_response_parts": list(collected.get("normalized_parts", [])),
+                "non_text_part_types": list(collected.get("non_text_part_types", [])),
+                "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
+            },
             direction="inbound",
         )
-        return response_text
+        return {
+            "response_text": response_text,
+            "normalized_parts": list(collected.get("normalized_parts", [])),
+            "non_text_part_types": list(collected.get("non_text_part_types", [])),
+            "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
+        }
     finally:
         await runner.close()
 
@@ -216,12 +229,18 @@ def create_app(
         )
 
         try:
-            response_text = await _run_local_agent(agent_obj=agent_obj, agent_name=agent_name, user_input=user_input)
+            agent_response = await _run_local_agent(agent_obj=agent_obj, agent_name=agent_name, user_input=user_input)
+            response_text = str(agent_response.get("response_text", "") or "")
             result_message: Dict[str, Any] = {
                 "kind": "message",
                 "messageId": uuid4().hex,
                 "role": "agent",
                 "parts": [{"kind": "text", "text": response_text}],
+                "metadata": {
+                    "normalized_response_parts": list(agent_response.get("normalized_parts", [])),
+                    "non_text_part_types": list(agent_response.get("non_text_part_types", [])),
+                    "used_non_text_fallback": bool(agent_response.get("used_non_text_fallback")),
+                },
             }
 
             context_id = message_payload.get("contextId")

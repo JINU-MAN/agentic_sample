@@ -1,17 +1,19 @@
 ﻿from __future__ import annotations
 
-import asyncio
-import json
 import re
-import threading
 from typing import Any, Dict, List
 
 from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from agentic_sample_ad.agent_metadata_utils import format_available_agents_for_prompt as _format_available_agents_for_prompt
 from agentic_sample_ad.main_agent.system_logger import log_event, log_exception
 from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
+from agentic_sample_ad.runtime_utils import (
+    extract_json_object_with_source,
+    run_coroutine_sync,
+)
 
 
 def _build_planning_agent_view(agent: LlmAgent) -> LlmAgent:
@@ -22,35 +24,16 @@ def _build_planning_agent_view(agent: LlmAgent) -> LlmAgent:
     )
 
 
-def _run_coroutine_sync(coro: Any) -> Any:
-    """
-    Run an async coroutine from sync code.
-
-    - If no event loop is running in this thread, use asyncio.run.
-    - If an event loop is already running, run in a separate thread.
-    """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(coro)
-
-    result: Any = None
-    error: Exception | None = None
-
-    def _target() -> None:
-        nonlocal result, error
-        try:
-            result = asyncio.run(coro)
-        except Exception as e:  # pragma: no cover
-            error = e
-
-    thread = threading.Thread(target=_target, daemon=True)
-    thread.start()
-    thread.join()
-
-    if error is not None:
-        raise error
-    return result
+def _is_internal_management_step(goal: str, deliverable: str = "") -> bool:
+    combined = " ".join(part for part in [str(goal or "").strip(), str(deliverable or "").strip()] if part).strip()
+    if not combined:
+        return False
+    return bool(
+        re.search(r"\bload(?:ing|ed)?\b.{0,40}\bskill\b", combined, flags=re.IGNORECASE)
+        or re.search(r"\bload(?:ing|ed)?\b.{0,40}\bsession memory\b", combined, flags=re.IGNORECASE)
+        or re.search(r"스킬.{0,24}(?:로드|불러)", combined, flags=re.IGNORECASE)
+        or re.search(r"세션 메모리.{0,24}(?:로드|불러)", combined, flags=re.IGNORECASE)
+    )
 
 
 async def _async_run_agent_prompt(agent: LlmAgent, prompt: str, task: str) -> str:
@@ -115,7 +98,7 @@ async def _async_run_agent_prompt(agent: LlmAgent, prompt: str, task: str) -> st
 
 def _run_agent_prompt(agent: LlmAgent, prompt: str, task: str) -> str:
     return str(
-        _run_coroutine_sync(_async_run_agent_prompt(agent=agent, prompt=prompt, task=task))
+        run_coroutine_sync(_async_run_agent_prompt(agent=agent, prompt=prompt, task=task))
     )
 
 
@@ -145,44 +128,15 @@ def _summarize_conversation_history(
 
 
 def _extract_json_object(text: str) -> Dict[str, Any] | None:
-    stripped = text.strip()
-    if not stripped:
+    parsed, source = extract_json_object_with_source(text)
+    stripped = str(text or "").strip()
+    if parsed is not None:
+        log_event("planner", "extract_json_success", {"source": source})
+        return parsed
+    if source == "empty":
         log_event("planner", "extract_json_empty", {})
-        return None
-
-    try:
-        obj = json.loads(stripped)
-        if isinstance(obj, dict):
-            log_event("planner", "extract_json_success", {"source": "plain_json"})
-            return obj
-    except json.JSONDecodeError:
-        pass
-
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", stripped, flags=re.DOTALL)
-    if fenced:
-        candidate = fenced.group(1).strip()
-        try:
-            obj = json.loads(candidate)
-            if isinstance(obj, dict):
-                log_event("planner", "extract_json_success", {"source": "fenced_json"})
-                return obj
-        except json.JSONDecodeError:
-            pass
-
-    start = stripped.find("{")
-    end = stripped.rfind("}")
-    if start >= 0 and end > start:
-        candidate = stripped[start : end + 1]
-        try:
-            obj = json.loads(candidate)
-            if isinstance(obj, dict):
-                log_event("planner", "extract_json_success", {"source": "substring"})
-                return obj
-        except json.JSONDecodeError:
-            log_event("planner", "extract_json_failed", {"source": "substring", "text": stripped})
-            return None
-
-    log_event("planner", "extract_json_failed", {"source": "all", "text": stripped})
+    else:
+        log_event("planner", "extract_json_failed", {"source": source, "text": stripped})
     return None
 
 
@@ -218,6 +172,18 @@ def _normalize_collaboration_plan(
         deliverable = str(item.get("deliverable") or item.get("output") or "").strip()
         if not goal:
             goal = "Handle this step with your specialization and provide a handoff-ready output."
+        if _is_internal_management_step(goal, deliverable):
+            log_event(
+                "planner",
+                "internal_management_step_ignored",
+                {
+                    "agent": normalized_agent,
+                    "goal": goal,
+                    "deliverable": deliverable,
+                },
+                level="WARNING",
+            )
+            continue
 
         steps.append(
             {
@@ -233,96 +199,6 @@ def _normalize_collaboration_plan(
     normalized = {"steps": steps, "notes": notes}
     log_event("planner", "collaboration_plan_normalized", {"collaboration_plan": normalized})
     return normalized
-
-
-def _format_available_agents_for_prompt(available_agents: List[Dict[str, Any]]) -> str:
-    if not available_agents:
-        return "No sub-agents are currently configured."
-
-    capability_labels = {
-        "coordination": "coordination and orchestration",
-        "workflow_replanning": "workflow replanning",
-        "user_clarification_routing": "user clarification and routing",
-        "comm.slack.post": "Slack channel delivery",
-        "paper_search": "paper search in the local PDF corpus",
-        "paper_memory": "workflow-scoped paper memory analysis",
-        "external_paper_fetch": "external paper reference lookup",
-        "sns_search": "SNS post collection",
-        "sns_summary": "social signal summarization",
-        "web_search": "web research and current-information lookup",
-        "web_evidence_summary": "citation-grounded web evidence synthesis",
-    }
-
-    def _tool_name_keys(agent: Dict[str, Any]) -> set[str]:
-        keys: set[str] = set()
-        for tool in agent.get("tools", []):
-            if isinstance(tool, dict):
-                token = str(tool.get("name", "")).strip().lower()
-            else:
-                token = str(tool).strip().lower()
-            if token:
-                keys.add(token)
-        return keys
-
-    def _humanize_capability(token: str) -> str:
-        lowered = token.strip().lower()
-        if lowered in capability_labels:
-            return capability_labels[lowered]
-        return " ".join(part for part in re.split(r"[._]+", token.strip()) if part)
-
-    lines: List[str] = []
-    for agent in available_agents:
-        name = str(agent.get("name", "UnknownAgent")).strip() or "UnknownAgent"
-        role = str(agent.get("role", "")).strip() or "worker"
-        desc = str(agent.get("description", "")).strip()
-        tool_name_keys = _tool_name_keys(agent)
-        name_key = re.sub(r"[^a-z0-9]+", "", name.lower())
-
-        capability_summaries: List[str] = []
-        seen_caps: set[str] = set()
-        for raw in agent.get("capabilities", []):
-            token = str(raw).strip()
-            lowered = token.lower()
-            compact = re.sub(r"[^a-z0-9]+", "", lowered)
-            if (
-                not token
-                or lowered in tool_name_keys
-                or lowered.endswith("_with_mcp")
-                or compact == name_key
-            ):
-                continue
-            summary = _humanize_capability(token).strip()
-            key = summary.lower()
-            if not summary or key in seen_caps:
-                continue
-            seen_caps.add(key)
-            capability_summaries.append(summary)
-
-        capability_text = "; ".join(capability_summaries) if capability_summaries else (desc or "(not provided)")
-
-        explicit_ownership = str(agent.get("ownership", "")).strip()
-        if explicit_ownership:
-            ownership = explicit_ownership
-        elif role.lower() == "coordinator":
-            ownership = (
-                "Own coordinator-only work such as orchestration, replanning, direct user handling, "
-                "and delivery actions that belong to this agent."
-            )
-        else:
-            ownership = (
-                "Use this agent when the request needs its specialization. "
-                "Do not assign unrelated coordination or final delivery work here."
-            )
-
-        lines.append(
-            f"- name: {name}\n"
-            f"  role: {role}\n"
-            f"  description: {desc}\n"
-            f"  capability_summary: {capability_text}\n"
-            f"  ownership: {ownership}"
-        )
-    return "\n".join(lines)
-
 
 
 def _fallback_collaboration_plan(
@@ -363,7 +239,10 @@ def _derive_collaboration_plan(
         log_event("planner", "collaboration_plan_skipped", {"reason": "no_available_agents"})
         return {"steps": [], "notes": ""}
 
-    agents_desc = _format_available_agents_for_prompt(available_agents)
+    agents_desc = _format_available_agents_for_prompt(
+        available_agents,
+        empty_text="No sub-agents are currently configured.",
+    )
     conversation_summary = _summarize_conversation_history(conversation_history, max_turn_lines=6, max_chars=900)
     plan_summary = _compact_text(raw_plan or "(none)", max_chars=1400)
 
@@ -385,9 +264,10 @@ def _derive_collaboration_plan(
         "- Use only names from Available agents.\n"
         "- Create practical future steps which are necessary to achieve goal.\n"
         "- Each step should be useful on its own and easy for the assigned agent to execute.\n"
+        "- Do not create workflow steps for loading agent-private skills, tools, or session memory.\n"
         "- Respect explicit user constraints.\n"
         "- Choose agents from role, capability, ownership, and description metadata.\n"
-        "- Use the coordinator only for coordination or owned delivery actions.\n\n"
+        "- Prefer specialists for evidence gathering and domain work; use the coordinator for orchestration, synthesis, or delivery it owns.\n\n"
         f"Recent conversation context summary:\n{conversation_summary}\n\n"
         f"User request:\n{user_input}\n\n"
         f"Current plan text summary:\n{plan_summary}\n\n"
@@ -426,7 +306,10 @@ def plan_with_main_agent(
         },
     )
 
-    agents_desc = _format_available_agents_for_prompt(available_agents)
+    agents_desc = _format_available_agents_for_prompt(
+        available_agents,
+        empty_text="No sub-agents are currently configured.",
+    )
     conversation_summary = _summarize_conversation_history(conversation_history, max_turn_lines=6, max_chars=900)
 
     planning_prompt = (
@@ -438,8 +321,9 @@ def plan_with_main_agent(
         "3) Assign each step to the agent that owns the work or best matches the specialization.\n"
         "4) If no sub-agent is needed, say so briefly.\n"
         "5) Choose from role, capability, and ownership metadata below, not by raw tool names.\n"
-        "6) Keep work with the coordinator only when the coordinator directly owns the action or coordination is required.\n"
-        "7) This phase is planning only. Do not execute tools or perform the plan.\n\n"
+        "6) Prefer specialists for research or analysis work, and use the coordinator for orchestration, synthesis, or delivery it owns.\n"
+        "7) This phase is planning only. Do not execute tools or perform the plan.\n"
+        "8) Do not create workflow steps for loading agent-private skills, tools, or session memory.\n\n"
         f"Recent conversation context summary:\n{conversation_summary}\n\n"
         f"User request:\n{user_input}\n\n"
         f"Available agents:\n{agents_desc}\n"

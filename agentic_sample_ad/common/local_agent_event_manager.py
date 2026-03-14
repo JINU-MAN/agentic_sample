@@ -1,6 +1,5 @@
 ﻿from __future__ import annotations
 
-import asyncio
 import json
 import threading
 from collections import deque
@@ -10,34 +9,9 @@ from typing import Any, Callable, Deque, Dict, List
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
-from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
+from agentic_sample_ad.network_retry import collect_response_parts_with_network_retry
+from agentic_sample_ad.runtime_utils import finalize_text_response, run_coroutine_sync
 from agentic_sample_ad.system_logger import log_event as default_log_event, log_exception as default_log_exception
-
-
-def _run_coroutine_sync(coro: Any) -> Any:
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(coro)
-
-    result: Any = None
-    error: Exception | None = None
-
-    def _target() -> None:
-        nonlocal result, error
-        try:
-            result = asyncio.run(coro)
-        except Exception as e:  # pragma: no cover
-            error = e
-
-    thread = threading.Thread(target=_target, daemon=True)
-    thread.start()
-    thread.join()
-
-    if error is not None:
-        raise error
-    return result
-
 
 @dataclass
 class AgentCommandEvent:
@@ -78,7 +52,7 @@ class LocalAgentEventManager:
             if not self._queue:
                 return {"ok": False, "agent": self._agent_name, "error": "No queued task."}
             event = self._queue.popleft()
-        return _run_coroutine_sync(self._async_run_command(event))
+        return run_coroutine_sync(self._async_run_command(event))
 
     def run_until_empty(self) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
@@ -110,7 +84,7 @@ class LocalAgentEventManager:
                 f"{context_json}"
             )
             new_message = types.Content(role="user", parts=[types.Part(text=prompt)])
-            chunks = await collect_text_response_with_network_retry(
+            collected = await collect_response_parts_with_network_retry(
                 runner=runner,
                 user_id="ad-local-agent-event-manager",
                 new_message=new_message,
@@ -119,12 +93,16 @@ class LocalAgentEventManager:
                 retry_details={"agent": self._agent_name, "command": event.command},
                 log_event_fn=self._log_event,
             )
-            response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
+            chunks = list(collected.get("chunks", []))
+            response_text = finalize_text_response(chunks)
             result = {
                 "ok": True,
                 "agent": self._agent_name,
                 "command": event.command,
                 "response": response_text,
+                "normalized_response_parts": list(collected.get("normalized_parts", [])),
+                "non_text_part_types": list(collected.get("non_text_part_types", [])),
+                "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
             }
             self._log_event(
                 self._component,
@@ -134,6 +112,9 @@ class LocalAgentEventManager:
                     "command": event.command,
                     "context": event.context,
                     "response": response_text,
+                    "normalized_response_parts": list(collected.get("normalized_parts", [])),
+                    "non_text_part_types": list(collected.get("non_text_part_types", [])),
+                    "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
                 },
                 direction="inbound",
             )

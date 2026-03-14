@@ -13,7 +13,9 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
-from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
+from agentic_sample_ad.handoff_contract_tool import recover_handoff_contract_from_parts
+from agentic_sample_ad.network_retry import collect_response_parts_with_network_retry
+from agentic_sample_ad.runtime_utils import finalize_text_response
 from agentic_sample_ad.system_logger import (
     finalize_process_logging as default_finalize_process_logging,
     initialize_process_logging as default_initialize_process_logging,
@@ -113,7 +115,7 @@ async def _run_local_agent(
     user_input: str,
     component: str,
     log_event_fn: Callable[..., None],
-) -> str:
+) -> Dict[str, Any]:
     runner = InMemoryRunner(agent=agent_obj, app_name=f"a2a-server-{agent_name}")
     log_event_fn(
         component,
@@ -123,7 +125,7 @@ async def _run_local_agent(
     )
     try:
         new_message = types.Content(role="user", parts=[types.Part(text=user_input)])
-        chunks = await collect_text_response_with_network_retry(
+        collected = await collect_response_parts_with_network_retry(
             runner=runner,
             user_id="a2a-server-user",
             new_message=new_message,
@@ -132,14 +134,32 @@ async def _run_local_agent(
             retry_details={"agent": agent_name, "user_input": user_input},
             log_event_fn=log_event_fn,
         )
-        response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
+        chunks = list(collected.get("chunks", []))
+        response_text = finalize_text_response(chunks)
+        if collected.get("used_non_text_fallback"):
+            recovered = recover_handoff_contract_from_parts(
+                collected.get("normalized_parts", [])
+            )
+            if recovered:
+                response_text = recovered
         log_event_fn(
             component,
             "agent_execution_completed",
-            {"agent": agent_name, "response": response_text},
+            {
+                "agent": agent_name,
+                "response": response_text,
+                "normalized_response_parts": collected.get("normalized_parts", []),
+                "non_text_part_types": collected.get("non_text_part_types", []),
+                "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
+            },
             direction="inbound",
         )
-        return response_text
+        return {
+            "response_text": response_text,
+            "normalized_parts": list(collected.get("normalized_parts", [])),
+            "non_text_part_types": list(collected.get("non_text_part_types", [])),
+            "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
+        }
     finally:
         await runner.close()
 
@@ -218,18 +238,24 @@ def create_app(
             direction="inbound",
         )
         try:
-            response_text = await _run_local_agent(
+            agent_response = await _run_local_agent(
                 agent_obj=agent_obj,
                 agent_name=agent_name,
                 user_input=user_input,
                 component=component,
                 log_event_fn=log_event_fn,
             )
+            response_text = str(agent_response.get("response_text", "") or "")
             result_message: Dict[str, Any] = {
                 "kind": "message",
                 "messageId": uuid4().hex,
                 "role": "agent",
                 "parts": [{"kind": "text", "text": response_text}],
+            }
+            result_message["metadata"] = {
+                "normalized_response_parts": list(agent_response.get("normalized_parts", [])),
+                "non_text_part_types": list(agent_response.get("non_text_part_types", [])),
+                "used_non_text_fallback": bool(agent_response.get("used_non_text_fallback")),
             }
 
             context_id = message_payload.get("contextId")
@@ -247,6 +273,9 @@ def create_app(
                     "request_id": request_id,
                     "response_chars": len(response_text),
                     "response": response_text,
+                    "normalized_response_parts": list(agent_response.get("normalized_parts", [])),
+                    "non_text_part_types": list(agent_response.get("non_text_part_types", [])),
+                    "used_non_text_fallback": bool(agent_response.get("used_non_text_fallback")),
                 },
                 direction="outbound",
             )

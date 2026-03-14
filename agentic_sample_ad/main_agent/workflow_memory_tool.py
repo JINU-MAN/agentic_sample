@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from agentic_sample_ad.tool_output_utils import render_tool_output
 from agentic_sample_ad.main_agent.system_logger import log_event, log_exception
-from agentic_sample_ad.workflow_memory_runtime import render_active_workflow_memory
+from agentic_sample_ad.workflow_memory_runtime import build_active_workflow_memory_view
 
 
 def read_workflow_memory(query: str = "", max_items: int = 6) -> str:
@@ -23,7 +24,20 @@ def read_workflow_memory(query: str = "", max_items: int = 6) -> str:
         direction="outbound",
     )
     try:
-        rendered = render_active_workflow_memory(query=query, max_items=normalized_max_items)
+        view = build_active_workflow_memory_view(query=query, max_items=normalized_max_items)
+        rendered = render_tool_output(
+            tool_name="read_workflow_memory",
+            ok=bool(view.get("ok")),
+            summary=(
+                "Loaded active workflow memory."
+                if bool(view.get("ok"))
+                else str(view.get("message", "No active workflow memory is available."))
+            ),
+            content_type="memory",
+            data=view,
+            errors=[] if bool(view.get("ok")) else [str(view.get("message", "workflow_memory_unavailable"))],
+            metadata={"query": query, "max_items": normalized_max_items},
+        )
         log_event(
             "tool.read_workflow_memory",
             "call_completed",

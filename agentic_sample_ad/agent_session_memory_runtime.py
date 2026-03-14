@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Dict, List
 
+from agentic_sample_ad.tool_output_utils import render_tool_output
+
 
 def _compact_text(value: Any, *, max_chars: int) -> str:
     text = " ".join(str(value or "").split()).strip()
@@ -105,11 +107,17 @@ def _load_session_memory_payload(memory_path: Path) -> Dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
-def render_session_memory(memory_path: str | Path, *, section: str = "", query: str = "", max_items: int = 6) -> str:
+def build_session_memory_view(memory_path: str | Path, *, section: str = "", query: str = "", max_items: int = 6) -> Dict[str, Any]:
     resolved = Path(memory_path).resolve()
     payload = _load_session_memory_payload(resolved)
     if not payload:
-        return f"No session memory is available at {resolved}."
+        return {
+            "ok": False,
+            "memory_kind": "agent_session_memory",
+            "selected_section": _resolve_section(section, query),
+            "message": f"No session memory is available at {resolved}.",
+            "path": str(resolved),
+        }
 
     max_items = max(1, min(int(max_items or 6), 12))
     selected_section = _resolve_section(section, query)
@@ -163,7 +171,14 @@ def render_session_memory(memory_path: str | Path, *, section: str = "", query: 
         if handoff_contract:
             result["handoff_contract"] = handoff_contract
 
-    return json.dumps(result, ensure_ascii=False, indent=2)
+    result["ok"] = True
+    result["path"] = str(resolved)
+    return result
+
+
+def render_session_memory(memory_path: str | Path, *, section: str = "", query: str = "", max_items: int = 6) -> str:
+    view = build_session_memory_view(memory_path, section=section, query=query, max_items=max_items)
+    return json.dumps(view, ensure_ascii=False, indent=2)
 
 
 def build_load_session_memory_tool(
@@ -201,11 +216,28 @@ def build_load_session_memory_tool(
                 direction="outbound",
             )
         try:
-            rendered = render_session_memory(
+            view = build_session_memory_view(
                 resolved_path,
                 section=section,
                 query=query,
                 max_items=normalized_max_items,
+            )
+            rendered = render_tool_output(
+                tool_name="load_session_memory",
+                ok=bool(view.get("ok")),
+                summary=(
+                    f"Loaded session memory section '{view.get('selected_section', 'overview')}'."
+                    if bool(view.get("ok"))
+                    else str(view.get("message", "Session memory is unavailable."))
+                ),
+                content_type="memory",
+                data=view,
+                errors=[] if bool(view.get("ok")) else [str(view.get("message", "session_memory_unavailable"))],
+                metadata={
+                    "agent": agent_name,
+                    "section": view.get("selected_section", section or "overview"),
+                    "max_items": normalized_max_items,
+                },
             )
             if log_event_fn is not None:
                 log_event_fn(
@@ -246,4 +278,4 @@ def build_load_session_memory_tool(
     return load_session_memory
 
 
-__all__ = ["build_load_session_memory_tool", "render_session_memory"]
+__all__ = ["build_load_session_memory_tool", "build_session_memory_view", "render_session_memory"]

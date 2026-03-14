@@ -1,3 +1,11 @@
-# Logs: keep only the active session log file tracked
-log/*
-!log/session_log.jsonl
+# Logs
+log/**
+main_agent/log/**
+paper_agent/log/**
+sns_agent/log/**
+web_search_agent/log/**
+
+!main_agent/log/.gitkeep
+!paper_agent/log/.gitkeep
+!sns_agent/log/.gitkeep
+!web_search_agent/log/.gitkeep

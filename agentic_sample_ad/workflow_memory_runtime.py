@@ -140,10 +140,13 @@ def get_active_workflow_memory() -> Dict[str, Any]:
     return normalize_workflow_memory_snapshot(_ACTIVE_WORKFLOW_MEMORY.get())
 
 
-def render_active_workflow_memory(query: str = "", max_items: int = 6) -> str:
+def build_active_workflow_memory_view(query: str = "", max_items: int = 6) -> Dict[str, Any]:
     snapshot = get_active_workflow_memory()
     if not snapshot or not snapshot.get("workflow_id"):
-        return "No active workflow memory is available for this step."
+        return {
+            "ok": False,
+            "message": "No active workflow memory is available for this step.",
+        }
 
     max_items = max(1, min(int(max_items or 6), 12))
     lowered = str(query or "").strip().lower()
@@ -180,4 +183,10 @@ def render_active_workflow_memory(query: str = "", max_items: int = 6) -> str:
 
     if activated_agents:
         payload["activated_agents"] = activated_agents[:max_items]
+    payload["ok"] = True
+    return payload
+
+
+def render_active_workflow_memory(query: str = "", max_items: int = 6) -> str:
+    payload = build_active_workflow_memory_view(query=query, max_items=max_items)
     return json.dumps(payload, ensure_ascii=False, indent=2)

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
+from agentic_sample_ad.tool_output_utils import render_tool_output
 from agentic_sample_ad.web_search_agent.system_logger import log_event, log_exception
 
 
@@ -52,7 +53,7 @@ def _extract_mcp_list_result(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def search_web_with_mcp(query: str, max_results: int = DEFAULT_RESULT_COUNT) -> str:
     """
-    Query the web-search MCP server and return normalized ranked results.
+    Query the web-search MCP server and return the shared tool output contract.
     """
     safe_query = query.strip()
     safe_max_results = max(1, min(int(max_results), 10))
@@ -73,14 +74,40 @@ def search_web_with_mcp(query: str, max_results: int = DEFAULT_RESULT_COUNT) -> 
             arguments={"query": safe_query, "max_results": safe_max_results},
         )
         normalized = _extract_mcp_list_result(raw)
-        result_text = json.dumps(normalized, ensure_ascii=False, indent=2)
+        error_messages = [
+            str(item.get("error", "")).strip()
+            for item in normalized
+            if isinstance(item, dict) and str(item.get("error", "")).strip()
+        ]
+        items = [item for item in normalized if not (isinstance(item, dict) and item.get("error"))]
+        ok = not error_messages
+        summary = (
+            f"Collected {len(items)} web result(s) for query '{safe_query}'."
+            if ok
+            else (error_messages[0] if error_messages else "Web search failed.")
+        )
+        result_text = render_tool_output(
+            tool_name="search_web_with_mcp",
+            ok=ok,
+            summary=summary,
+            content_type="collection",
+            items=items,
+            data={
+                "query": safe_query,
+                "requested_max_results": safe_max_results,
+                "result_count": len(items),
+            },
+            errors=error_messages,
+            metadata={"server_script_path": str(WEB_SEARCH_MCP_SERVER)},
+        )
         log_event(
             "tool.search_web_with_mcp",
             "call_completed",
             {
                 "query": safe_query,
                 "max_results": safe_max_results,
-                "result_count": len(normalized),
+                "result_count": len(items),
+                "ok": ok,
             },
             direction="inbound",
         )

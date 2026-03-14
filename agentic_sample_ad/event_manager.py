@@ -4,7 +4,6 @@ import asyncio
 import json
 import os
 import re
-import threading
 import time
 from typing import Any, Dict, List
 from uuid import uuid4
@@ -15,8 +14,26 @@ from a2a.types import MessageSendParams, SendMessageRequest
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
-from agentic_sample_ad.network_retry import collect_text_response_with_network_retry
+from agentic_sample_ad.agent_metadata_utils import (
+    agent_capability_keys as _agent_capability_keys,
+    agent_capability_summary_text as _agent_capability_summary_text,
+    agent_ownership_text as _agent_ownership_text,
+    format_available_agents_for_prompt,
+)
+from agentic_sample_ad.network_retry import (
+    collect_response_parts_with_network_retry,
+    collect_text_response_with_network_retry,
+)
 from agentic_sample_ad.main_agent.system_logger import log_event, log_exception
+from agentic_sample_ad.runtime_utils import (
+    EMPTY_RESPONSE_SENTINELS,
+    extract_json_object as _extract_json_object,
+    extract_json_object_with_source as _extract_json_object_with_source,
+    finalize_text_response,
+    run_coroutine_sync as _run_coroutine_sync,
+)
+from agentic_sample_ad.handoff_contract_tool import recover_handoff_contract_from_parts
+from agentic_sample_ad.tool_output_utils import TOOL_OUTPUT_CONTRACT
 from agentic_sample_ad.workflow_memory_runtime import (
     reset_active_workflow_memory,
     set_active_workflow_memory,
@@ -24,27 +41,6 @@ from agentic_sample_ad.workflow_memory_runtime import (
 
 
 AGENT_MESSAGE_COMPONENT = "event_manager.agent_message"
-CAPABILITY_LABELS: Dict[str, str] = {
-    "coordination": "coordination and orchestration",
-    "workflow_replanning": "workflow replanning",
-    "user_clarification_routing": "user clarification and routing",
-    "workflow_memory_read": "shared workflow memory lookup",
-    "comm.slack.post": "Slack channel delivery",
-    "paper_search": "paper search in the local PDF corpus",
-    "paper_memory": "workflow-scoped paper memory analysis",
-    "external_paper_fetch": "external paper reference lookup",
-    "paper_evidence": "paper evidence synthesis",
-    "sns_search": "SNS post collection",
-    "sns_summary": "social signal summarization",
-    "social_signal_analysis": "social signal analysis",
-    "web_search": "web research and current-information lookup",
-    "web_evidence_summary": "citation-grounded web evidence synthesis",
-    "web_research": "web research workflow ownership",
-}
-EMPTY_RESPONSE_SENTINELS = {
-    "",
-    "(No text response emitted.)",
-}
 PROGRESS_REVIEW_BLOCKER_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
@@ -54,6 +50,21 @@ PROGRESS_REVIEW_BLOCKER_PATTERNS = [
         r"\bskills?\b.{0,40}\bnot found\b",
     )
 ]
+STRICT_JSON_FENCE_ONLY_RE = re.compile(r"\A\s*```(?:json)?\s*(\{.*\})\s*```\s*\Z", re.DOTALL)
+INTERNAL_BOOTSTRAP_TEXT_PATTERNS = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"\bload(?:ing|ed)?\b.{0,40}\bskill\b",
+        r"\bskill\b.{0,40}\b(?:not loaded|needs to be loaded|must be loaded|required to be loaded)\b",
+        r"\bload(?:ing|ed)?\b.{0,40}\bsession memory\b",
+        r"\bsession memory\b.{0,40}\b(?:not loaded|needs to be loaded|must be loaded)\b",
+        r"스킬.{0,24}(?:로드|불러)",
+        r"(?:로드|불러).{0,24}스킬",
+        r"세션 메모리.{0,24}(?:로드|불러)",
+        r"(?:로드|불러).{0,24}세션 메모리",
+    )
+]
+INTERNAL_BOOTSTRAP_CAPABILITY_KEYS = {"load_skill", "load_session_memory"}
 
 
 def _env_float(name: str, default: float, minimum: float) -> float:
@@ -86,83 +97,8 @@ def _resolve_same_task_review_threshold() -> int:
     return _env_int("AGENTIC_SAME_TASK_REVIEW_THRESHOLD", default=2, minimum=1)
 
 
-def _humanize_capability(token: str) -> str:
-    lowered = str(token).strip().lower()
-    if lowered in CAPABILITY_LABELS:
-        return CAPABILITY_LABELS[lowered]
-    return " ".join(part for part in re.split(r"[._]+", str(token).strip()) if part)
-
-
-def _tool_name_keys(agent_meta: Dict[str, Any]) -> set[str]:
-    keys: set[str] = set()
-    for tool in agent_meta.get("tools", []):
-        if isinstance(tool, dict):
-            token = str(tool.get("name", "")).strip().lower()
-        else:
-            token = str(tool).strip().lower()
-        if token:
-            keys.add(token)
-    return keys
-
-
-def _agent_capability_summary_text(agent_meta: Dict[str, Any]) -> str:
-    desc = str(agent_meta.get("description", "")).strip()
-    tool_keys = _tool_name_keys(agent_meta)
-    name_key = re.sub(r"[^a-z0-9]+", "", str(agent_meta.get("name", "")).lower())
-    seen: set[str] = set()
-    labels: List[str] = []
-    for raw in agent_meta.get("capabilities", []):
-        token = str(raw).strip()
-        lowered = token.lower()
-        compact = re.sub(r"[^a-z0-9]+", "", lowered)
-        if not token or lowered in tool_keys or lowered.endswith("_with_mcp") or compact == name_key:
-            continue
-        label = _humanize_capability(token).strip()
-        key = label.lower()
-        if not label or key in seen:
-            continue
-        seen.add(key)
-        labels.append(label)
-    return "; ".join(labels) if labels else (desc or "(not provided)")
-
-
-def _agent_ownership_text(agent_meta: Dict[str, Any]) -> str:
-    explicit = str(agent_meta.get("ownership", "")).strip()
-    if explicit:
-        return explicit
-    role = str(agent_meta.get("role", "")).strip().lower()
-    if role == "coordinator":
-        return (
-            "Own coordinator-only work such as orchestration, replanning, direct user handling, "
-            "and delivery actions that belong to this agent."
-        )
-    return (
-        "Use this agent when the request needs its specialization. "
-        "Do not assign unrelated coordination or final delivery work here."
-    )
-
-
 def _format_available_agents_for_review(available_agents: List[Dict[str, Any]]) -> str:
-    if not available_agents:
-        return "(none)"
-
-    lines: List[str] = []
-    for agent in available_agents:
-        name = str(agent.get("name", "UnknownAgent")).strip() or "UnknownAgent"
-        role = str(agent.get("role", "")).strip() or "worker"
-        desc = str(agent.get("description", "")).strip()
-        capability_summary = _agent_capability_summary_text(agent)
-        ownership = _agent_ownership_text(agent)
-        instruction_preview = str(agent.get("instruction_preview", "")).strip()
-        lines.append(
-            f"- name: {name}\n"
-            f"  role: {role}\n"
-            f"  description: {desc}\n"
-            f"  capability_summary: {capability_summary}\n"
-            f"  ownership: {ownership}\n"
-            f"  instruction_preview: {instruction_preview or '(not provided)'}"
-        )
-    return "\n".join(lines) or "(none)"
+    return format_available_agents_for_prompt(available_agents, empty_text="(none)")
 
 
 def _resolve_collaboration_max_steps(initial_steps: int) -> int:
@@ -197,93 +133,6 @@ def _is_a2a_agent(agent_meta: Dict[str, Any]) -> bool:
 
 def _is_local_agent(agent_meta: Dict[str, Any]) -> bool:
     return str(agent_meta.get("type", "")).strip().lower() == "local"
-
-
-def _run_coroutine_sync(coro: Any) -> Any:
-    """
-    Run a coroutine from sync code.
-
-    - If no running loop exists in this thread: use asyncio.run.
-    - If a loop already exists: run in a dedicated thread.
-    """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(coro)
-
-    result: Any = None
-    error: Exception | None = None
-
-    def _target() -> None:
-        nonlocal result, error
-        try:
-            result = asyncio.run(coro)
-        except Exception as e:  # pragma: no cover
-            error = e
-
-    thread = threading.Thread(target=_target, daemon=True)
-    thread.start()
-    thread.join()
-
-    if error is not None:
-        raise error
-    return result
-
-
-def _extract_json_object(text: str) -> Dict[str, Any] | None:
-    stripped = text.strip()
-    if not stripped:
-        return None
-
-    try:
-        parsed = json.loads(stripped)
-        if isinstance(parsed, dict):
-            return parsed
-    except json.JSONDecodeError:
-        pass
-
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", stripped, flags=re.DOTALL)
-    if fenced:
-        candidate = fenced.group(1).strip()
-        try:
-            parsed = json.loads(candidate)
-            if isinstance(parsed, dict):
-                return parsed
-        except json.JSONDecodeError:
-            pass
-
-    start = stripped.find("{")
-    end = stripped.rfind("}")
-    if start >= 0 and end > start:
-        candidate = stripped[start : end + 1]
-        try:
-            parsed = json.loads(candidate)
-            if isinstance(parsed, dict):
-                return parsed
-        except json.JSONDecodeError:
-            return None
-
-    return None
-
-
-def _extract_strict_json_object(text: str) -> Dict[str, Any] | None:
-    stripped = text.strip()
-    if not stripped:
-        return None
-
-    candidate = stripped
-    fenced = re.fullmatch(r"```(?:json)?\s*(\{.*\})\s*```", stripped, flags=re.DOTALL)
-    if fenced:
-        candidate = fenced.group(1).strip()
-
-    try:
-        parsed = json.loads(candidate)
-    except json.JSONDecodeError:
-        return None
-
-    if isinstance(parsed, dict):
-        return parsed
-    return None
 
 
 def _message_preview(text: str, max_chars: int = 1200) -> str:
@@ -543,6 +392,18 @@ def _extract_a2a_response_text(payload: Dict[str, Any]) -> str:
     return "\n".join(deduped).strip()
 
 
+def _extract_a2a_response_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
+    result = payload.get("result")
+    if isinstance(result, dict):
+        metadata = result.get("metadata")
+        if isinstance(metadata, dict):
+            return metadata
+    root = payload.get("root")
+    if isinstance(root, dict):
+        return _extract_a2a_response_metadata(root)
+    return {}
+
+
 def _a2a_card_url(base_url: str) -> str:
     return f"{str(base_url).rstrip('/')}/.well-known/agent-card.json"
 
@@ -589,12 +450,22 @@ def _execute_single_a2a_agent(agent_meta: Dict[str, Any], user_input: str) -> Di
         response_text = _extract_a2a_response_text(raw_result)
         if not response_text:
             response_text = json.dumps(raw_result, ensure_ascii=False)
+        response_metadata = _extract_a2a_response_metadata(raw_result)
         result = {
             "ok": True,
             "agent": name,
             "response": response_text,
             "raw_a2a_result": raw_result,
             "elapsed_sec": elapsed_sec,
+            "normalized_response_parts": list(response_metadata.get("normalized_response_parts", []))
+            if isinstance(response_metadata, dict)
+            else [],
+            "non_text_part_types": list(response_metadata.get("non_text_part_types", []))
+            if isinstance(response_metadata, dict)
+            else [],
+            "used_non_text_fallback": bool(response_metadata.get("used_non_text_fallback"))
+            if isinstance(response_metadata, dict)
+            else False,
         }
         log_event("event_manager.a2a", "request_completed", {"base_url": base_url, "result": result})
         return result
@@ -668,7 +539,7 @@ async def _async_run_local_agent(
                 direction="inbound",
             )
 
-        chunks = await collect_text_response_with_network_retry(
+        collected = await collect_response_parts_with_network_retry(
             runner=runner,
             user_id="event-manager-user",
             new_message=new_message,
@@ -678,18 +549,34 @@ async def _async_run_local_agent(
             on_text=_on_text,
             log_event_fn=log_event,
         )
+        chunks = list(collected.get("chunks", []))
 
-        response_text = "\n".join(chunks).strip() or "(No text response emitted.)"
+        response_text = finalize_text_response(chunks)
+        if collected.get("used_non_text_fallback"):
+            recovered = recover_handoff_contract_from_parts(
+                list(collected.get("normalized_parts", []))
+            )
+            if recovered:
+                response_text = recovered
         log_event(
             "event_manager.local_agent",
             "execution_completed",
-            {"agent": agent_name, "response": response_text},
+            {
+                "agent": agent_name,
+                "response": response_text,
+                "normalized_response_parts": list(collected.get("normalized_parts", [])),
+                "non_text_part_types": list(collected.get("non_text_part_types", [])),
+                "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
+            },
             direction="inbound",
         )
         return {
             "ok": True,
             "agent": agent_name,
             "response": response_text,
+            "normalized_response_parts": list(collected.get("normalized_parts", [])),
+            "non_text_part_types": list(collected.get("non_text_part_types", [])),
+            "used_non_text_fallback": bool(collected.get("used_non_text_fallback")),
         }
     except Exception as e:
         log_exception(
@@ -990,6 +877,18 @@ def _extract_collaboration_steps(
             continue
         if not goal:
             goal = "Handle this step and provide a handoff-ready output."
+        if _is_internal_management_step(goal, deliverable):
+            log_event(
+                "event_manager.collaboration",
+                "internal_management_step_ignored",
+                {
+                    "agent": agent_name,
+                    "goal": goal,
+                    "deliverable": deliverable,
+                },
+                level="WARNING",
+            )
+            continue
 
         resolved_steps.append(
             {
@@ -1205,8 +1104,21 @@ def _extract_artifacts_from_agent_output(
     parsed = _extract_json_object(str(text or "").strip())
     if not isinstance(parsed, dict):
         return []
+    return _normalize_artifacts_from_payload(
+        parsed.get("artifacts"),
+        source_agent=source_agent,
+        workflow_id=workflow_id,
+        workflow_step=workflow_step,
+    )
 
-    raw_artifacts = parsed.get("artifacts")
+
+def _normalize_artifacts_from_payload(
+    raw_artifacts: Any,
+    *,
+    source_agent: str,
+    workflow_id: str,
+    workflow_step: int,
+) -> List[Dict[str, Any]]:
     if isinstance(raw_artifacts, dict):
         raw_items: List[Any] = [raw_artifacts]
     elif isinstance(raw_artifacts, list):
@@ -1237,27 +1149,23 @@ def _extract_artifacts_from_agent_output(
     return normalized
 
 
-def _extract_agent_output_summary(text: str) -> str:
-    raw_text = str(text or "").strip()
-    if not raw_text:
+def _extract_agent_output_summary_from_payload(payload: Dict[str, Any]) -> str:
+    if not isinstance(payload, dict):
         return ""
 
-    parsed = _extract_json_object(raw_text)
-    if not isinstance(parsed, dict):
-        return raw_text
-
     summary = _extract_first_text_value(
-        parsed.get("summary"),
-        parsed.get("result"),
-        parsed.get("response"),
-        parsed.get("answer"),
-        parsed.get("message"),
+        payload.get("summary"),
+        payload.get("text_response"),
+        payload.get("result"),
+        payload.get("response"),
+        payload.get("answer"),
+        payload.get("message"),
         max_chars=3200,
     )
     if summary:
         return summary
 
-    artifacts = parsed.get("artifacts")
+    artifacts = payload.get("artifacts")
     if isinstance(artifacts, list) and artifacts:
         titles: List[str] = []
         for item in artifacts[:3]:
@@ -1273,7 +1181,214 @@ def _extract_agent_output_summary(text: str) -> str:
             return f"Reusable artifacts prepared: {', '.join(titles)}"
         return f"Reusable artifacts prepared: {len(artifacts)} items"
 
-    return raw_text
+    return ""
+
+
+def _extract_agent_output_text_response_from_payload(payload: Dict[str, Any]) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    return _extract_first_text_value(
+        payload.get("text_response"),
+        payload.get("details"),
+        payload.get("narrative"),
+        max_chars=12000,
+    )
+
+
+def _extract_strict_contract_payload(raw_text: str) -> tuple[Dict[str, Any] | None, str, List[str]]:
+    parsed, source = _extract_json_object_with_source(raw_text)
+    if source in {"plain_json", "substring", "fenced_json"} and isinstance(parsed, dict):
+        return parsed, source, []
+
+    fence_match = STRICT_JSON_FENCE_ONLY_RE.fullmatch(raw_text)
+    if fence_match:
+        candidate = fence_match.group(1).strip()
+        try:
+            fenced_parsed = json.loads(candidate)
+        except json.JSONDecodeError:
+            return None, "fenced_json_invalid", ["invalid_json_payload"]
+        if isinstance(fenced_parsed, dict):
+            return fenced_parsed, "fenced_json", []
+        return None, "fenced_json_invalid", ["top_level_json_object_required"]
+
+    violations: List[str] = ["response_must_be_single_json_object"]
+    if source == "substring":
+        violations.append("plain_prose_outside_json_not_allowed")
+    elif source == "substring_invalid":
+        violations.append("invalid_json_payload")
+    elif source == "empty":
+        violations.append("empty_response")
+    elif source == "not_found":
+        violations.append("json_payload_not_found")
+    return None, source, violations
+
+
+def _validate_worker_contract_payload(payload: Dict[str, Any]) -> List[str]:
+    violations: List[str] = []
+    tool_contract_keys = {"ok", "tool_name", "summary", "content_type", "items", "data", "errors", "metadata"}
+    if "tool_name" in payload and tool_contract_keys.issubset(set(payload.keys())):
+        violations.append("raw_tool_output_contract_not_allowed")
+
+    status = str(payload.get("status", "")).strip().lower()
+    if status not in {"completed", "partial", "blocked", "failed"}:
+        violations.append("status_required")
+
+    summary = _extract_agent_output_summary_from_payload(payload)
+    if not summary:
+        violations.append("summary_required")
+
+    raw_artifacts = payload.get("artifacts", [])
+    if raw_artifacts is not None and not isinstance(raw_artifacts, (list, dict)):
+        violations.append("artifacts_must_be_array")
+
+    raw_needs = payload.get("needs", [])
+    if raw_needs is not None and not isinstance(raw_needs, (list, dict)):
+        violations.append("needs_must_be_array")
+
+    raw_text_response = payload.get("text_response")
+    if raw_text_response is not None and not isinstance(raw_text_response, (str, int, float, bool)):
+        violations.append("text_response_must_be_string")
+
+    return violations
+
+
+def _collect_called_tool_names(normalized_parts: Any) -> List[str]:
+    names: List[str] = []
+    if not isinstance(normalized_parts, list):
+        return names
+    for item in normalized_parts:
+        if not isinstance(item, dict):
+            continue
+        kind = str(item.get("kind", "")).strip().lower()
+        if kind not in {"function_call", "function_response"}:
+            continue
+        name = str(item.get("name", "")).strip()
+        if name and name not in names:
+            names.append(name)
+    return names
+
+
+def _is_bootstrap_only_worker_output(
+    *,
+    structured_output: Dict[str, Any],
+    normalized_parts: Any,
+) -> bool:
+    tool_names = _collect_called_tool_names(normalized_parts)
+    if not tool_names:
+        return False
+    if any(name not in INTERNAL_BOOTSTRAP_CAPABILITY_KEYS for name in tool_names):
+        return False
+    if structured_output.get("artifacts") or structured_output.get("needs"):
+        return False
+
+    raw_text = str(structured_output.get("raw_response", "")).strip()
+    summary = str(structured_output.get("summary", "")).strip()
+    text_response = str(structured_output.get("text_response", "")).strip()
+    combined = "\n".join(part for part in [summary, text_response, raw_text] if part).strip()
+    if not combined:
+        return True
+    return any(pattern.search(combined) for pattern in INTERNAL_BOOTSTRAP_TEXT_PATTERNS)
+
+
+def _apply_bootstrap_only_violation(
+    *,
+    structured_output: Dict[str, Any] | None,
+    normalized_parts: Any,
+) -> bool:
+    if not isinstance(structured_output, dict):
+        return False
+    if not _is_bootstrap_only_worker_output(
+        structured_output=structured_output,
+        normalized_parts=normalized_parts,
+    ):
+        return False
+    violations = list(structured_output.get("contract_violations", []))
+    violations.append("bootstrap_only_output_not_allowed")
+    structured_output["contract_violations"] = list(dict.fromkeys(violations))
+    structured_output["contract_valid"] = False
+    current_status = str(structured_output.get("status", "")).strip().lower()
+    if current_status == "completed":
+        structured_output["status"] = "blocked"
+    return True
+
+
+def _normalize_worker_output_status(
+    value: Any,
+    *,
+    has_summary: bool,
+    has_artifacts: bool,
+    has_needs: bool,
+    raw_text: str,
+) -> str:
+    token = str(value or "").strip().lower()
+    if token in {"completed", "complete", "done", "success", "ok"}:
+        return "completed"
+    if token in {"partial", "in_progress", "deferred"}:
+        return "partial"
+    if token in {"blocked", "needs_input", "failed", "error"}:
+        return "blocked"
+    if raw_text in EMPTY_RESPONSE_SENTINELS:
+        return "blocked"
+    if has_needs and not (has_summary or has_artifacts):
+        return "blocked"
+    if has_needs:
+        return "partial"
+    return "completed"
+
+
+def _extract_structured_agent_output(
+    text: str,
+    *,
+    source_agent: str,
+    workflow_id: str,
+    workflow_step: int,
+) -> Dict[str, Any]:
+    raw_text = str(text or "").strip()
+    parsed, contract_source, contract_violations = _extract_strict_contract_payload(raw_text)
+    summary = _extract_agent_output_summary_from_payload(parsed) if isinstance(parsed, dict) else ""
+    text_response = _extract_agent_output_text_response_from_payload(parsed) if isinstance(parsed, dict) else ""
+    artifacts = _normalize_artifacts_from_payload(
+        parsed.get("artifacts") if isinstance(parsed, dict) else [],
+        source_agent=source_agent,
+        workflow_id=workflow_id,
+        workflow_step=workflow_step,
+    )
+    needs = _normalize_need_entries(
+        parsed.get("needs") if isinstance(parsed, dict) else [],
+        source_agent=source_agent,
+        workflow_step=workflow_step,
+    )
+    if isinstance(parsed, dict):
+        contract_violations.extend(_validate_worker_contract_payload(parsed))
+    has_summary = bool(summary and summary not in EMPTY_RESPONSE_SENTINELS)
+    has_artifacts = bool(artifacts)
+    has_needs = bool(needs)
+    status = _normalize_worker_output_status(
+        parsed.get("status") if isinstance(parsed, dict) else "",
+        has_summary=has_summary,
+        has_artifacts=has_artifacts,
+        has_needs=has_needs,
+        raw_text=raw_text,
+    )
+    if not summary:
+        if has_artifacts:
+            summary = f"Reusable artifacts prepared: {len(artifacts)} item(s)"
+        elif has_needs:
+            summary = _need_display_text(needs[0])
+        else:
+            summary = raw_text
+    contract_valid = isinstance(parsed, dict) and not contract_violations
+    return {
+        "status": status,
+        "summary": summary,
+        "text_response": text_response,
+        "artifacts": artifacts,
+        "needs": needs,
+        "raw_response": raw_text,
+        "contract_valid": contract_valid,
+        "contract_source": contract_source,
+        "contract_violations": list(dict.fromkeys(contract_violations)),
+    }
 
 
 def _build_artifact_context_entry(artifact: Dict[str, Any]) -> Dict[str, Any]:
@@ -1334,35 +1449,43 @@ def _summarize_conversation_history(
     return _compact_text("\n".join(tail), max_chars=max_chars)
 
 
-def _build_delegation_targets(
+def _build_delegation_options(
     *,
     available_agents: List[Dict[str, Any]],
     current_agent_name: str,
     max_items: int = 6,
-) -> List[str]:
+) -> List[Dict[str, Any]]:
     current_key = str(current_agent_name).strip().lower()
-    names: List[str] = []
+    options: List[Dict[str, Any]] = []
     seen: set[str] = set()
 
-    def _push(name: str) -> None:
-        token = str(name).strip()
+    def _push(agent_meta: Dict[str, Any]) -> None:
+        token = str(agent_meta.get("name", "")).strip()
         key = token.lower()
         if not token or key in seen:
             return
         seen.add(key)
-        names.append(token)
+        options.append(
+            {
+                "name": token,
+                "role": str(agent_meta.get("role", "")).strip() or "worker",
+                "description": str(agent_meta.get("description", "")).strip(),
+                "capabilities": _agent_capability_keys(agent_meta),
+                "capability_summary": _agent_capability_summary_text(agent_meta),
+                "ownership": _agent_ownership_text(agent_meta),
+            }
+        )
 
-    _push("MainAgent")
     for agent in available_agents:
         name = str(agent.get("name", "")).strip()
         if not name:
             continue
         if name.strip().lower() == current_key:
             continue
-        _push(name)
-        if len(names) >= max_items:
+        _push(agent)
+        if len(options) >= max_items:
             break
-    return names[:max_items]
+    return options[:max_items]
 
 
 def _format_remaining_steps(
@@ -1481,7 +1604,7 @@ def _build_workflow_memory_snapshot(
     current_step: int,
     results: List[Dict[str, Any]],
     artifact_store: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
     pending_steps: List[Dict[str, Any]],
     activated_agent_cards: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
@@ -1500,10 +1623,10 @@ def _build_workflow_memory_snapshot(
             max_items=10,
         ),
         "open_needs": [
-            _compact_text(str(item).strip(), max_chars=220)
-            for item in open_needs
-            if str(item).strip()
-        ][:10],
+            _build_need_context_entry(item)
+            for item in open_needs[:10]
+            if isinstance(item, dict)
+        ],
         "pending_steps": [
             {
                 "agent": str(step.get("agent", "")).strip(),
@@ -1528,107 +1651,242 @@ def _normalize_need_text(value: str) -> str:
     return compact[:300]
 
 
-def _canonicalize_need_text(value: str) -> str:
-    token = _normalize_need_text(value)
-    if not token:
+def _normalize_need_kind(value: str) -> str:
+    token = re.sub(r"[^a-z0-9_/-]+", "_", str(value or "").strip().lower()).strip("_")
+    return token[:60]
+
+
+def _normalize_need_capabilities(raw_value: Any) -> List[str]:
+    values = raw_value if isinstance(raw_value, list) else [raw_value]
+    normalized: List[str] = []
+    seen: set[str] = set()
+    for item in values:
+        token = str(item or "").strip()
+        lowered = token.lower()
+        if not token or lowered in seen:
+            continue
+        seen.add(lowered)
+        normalized.append(token[:80])
+    return normalized[:8]
+
+
+def _normalize_need_entry(
+    value: Any,
+    *,
+    source_agent: str = "",
+    workflow_step: int | None = None,
+) -> Dict[str, Any] | None:
+    request = ""
+    reason = ""
+    kind = ""
+    required_capabilities: List[str] = []
+    blocking: bool | None = None
+
+    if isinstance(value, dict):
+        request = _normalize_need_text(
+            str(
+                value.get("request")
+                or value.get("task")
+                or value.get("message")
+                or value.get("need")
+                or ""
+            )
+        )
+        reason = _compact_text(
+            str(value.get("reason") or value.get("why") or "").strip(),
+            max_chars=220,
+        )
+        kind = _normalize_need_kind(str(value.get("kind") or value.get("type") or ""))
+        required_capabilities = _normalize_need_capabilities(
+            value.get("required_capabilities")
+            or value.get("capabilities")
+            or value.get("required_capability")
+            or []
+        )
+        if "blocking" in value:
+            blocking = bool(value.get("blocking"))
+    elif isinstance(value, str):
+        token = _normalize_need_text(value)
+        if not token:
+            return None
+        request = token
+    else:
+        return None
+
+    if not request or request.lower() in {"none", "n/a", "no", "null", "없음"}:
+        return None
+
+    entry: Dict[str, Any] = {"request": request[:300]}
+    if reason:
+        entry["reason"] = reason
+    if kind:
+        entry["kind"] = kind
+    if required_capabilities:
+        entry["required_capabilities"] = required_capabilities
+    if blocking is not None:
+        entry["blocking"] = bool(blocking)
+    if source_agent:
+        entry["source_agent"] = str(source_agent).strip()
+    if isinstance(workflow_step, int):
+        entry["workflow_step"] = workflow_step
+    return entry
+
+
+def _need_display_text(need: Dict[str, Any] | str) -> str:
+    if isinstance(need, str):
+        entry = _normalize_need_entry(need)
+    else:
+        entry = need if isinstance(need, dict) else None
+    if not isinstance(entry, dict):
         return ""
-    if token.lower() in {"none", "n/a", "no", "null", "없음"}:
+    request = _normalize_need_text(str(entry.get("request", "")).strip())
+    if not request:
         return ""
-
-    target_agent, request = _parse_targeted_need(token)
-    if target_agent and request:
-        return f"[{target_agent}] {request}"[:300]
-    return token[:300]
+    return request[:300]
 
 
-def _extract_additional_needs_from_agent_output(text: str) -> List[str]:
+def _need_identity_key(need: Dict[str, Any] | str) -> str:
+    if isinstance(need, str):
+        entry = _normalize_need_entry(need)
+    else:
+        entry = need if isinstance(need, dict) else None
+    if not isinstance(entry, dict):
+        return ""
+    kind = _normalize_need_kind(str(entry.get("kind", ""))).lower()
+    request = _normalize_need_text(str(entry.get("request", "")).strip()).lower()
+    capability_key = ",".join(
+        token.lower()
+        for token in _normalize_need_capabilities(entry.get("required_capabilities", []))
+    )
+    if not request:
+        return ""
+    return f"{kind}|{capability_key}|{request}"
+
+
+def _build_need_context_entry(need: Dict[str, Any]) -> Dict[str, Any]:
+    entry: Dict[str, Any] = {
+        "request": _compact_text(str(need.get("request", "")).strip(), max_chars=220),
+    }
+    reason = _compact_text(str(need.get("reason", "")).strip(), max_chars=180)
+    if reason:
+        entry["reason"] = reason
+    kind = _normalize_need_kind(str(need.get("kind", "")).strip())
+    if kind:
+        entry["kind"] = kind
+    required_capabilities = _normalize_need_capabilities(need.get("required_capabilities", []))
+    if required_capabilities:
+        entry["required_capabilities"] = required_capabilities
+    if "blocking" in need:
+        entry["blocking"] = bool(need.get("blocking"))
+    source_agent = str(need.get("source_agent", "")).strip()
+    if source_agent:
+        entry["source_agent"] = source_agent
+    workflow_step = need.get("workflow_step")
+    if isinstance(workflow_step, int):
+        entry["workflow_step"] = workflow_step
+    return entry
+
+
+def _format_open_needs_for_prompt(needs: List[Dict[str, Any]], *, max_items: int = 8) -> str:
+    if not needs:
+        return "(none)"
+    lines: List[str] = []
+    for need in needs[:max_items]:
+        if not isinstance(need, dict):
+            continue
+        text = _need_display_text(need)
+        if not text:
+            continue
+        kind = _normalize_need_kind(str(need.get("kind", "")).strip())
+        reason = _compact_text(str(need.get("reason", "")).strip(), max_chars=120)
+        source_agent = str(need.get("source_agent", "")).strip()
+        required_capabilities = _normalize_need_capabilities(need.get("required_capabilities", []))
+        suffix_parts: List[str] = []
+        if kind:
+            suffix_parts.append(f"kind: {kind}")
+        if required_capabilities:
+            suffix_parts.append(f"capabilities: {', '.join(required_capabilities)}")
+        if reason:
+            suffix_parts.append(f"reason: {reason}")
+        if source_agent:
+            suffix_parts.append(f"source: {source_agent}")
+        suffix = f" ({'; '.join(suffix_parts)})" if suffix_parts else ""
+        lines.append(f"- {text}{suffix}")
+    if not lines:
+        return "(none)"
+    if len(needs) > max_items:
+        lines.append(f"... ({len(needs) - max_items} more open needs)")
+    return "\n".join(lines)
+
+
+def _normalize_need_entries(
+    raw_value: Any,
+    *,
+    source_agent: str = "",
+    workflow_step: int | None = None,
+    max_items: int = 12,
+) -> List[Dict[str, Any]]:
+    if raw_value is None:
+        return []
+    values = raw_value if isinstance(raw_value, list) else [raw_value]
+    normalized: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in values:
+        entry = _normalize_need_entry(item, source_agent=source_agent, workflow_step=workflow_step)
+        if not entry:
+            continue
+        key = _need_identity_key(entry)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        normalized.append(entry)
+        if len(normalized) >= max_items:
+            break
+    return normalized
+
+
+def _extract_needs_from_agent_output(
+    text: str,
+    *,
+    source_agent: str,
+    workflow_step: int,
+) -> List[Dict[str, Any]]:
     raw_text = str(text or "").strip()
     if not raw_text:
         return []
 
     parsed = _extract_json_object(raw_text)
     if isinstance(parsed, dict):
-        raw_needs = parsed.get("additional_needs")
-        if isinstance(raw_needs, list):
-            collected: List[str] = []
-            seen: set[str] = set()
-            for item in raw_needs:
-                if not isinstance(item, str):
-                    continue
-                need = _canonicalize_need_text(item)
-                if not need:
-                    continue
-                key = need.lower()
-                if key in seen:
-                    continue
-                seen.add(key)
-                collected.append(need)
-                if len(collected) >= 12:
-                    break
-            return collected
-        if isinstance(raw_needs, str):
-            token = _canonicalize_need_text(raw_needs)
-            if token:
-                return [token]
-
-        normalized_from_structured: List[str] = []
-        seen_structured: set[str] = set()
-
-        def _push_structured_need(raw_value: str) -> None:
-            token = _canonicalize_need_text(raw_value)
-            key = token.lower()
-            if not token:
-                return
-            if key in seen_structured:
-                return
-            seen_structured.add(key)
-            normalized_from_structured.append(token)
-
-        raw_needs = parsed.get("needs")
-        if isinstance(raw_needs, list):
-            for item in raw_needs:
-                if isinstance(item, str):
-                    _push_structured_need(item)
-                elif isinstance(item, dict):
-                    target = str(
-                        item.get("target")
-                        or item.get("agent")
-                        or item.get("to")
-                        or ""
-                    ).strip()
-                    request = str(
-                        item.get("request")
-                        or item.get("task")
-                        or item.get("message")
-                        or item.get("need")
-                        or ""
-                    ).strip()
-                    if target and request:
-                        _push_structured_need(f"[{target}] {request}")
-                    elif request:
-                        _push_structured_need(request)
-                if len(normalized_from_structured) >= 12:
-                    break
+        normalized = _normalize_need_entries(
+            parsed.get("needs"),
+            source_agent=source_agent,
+            workflow_step=workflow_step,
+        )
+        if normalized:
+            return normalized
 
         raw_events = parsed.get("workflow_events")
-        if isinstance(raw_events, list) and len(normalized_from_structured) < 12:
+        if isinstance(raw_events, list):
+            event_needs: List[Dict[str, Any]] = []
             for item in raw_events:
                 if not isinstance(item, dict):
                     continue
                 event_type = str(item.get("type", "")).strip().lower()
                 if event_type not in {"need_request", "delegate_request", "handoff_request"}:
                     continue
-                target = str(item.get("target") or item.get("agent") or "").strip()
-                request = str(item.get("request") or item.get("payload") or item.get("message") or "").strip()
-                if target and request:
-                    _push_structured_need(f"[{target}] {request}")
-                elif request:
-                    _push_structured_need(request)
-                if len(normalized_from_structured) >= 12:
-                    break
-
-        if normalized_from_structured:
-            return normalized_from_structured[:12]
+                event_needs.append(
+                    {
+                        "request": str(item.get("request") or item.get("payload") or item.get("message") or "").strip(),
+                        "reason": str(item.get("reason") or "").strip(),
+                    }
+                )
+            normalized = _normalize_need_entries(
+                event_needs,
+                source_agent=source_agent,
+                workflow_step=workflow_step,
+            )
+            if normalized:
+                return normalized
 
     lines = raw_text.splitlines()
     marker_index = -1
@@ -1636,77 +1894,56 @@ def _extract_additional_needs_from_agent_output(text: str) -> List[str]:
     for idx, line in enumerate(lines):
         stripped = line.strip()
         lowered = stripped.lower()
-        if lowered.startswith("additional needs:"):
+        if lowered.startswith("needs:"):
             marker_index = idx
-            inline_value = stripped[len("additional needs:") :].strip()
+            inline_value = stripped[len("needs:") :].strip()
             break
-        if lowered in {"additional needs", "additional needs:"}:
+        if lowered in {"needs", "needs:"}:
             marker_index = idx
             break
 
     if marker_index < 0:
         return []
 
-    needs: List[str] = []
-    seen_keys: set[str] = set()
-
+    fallback_values: List[str] = []
     if inline_value:
-        token = _canonicalize_need_text(inline_value)
-        if token:
-            seen_keys.add(token.lower())
-            needs.append(token)
+        fallback_values.append(inline_value)
 
     for line in lines[marker_index + 1 :]:
         stripped = line.strip()
         if not stripped:
-            if needs:
+            if fallback_values:
                 break
             continue
-
-        # Stop at a likely next section heading.
-        if needs and re.match(r"^[A-Za-z][A-Za-z0-9 _/-]{0,40}:$", stripped):
+        if fallback_values and re.match(r"^[A-Za-z][A-Za-z0-9 _/-]{0,40}:$", stripped):
+            break
+        fallback_values.append(stripped)
+        if len(fallback_values) >= 12:
             break
 
-        token = _canonicalize_need_text(stripped)
-        if not token:
-            continue
-        key = token.lower()
-        if key in seen_keys:
-            continue
-        seen_keys.add(key)
-        needs.append(token)
-        if len(needs) >= 12:
-            break
-
-    return needs
+    return _normalize_need_entries(
+        fallback_values,
+        source_agent=source_agent,
+        workflow_step=workflow_step,
+    )
 
 
-def _parse_targeted_need(need: str) -> tuple[str, str]:
-    token = _normalize_need_text(need)
-    if not token:
-        return "", ""
-    bracket_match = re.match(r"^\[(?P<agent>[^\[\]]{1,80})\]\s*(?P<request>.+)$", token)
-    if bracket_match:
-        target_agent = str(bracket_match.group("agent") or "").strip()
-        request = str(bracket_match.group("request") or "").strip()
-        return target_agent, request
+def _is_user_clarification_need(need: Dict[str, Any] | str) -> bool:
+    request = ""
+    kind = ""
+    required_capabilities: List[str] = []
+    if isinstance(need, dict):
+        request = _normalize_need_text(str(need.get("request", "")).strip())
+        kind = _normalize_need_kind(str(need.get("kind", "")).strip())
+        required_capabilities = _normalize_need_capabilities(need.get("required_capabilities", []))
+    else:
+        request = _normalize_need_text(need)
 
-    colon_match = re.match(r"^(?P<agent>[A-Za-z][A-Za-z0-9_-]{1,79})\s*:\s*(?P<request>.+)$", token)
-    if colon_match:
-        target_agent = str(colon_match.group("agent") or "").strip()
-        request = str(colon_match.group("request") or "").strip()
-        return target_agent, request
+    required_capability_keys = {token.lower() for token in required_capabilities}
+    if kind == "user_clarification" or "user_clarification_routing" in required_capability_keys:
+        return True
 
-    return "", ""
-
-
-def _is_user_clarification_need(need: str) -> bool:
-    target_agent, request = _parse_targeted_need(need)
-    target_lower = target_agent.strip().lower()
-    if target_lower and target_lower != "mainagent":
-        return False
-
-    text = str(request or need).strip()
+    text = str(request or _need_display_text(need)).strip()
     if not text:
         return False
 
@@ -1732,19 +1969,42 @@ def _is_user_clarification_need(need: str) -> bool:
         and ("채널" in text or "channel" in lowered)
         and any(token in lowered for token in ["ask", "need", "provide", "id", "name", "알려", "확인", "입력"])
     )
-    if target_lower == "mainagent":
-        return ("?" in text) or any(token in lowered for token in explicit_clarification_tokens) or is_slack_channel_question
-    return False
+    return ("?" in text) or any(token in lowered for token in explicit_clarification_tokens) or is_slack_channel_question
 
 
-def _first_user_clarification_request(needs: List[str]) -> str:
+def _is_internal_bootstrap_text(text: str) -> bool:
+    normalized = " ".join(str(text or "").split()).strip()
+    if not normalized:
+        return False
+    return any(pattern.search(normalized) for pattern in INTERNAL_BOOTSTRAP_TEXT_PATTERNS)
+
+
+def _is_internal_bootstrap_need(need: Dict[str, Any] | str) -> bool:
+    if isinstance(need, dict):
+        request = _normalize_need_text(str(need.get("request", "")).strip())
+        reason = _compact_text(str(need.get("reason", "")).strip(), max_chars=220)
+        capabilities = {
+            token.lower()
+            for token in _normalize_need_capabilities(need.get("required_capabilities", []))
+        }
+    else:
+        request = _normalize_need_text(str(need or "").strip())
+        reason = ""
+        capabilities = set()
+    if capabilities & INTERNAL_BOOTSTRAP_CAPABILITY_KEYS:
+        return True
+    combined = " ".join(part for part in [request, reason] if part).strip()
+    return _is_internal_bootstrap_text(combined)
+
+
+def _first_user_clarification_request(needs: List[Dict[str, Any]]) -> str:
     for need in needs:
         if not _is_user_clarification_need(need):
             continue
-        target_agent, request = _parse_targeted_need(need)
-        if target_agent and request:
+        request = _normalize_need_text(str(need.get("request", "")).strip())
+        if request:
             return request
-        normalized = _normalize_need_text(need)
+        normalized = _need_display_text(need)
         lowered = normalized.lower()
         if ("슬랙" in normalized or "slack" in lowered) and ("채널" in normalized or "channel" in lowered):
             return "슬랙 게시를 위해 정확한 채널 이름 또는 채널 ID(예: C12345678)를 알려주세요."
@@ -1752,9 +2012,51 @@ def _first_user_clarification_request(needs: List[str]) -> str:
     return ""
 
 
+def _agent_matches_need(agent_meta: Dict[str, Any], need: Dict[str, Any]) -> int:
+    if not isinstance(agent_meta, dict) or not isinstance(need, dict):
+        return 0
+
+    required_capabilities = {
+        token.lower()
+        for token in _normalize_need_capabilities(need.get("required_capabilities", []))
+    }
+    agent_capabilities = {
+        token.lower()
+        for token in _agent_capability_keys(agent_meta)
+    }
+    if required_capabilities:
+        overlap = len(required_capabilities & agent_capabilities)
+        if overlap <= 0:
+            return 0
+        coordinator_bonus = 0 if str(agent_meta.get("role", "")).strip().lower() == "coordinator" else 10
+        return overlap * 100 + coordinator_bonus
+
+    return 0
+
+
+def _is_internal_management_step(goal: str, deliverable: str = "") -> bool:
+    combined = " ".join(part for part in [str(goal or "").strip(), str(deliverable or "").strip()] if part).strip()
+    return _is_internal_bootstrap_text(combined)
+
+
+def _select_agent_for_need(
+    *,
+    need: Dict[str, Any],
+    available_agents: List[Dict[str, Any]],
+) -> Dict[str, Any] | None:
+    best_agent: Dict[str, Any] | None = None
+    best_score = 0
+    for agent_meta in available_agents:
+        score = _agent_matches_need(agent_meta, need)
+        if score > best_score:
+            best_score = score
+            best_agent = agent_meta
+    return best_agent
+
+
 def _build_indirect_delegation_fallback_steps(
     *,
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
     available_agents: List[Dict[str, Any]],
     pending_steps: List[Dict[str, Any]],
     max_steps: int = 3,
@@ -1772,17 +2074,22 @@ def _build_indirect_delegation_fallback_steps(
     local_signatures: set[str] = set()
 
     for need in open_needs:
-        need_text = _normalize_need_text(need)
-        target_agent, request = _parse_targeted_need(need_text)
-        if not target_agent or not request:
+        if not isinstance(need, dict):
+            continue
+        request = _normalize_need_text(str(need.get("request", "")).strip())
+        need_kind = _normalize_need_kind(str(need.get("kind", "")).strip())
+        if not request:
+            continue
+        if need_kind == "user_clarification":
             continue
 
-        target_key = target_agent.lower()
-        agent_meta = available_index.get(target_key)
+        agent_meta = _select_agent_for_need(need=need, available_agents=available_agents)
         if agent_meta is None:
             continue
+        agent_name = str(agent_meta.get("name", "")).strip() or "UnknownAgent"
+        agent_key = agent_name.lower()
 
-        canonical_need = f"{target_key}|{request.lower()}"
+        canonical_need = f"{agent_key}|{request.lower()}"
         if canonical_need in local_signatures:
             continue
 
@@ -1790,14 +2097,14 @@ def _build_indirect_delegation_fallback_steps(
             "Handle this unresolved follow-up need and return a usable result.\n"
             f"Requested need: {request}"
         )
-        signature = f"{target_key}|{goal.lower()}"
+        signature = f"{agent_key}|{goal.lower()}"
         if signature in existing_signatures:
-            consumed_need_keys.add(need_text.lower())
+            consumed_need_keys.add(_need_identity_key(need))
             continue
 
         added_steps.append(
             {
-                "agent": str(agent_meta.get("name", "")).strip() or target_agent,
+                "agent": agent_name,
                 "goal": goal[:1000],
                 "deliverable": f"Concrete response/evidence addressing: {request}"[:1000],
                 "agent_meta": agent_meta,
@@ -1805,12 +2112,395 @@ def _build_indirect_delegation_fallback_steps(
         )
         local_signatures.add(canonical_need)
         existing_signatures.add(signature)
-        consumed_need_keys.add(need_text.lower())
+        consumed_need_keys.add(_need_identity_key(need))
 
         if len(added_steps) >= max_steps:
             break
 
     return {"steps": added_steps, "consumed_need_keys": sorted(consumed_need_keys)}
+
+
+def _result_has_actionable_evidence(result: Dict[str, Any]) -> bool:
+    if not isinstance(result, dict) or not bool(result.get("ok")):
+        return False
+    if result.get("artifacts_emitted"):
+        return True
+    agent_name = str(result.get("agent", "")).strip().lower()
+    if agent_name == "mainagent":
+        return False
+    output_status = str(result.get("output_status", "")).strip().lower()
+    if output_status == "blocked":
+        return False
+    response = str(result.get("response", "")).strip()
+    if not response or response in EMPTY_RESPONSE_SENTINELS:
+        return False
+    if _is_internal_bootstrap_text(response):
+        return False
+    return True
+
+
+def _is_delivery_step(step: Dict[str, Any]) -> bool:
+    if not isinstance(step, dict):
+        return False
+    agent_meta = step.get("agent_meta", {})
+    capability_keys = {
+        token.lower()
+        for token in _agent_capability_keys(agent_meta if isinstance(agent_meta, dict) else {})
+    }
+    if "comm.slack.post" not in capability_keys:
+        return False
+    combined = " ".join(
+        part for part in [str(step.get("goal", "")).strip(), str(step.get("deliverable", "")).strip()] if part
+    ).lower()
+    delivery_tokens = ["slack", "channel", "post", "deliver", "send", "message", "게시", "전송", "메시지"]
+    return any(token in combined for token in delivery_tokens)
+
+
+def _delivery_gate_error(
+    *,
+    step: Dict[str, Any],
+    open_needs: List[Dict[str, Any]],
+    results: List[Dict[str, Any]],
+    artifact_store: List[Dict[str, Any]],
+) -> str:
+    if not _is_delivery_step(step):
+        return ""
+    unresolved_blocking = [need for need in open_needs if isinstance(need, dict) and bool(need.get("blocking"))]
+    if unresolved_blocking:
+        return (
+            "Delivery is blocked because unresolved workflow needs remain. "
+            "Resolve the missing evidence or clarification before posting a final message."
+        )
+    if artifact_store:
+        return ""
+    if any(_result_has_actionable_evidence(item) for item in results):
+        return ""
+    return (
+        "Delivery is blocked because no reusable evidence or specialist findings are available yet. "
+        "Gather or synthesize evidence before posting to Slack."
+    )
+
+
+def _pending_step_log_entries(steps: List[Dict[str, Any]], *, max_items: int = 8) -> List[Dict[str, str]]:
+    return [
+        {
+            "agent": str(step.get("agent", "")),
+            "goal": str(step.get("goal", "")),
+        }
+        for step in steps[:max_items]
+        if isinstance(step, dict)
+    ]
+
+
+def _append_unique_open_needs(
+    *,
+    open_needs: List[Dict[str, Any]],
+    new_needs: List[Dict[str, Any]],
+    seen_need_keys: set[str],
+) -> List[Dict[str, Any]]:
+    added_needs: List[Dict[str, Any]] = []
+    for need in new_needs:
+        if not isinstance(need, dict):
+            continue
+        if _is_internal_bootstrap_need(need):
+            log_event(
+                "workflow.need",
+                "need_ignored_internal_bootstrap",
+                {
+                    "request": _normalize_need_text(str(need.get("request", "")).strip()),
+                    "reason": _compact_text(str(need.get("reason", "")).strip(), max_chars=180),
+                    "source_agent": str(need.get("source_agent", "")).strip(),
+                    "required_capabilities": _normalize_need_capabilities(need.get("required_capabilities", [])),
+                },
+                level="WARNING",
+            )
+            continue
+        key = _need_identity_key(need)
+        if not key or key in seen_need_keys:
+            continue
+        seen_need_keys.add(key)
+        open_needs.append(need)
+        added_needs.append(need)
+    return added_needs
+
+
+def _resolve_open_needs_for_completed_agent(
+    *,
+    open_needs: List[Dict[str, Any]],
+    previous_open_needs: List[Dict[str, Any]],
+    agent_name: str,
+    agent_meta: Dict[str, Any],
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    previous_need_keys = {
+        _need_identity_key(item)
+        for item in previous_open_needs
+        if isinstance(item, dict)
+    }
+    resolved: List[Dict[str, Any]] = []
+    remaining: List[Dict[str, Any]] = []
+
+    for need in open_needs:
+        if not isinstance(need, dict):
+            continue
+        need_key = _need_identity_key(need)
+        if need_key not in previous_need_keys:
+            remaining.append(need)
+            continue
+        if _agent_matches_need(agent_meta, need) > 0:
+            resolved.append(need)
+            continue
+        remaining.append(need)
+
+    return remaining, resolved
+
+
+def _replace_pending_steps_with_log(
+    *,
+    candidate_steps: List[Dict[str, Any]],
+    event_name: str,
+    log_payload: Dict[str, Any] | None = None,
+) -> List[Dict[str, Any]]:
+    new_pending_steps = list(candidate_steps)
+    payload = dict(log_payload or {})
+    payload["new_pending_steps"] = _pending_step_log_entries(new_pending_steps)
+    log_event("event_manager.collaboration", event_name, payload)
+    return new_pending_steps
+
+
+def _register_new_artifacts(
+    *,
+    artifact_store: List[Dict[str, Any]],
+    new_artifacts: List[Dict[str, Any]],
+    seen_artifact_keys: set[str],
+    source_agent: str,
+    workflow_step: int,
+) -> List[Dict[str, Any]]:
+    added_artifacts: List[Dict[str, Any]] = []
+    for artifact in new_artifacts:
+        artifact_key = _artifact_identity_key(artifact)
+        if artifact_key and artifact_key in seen_artifact_keys:
+            continue
+        if artifact_key:
+            seen_artifact_keys.add(artifact_key)
+        artifact_store.append(artifact)
+        added_artifacts.append(artifact)
+    if added_artifacts:
+        log_event(
+            "workflow.artifact",
+            "artifacts_registered",
+            {
+                "source_agent": source_agent,
+                "workflow_step": workflow_step,
+                "artifact_count": len(added_artifacts),
+                "artifact_ids": [str(item.get("id", "")) for item in added_artifacts],
+                "artifact_types": [str(item.get("type", "")) for item in added_artifacts],
+                "store_size": len(artifact_store),
+            },
+            direction="inbound",
+        )
+    return added_artifacts
+
+
+def _log_emitted_needs(
+    *,
+    source_agent: str,
+    workflow_id: str,
+    workflow_step: int,
+    needs: List[Dict[str, Any]],
+    open_needs: List[Dict[str, Any]],
+) -> None:
+    for need in needs:
+        request = _normalize_need_text(str(need.get("request", "")).strip())
+        required_capabilities = _normalize_need_capabilities(need.get("required_capabilities", []))
+        log_event(
+            "workflow.need",
+            "need_emitted",
+            {
+                "source_agent": source_agent,
+                "required_capabilities": required_capabilities,
+                "kind": _normalize_need_kind(str(need.get("kind", "")).strip()),
+                "request": request or _need_display_text(need),
+                "reason": str(need.get("reason", "")).strip(),
+                "workflow_step": workflow_step,
+            },
+        )
+        _log_agent_message(
+            action="need_requested",
+            from_agent=source_agent,
+            to_agent="MainAgent",
+            message=request or _need_display_text(need),
+            channel="needs",
+            workflow_id=workflow_id,
+            workflow_step=workflow_step,
+            direction="outbound",
+        )
+
+    if needs:
+        log_event(
+            "event_manager.collaboration",
+            "open_needs_updated_from_agent_output",
+            {
+                "added_needs": [_build_need_context_entry(item) for item in needs],
+                "open_needs": [_build_need_context_entry(item) for item in open_needs],
+            },
+            direction="inbound",
+        )
+
+
+def _mark_workflow_paused_for_user_input(
+    *,
+    result: Dict[str, Any],
+    step: int,
+    agent: str,
+    request: str,
+    source: str,
+) -> None:
+    result["workflow_paused"] = True
+    result["pause_reason"] = "awaiting_user_clarification"
+    result["pause_request"] = request
+    log_event(
+        "event_manager.collaboration",
+        "workflow_paused_for_user_input",
+        {
+            "step": step,
+            "agent": agent,
+            "request": request,
+            "source": source,
+        },
+    )
+
+
+def _append_error_detail(result: Dict[str, Any], heading: str, detail: str) -> None:
+    normalized = str(detail).strip()
+    if not normalized:
+        return
+    current_error = str(result.get("error", "Unknown error")).strip()
+    result["error"] = f"{current_error}\n\n{heading}: {normalized}"
+
+
+def _append_coordinator_message(result: Dict[str, Any], user_message: str) -> None:
+    normalized = str(user_message).strip()
+    if not normalized:
+        return
+    current_error = str(result.get("error", "Unknown error")).strip()
+    result["error"] = f"{current_error}\n\nCoordinator Message: {normalized}"
+
+
+def _maybe_replace_pending_steps_from_review(
+    *,
+    should_replace: bool,
+    updated_steps: Any,
+    event_name: str,
+    failed_step: int,
+    failed_agent: str,
+    reason: str,
+) -> List[Dict[str, Any]] | None:
+    if not should_replace or not updated_steps:
+        return None
+    return _replace_pending_steps_with_log(
+        candidate_steps=list(updated_steps),
+        event_name=event_name,
+        log_payload={
+            "failed_step": failed_step,
+            "failed_agent": failed_agent,
+            "reason": reason,
+        },
+    )
+
+
+def _default_progress_review_result(reason: str) -> Dict[str, Any]:
+    return {
+        "needs": [],
+        "should_update_plan": False,
+        "updated_steps": [],
+        "reason": reason,
+    }
+
+
+def _run_progress_review_or_skip(
+    *,
+    review_trigger_reasons: List[str],
+    main_agent: Any,
+    available_agents: List[Dict[str, Any]],
+    user_input: str,
+    conversation_history: str,
+    raw_plan: str,
+    results: List[Dict[str, Any]],
+    enriched: Dict[str, Any],
+    pending_steps: List[Dict[str, Any]],
+    open_needs: List[Dict[str, Any]],
+    step_counter: int,
+    agent_name: str,
+) -> Dict[str, Any]:
+    if review_trigger_reasons:
+        return _review_collaboration_progress_with_main_agent(
+            main_agent=main_agent,
+            available_agents=available_agents,
+            user_input=user_input,
+            conversation_history=conversation_history,
+            raw_plan=raw_plan,
+            completed_results=results,
+            latest_result=enriched,
+            pending_steps=pending_steps,
+            open_needs=open_needs,
+            trigger_reasons=review_trigger_reasons,
+        )
+
+    review = _default_progress_review_result("review_skipped_no_trigger")
+    log_event(
+        "event_manager.collaboration",
+        "replan_review_skipped",
+        {
+            "step": step_counter,
+            "agent": agent_name,
+            "pending_count": len(pending_steps),
+            "open_needs_count": len(open_needs),
+            "trigger_reasons": review_trigger_reasons,
+        },
+    )
+    return review
+
+
+def _apply_progress_review_plan_update(
+    *,
+    review: Dict[str, Any],
+    pending_steps: List[Dict[str, Any]],
+    completed_agent: str,
+    completed_goal: str,
+) -> tuple[bool, List[Dict[str, Any]]]:
+    if not (review.get("should_update_plan") and review.get("updated_steps")):
+        return False, pending_steps
+
+    candidate_steps = list(review["updated_steps"])
+    candidate_signatures = _step_signature_list(candidate_steps)
+    pending_signatures = _step_signature_list(pending_steps)
+    completed_signature = _step_signature({"agent": completed_agent, "goal": completed_goal})
+    needs_in_review = bool(review.get("needs"))
+
+    no_progress_reasons: List[str] = []
+    if candidate_signatures and all(sig == completed_signature for sig in candidate_signatures):
+        no_progress_reasons.append("repeats_completed_step")
+    if candidate_signatures and candidate_signatures == pending_signatures:
+        no_progress_reasons.append("identical_to_existing_pending")
+
+    if no_progress_reasons and not needs_in_review:
+        log_event(
+            "event_manager.collaboration",
+            "plan_update_rejected_no_progress",
+            {
+                "reason": str(review.get("reason", "")),
+                "reasons": no_progress_reasons,
+                "candidate_signatures": candidate_signatures,
+                "pending_signatures": pending_signatures,
+            },
+        )
+        return False, pending_steps
+
+    return True, _replace_pending_steps_with_log(
+        candidate_steps=candidate_steps,
+        event_name="plan_updated",
+        log_payload={"reason": str(review.get("reason", ""))},
+    )
 
 
 def _build_collaboration_step_input(
@@ -1819,7 +2509,7 @@ def _build_collaboration_step_input(
     user_input: str,
     prior_results: List[Dict[str, Any]],
     input_artifacts: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
     remaining_steps: List[Dict[str, Any]],
     available_agents: List[Dict[str, Any]],
     step: Dict[str, Any],
@@ -1841,7 +2531,7 @@ def _build_collaboration_step_input(
         max_items=2,
         max_goal_chars=140,
     )
-    delegation_targets = _build_delegation_targets(
+    delegation_options = _build_delegation_options(
         available_agents=available_agents,
         current_agent_name=str(step.get("agent", "")),
         max_items=6,
@@ -1862,36 +2552,223 @@ def _build_collaboration_step_input(
             "prior_results": prior_text,
             "input_artifacts": input_artifacts,
             "open_needs": [
-                _compact_text(str(item).strip(), max_chars=180)
-                for item in open_needs
-                if str(item).strip()
-            ][:4],
+                _build_need_context_entry(item)
+                for item in open_needs[:4]
+                if isinstance(item, dict)
+            ],
             "remaining_steps_hint": remaining_text,
         },
-        "delegation_targets": delegation_targets,
+        "delegation_options": delegation_options,
         "total_steps_hint": total_steps_hint,
-        "runtime_hints": {
-            "input_artifacts_supported": True,
-            "structured_handoff_supported": True,
-            "artifact_handoff_fields": ["type", "title", "summary", "url", "identifiers"],
-            "needs_handoff_supported": True,
+        "handoff_support": {
+            "input_artifacts": True,
+            "artifacts": ["type", "title", "summary", "url", "identifiers"],
+            "tool_output_contract": TOOL_OUTPUT_CONTRACT,
+            "output_contract": {
+                "status": "completed | partial | blocked | failed",
+                "summary": "required concise handoff-ready result",
+                "text_response": "optional fuller explanation kept inside JSON",
+                "artifacts": ["optional reusable structured items"],
+                "needs": ["optional follow-up needs using the needs schema below"],
+            },
+            "needs": {
+                "supported": True,
+                "schema": {
+                    "needs": [
+                        {
+                            "kind": "missing_evidence | user_clarification | missing_context",
+                            "request": "what is needed next",
+                            "required_capabilities": ["capability_key"],
+                            "reason": "why this handoff is needed",
+                            "blocking": True,
+                        }
+                    ]
+                },
+            },
         },
     }
     context_json = json.dumps(context_packet, ensure_ascii=False)
 
     return (
         "You are handling one step in a multi-agent workflow.\n"
-        "Use the context packet below as task context for this step.\n"
-        "Your own agent instruction and tools remain the primary contract for this step.\n"
-        "Work autonomously and choose the concrete approach yourself.\n"
-        "Treat goal, deliverable, and runtime_hints as guidance rather than rigid instructions.\n"
-        "Do not call other agents directly.\n"
-        "If internal workflow context is missing, do not ask the user for prior step data first. "
-        "Return structured `needs` targeted to `MainAgent` so the coordinator can provide shared workflow memory or the missing handoff context.\n"
-        "Return the best handoff-ready result you can for this step.\n\n"
+        "Use the context packet below as working context, not as a rigid script.\n"
+        "Solve the step directly when it matches your specialization and tools.\n"
+        "If another available agent is a better fit, or important workflow context is missing, say that clearly and return the strongest partial result or handoff you can.\n"
+        "Your direct callable tools return JSON using this internal tool contract:\n"
+        "{\n"
+        '  "ok": true,\n'
+        '  "tool_name": "callable tool name",\n'
+        '  "summary": "required concise tool-result summary",\n'
+        '  "content_type": "collection | object | memory | delivery | error",\n'
+        '  "items": ["optional normalized list records"],\n'
+        '  "data": {"optional structured payload": "..."},\n'
+        '  "errors": ["optional error strings"],\n'
+        '  "metadata": {"optional call metadata": "..."}\n'
+        "}\n"
+        "Use that tool contract internally, but do not return a raw tool output contract as your final workflow-step answer.\n"
+        "Return JSON only using this contract:\n"
+        "{\n"
+        '  "status": "completed | partial | blocked | failed",\n'
+        '  "summary": "required concise handoff-ready result",\n'
+        '  "text_response": "optional fuller explanation kept inside JSON",\n'
+        '  "artifacts": [\n'
+        "    {\n"
+        '      "type": "artifact type",\n'
+        '      "title": "short title",\n'
+        '      "summary": "what this artifact contains",\n'
+        '      "url": "optional source url",\n'
+        '      "identifiers": {"doi": "...", "arxiv_id": "..."}\n'
+        "    }\n"
+        "  ],\n"
+        '  "needs": [\n'
+        "    {\n"
+        '      "kind": "missing_evidence | user_clarification | missing_context",\n'
+        '      "request": "what is needed next",\n'
+        '      "required_capabilities": ["capability_key"],\n'
+        '      "reason": "why this handoff is needed",\n'
+        '      "blocking": true\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "Rules:\n"
+        "- `summary` is always required, even when blocked.\n"
+        "- Put any longer narrative or explanation inside `text_response`, not outside the JSON object.\n"
+        "- Use your private tools, skills, and session memory directly before declaring a blocker.\n"
+        "- Read internal tool results from their `summary`, `items`, `data`, and `errors` fields, then synthesize the task result in the workflow-step contract.\n"
+        "- Do not treat `load_skill`, `load_session_memory`, or other internal bootstrap output as the final answer to the workflow step.\n"
+        "- Do not emit `needs` asking the coordinator to load your own skills, tools, or session memory.\n"
+        "- Use `needs` only for missing evidence, missing shared workflow context, or user clarification that another agent or the user must provide.\n"
+        "- If you are blocked, explain the blocker in `summary` and include `needs` when coordinator follow-up is required.\n"
+        "- If you have reusable evidence, include it in `artifacts` and keep `summary` concise.\n"
+        "- Do not return plain prose outside the JSON object.\n"
+        "Keep the response focused on advancing the workflow.\n\n"
         "Workflow Context Packet:\n"
         f"{context_json}"
     )
+
+
+def _build_contract_repair_input(
+    *,
+    previous_response: str,
+    violations: List[str],
+) -> str:
+    violations_text = ", ".join(str(item).strip() for item in violations if str(item).strip()) or "invalid_output_contract"
+    return (
+        "Your previous workflow-step response violated the required output contract.\n"
+        "Do NOT write JSON manually. Do NOT output plain prose.\n\n"
+        "Steps to repair:\n"
+        "1. Read the previous response below and extract the key content: what was found (status, summary), any reusable items (artifacts), any outstanding needs.\n"
+        "2. Call `format_handoff_contract(status=..., summary=..., text_response=..., artifacts_json=..., needs_json=...)` with that content.\n"
+        "3. After the tool returns, write its return value as your next message — copy the returned string exactly as a text message, with no prose before or after it.\n"
+        "4. If `format_handoff_contract` returns a line starting with 'format_handoff_contract failed', fix the arguments and call it again.\n\n"
+        "Argument rules:\n"
+        "- `status`: one of 'completed', 'partial', 'blocked', 'failed'.\n"
+        "- `summary`: 1–3 sentences describing what was found or done. Must not be empty.\n"
+        "- `text_response`: detailed narrative if needed, otherwise pass empty string ''.\n"
+        "- `artifacts_json`: JSON array string — each item needs 'title' and 'summary'. "
+        "Add 'url', 'doi', 'arxiv_id' when available. Pass empty string '' if none.\n"
+        "- `needs_json`: JSON array string — each item needs 'request'. "
+        "Add 'required_capabilities' and 'blocking' when relevant. Pass empty string '' if none.\n\n"
+        "Do not return raw internal tool contracts (ok/tool_name/items/data/errors/metadata).\n"
+        "Do not include bootstrap outputs such as `load_skill` / `load_session_memory` results.\n"
+        "Do not ask the coordinator to load your private skills, tools, or session memory.\n\n"
+        f"Violations detected: {violations_text}\n\n"
+        "Previous response to repair:\n"
+        f"{previous_response}"
+    )
+
+
+def _attempt_worker_output_contract_repair(
+    *,
+    agent_meta: Dict[str, Any],
+    agent_name: str,
+    workflow_id: str,
+    workflow_step: int,
+    invalid_response: str,
+    violations: List[str],
+    workflow_memory_snapshot: Dict[str, Any] | None,
+) -> Dict[str, Any]:
+    repair_prompt = _build_contract_repair_input(
+        previous_response=invalid_response,
+        violations=violations,
+    )
+    log_event(
+        "event_manager.collaboration",
+        "worker_output_contract_repair_started",
+        {
+            "agent": agent_name,
+            "workflow_step": workflow_step,
+            "violations": violations,
+        },
+        level="WARNING",
+    )
+    _log_agent_message(
+        action="sent",
+        from_agent="MainAgent",
+        to_agent=agent_name,
+        message=repair_prompt,
+        channel="contract_repair",
+        workflow_id=workflow_id,
+        workflow_step=workflow_step,
+        direction="outbound",
+    )
+    repair_result = _execute_single_agent(
+        agent_meta,
+        repair_prompt,
+        workflow_memory_snapshot=workflow_memory_snapshot,
+    )
+    repair_raw_output = (
+        str(repair_result.get("response", "")).strip()
+        if repair_result.get("ok")
+        else str(repair_result.get("error", "")).strip()
+    )
+    _log_agent_message(
+        action="received",
+        from_agent=agent_name,
+        to_agent="MainAgent",
+        message=repair_raw_output,
+        channel="contract_repair",
+        workflow_id=workflow_id,
+        workflow_step=workflow_step,
+        ok=bool(repair_result.get("ok")),
+        direction="inbound",
+    )
+    structured_output: Dict[str, Any] | None = None
+    if repair_result.get("ok"):
+        structured_output = _extract_structured_agent_output(
+            repair_raw_output,
+            source_agent=agent_name,
+            workflow_id=workflow_id,
+            workflow_step=workflow_step,
+        )
+        _apply_bootstrap_only_violation(
+            structured_output=structured_output,
+            normalized_parts=repair_result.get("normalized_response_parts", []),
+        )
+    success = bool(repair_result.get("ok")) and isinstance(structured_output, dict) and bool(
+        structured_output.get("contract_valid")
+    )
+    log_event(
+        "event_manager.collaboration",
+        "worker_output_contract_repair_completed",
+        {
+            "agent": agent_name,
+            "workflow_step": workflow_step,
+            "success": success,
+            "violations": violations,
+            "repair_violations": list(structured_output.get("contract_violations", []))
+            if isinstance(structured_output, dict)
+            else [],
+        },
+        direction="inbound" if success else "outbound",
+        level="INFO" if success else "WARNING",
+    )
+    return {
+        "result": repair_result,
+        "structured_output": structured_output or {},
+        "success": success,
+        "raw_output": repair_raw_output,
+    }
 
 
 def _result_text_for_progress_review(latest_result: Dict[str, Any]) -> str:
@@ -1905,7 +2782,7 @@ def _collect_progress_review_reasons(
     *,
     latest_result: Dict[str, Any],
     pending_steps: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
 ) -> List[str]:
     reasons: List[str] = []
 
@@ -1928,13 +2805,13 @@ def _collect_progress_review_reasons(
                 break
 
     emitted_artifacts = latest_result.get("artifacts_emitted")
-    additional_needs = latest_result.get("parsed_additional_needs")
+    parsed_needs = latest_result.get("parsed_needs")
     if (
         bool(latest_result.get("ok"))
         and pending_steps
         and str(latest_result.get("agent", "")).strip().lower() != "mainagent"
         and not emitted_artifacts
-        and not additional_needs
+        and not parsed_needs
         and response_text in EMPTY_RESPONSE_SENTINELS
     ):
         reasons.append("missing_handoff_material")
@@ -1965,7 +2842,7 @@ async def _async_review_collaboration_progress_with_main_agent(
     completed_results: List[Dict[str, Any]],
     latest_result: Dict[str, Any],
     pending_steps: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
     trigger_reasons: List[str],
 ) -> Dict[str, Any]:
     runner = InMemoryRunner(agent=main_agent, app_name="main-collaboration-replanner")
@@ -1993,7 +2870,7 @@ async def _async_review_collaboration_progress_with_main_agent(
 
         completed_text = _format_prior_results_for_handoff(completed_results)
         pending_text = _format_remaining_steps(pending_steps)
-        needs_text = "\n".join(f"- {item}" for item in open_needs) if open_needs else "(none)"
+        needs_text = _format_open_needs_for_prompt(open_needs)
         conversation_summary = _summarize_conversation_history(conversation_history, max_turn_lines=8, max_chars=1200)
         planner_summary = _compact_text(raw_plan or "(none)", max_chars=1200)
         trigger_text = ", ".join(trigger_reasons) if trigger_reasons else "(none)"
@@ -2004,7 +2881,15 @@ async def _async_review_collaboration_progress_with_main_agent(
             "Return JSON only.\n\n"
             "JSON schema:\n"
             "{\n"
-            '  "additional_needs": ["need1", "need2"],\n'
+            '  "needs": [\n'
+            "    {\n"
+            '      "kind": "missing_evidence | user_clarification | missing_context",\n'
+            '      "request": "what is needed next",\n'
+            '      "required_capabilities": ["capability_key"],\n'
+            '      "reason": "why this handoff or follow-up is needed",\n'
+            '      "blocking": true\n'
+            "    }\n"
+            "  ],\n"
             '  "should_update_plan": true,\n'
             '  "updated_steps": [\n'
             "    {\n"
@@ -2016,11 +2901,11 @@ async def _async_review_collaboration_progress_with_main_agent(
             '  "reason": "short reason"\n'
             "}\n\n"
             "Guidelines:\n"
-            "- Use only names from Available agents.\n"
-            "- additional_needs should include only unresolved concrete needs.\n"
+            "- needs should include only unresolved concrete follow-up needs.\n"
+            "- Do not request or plan agent-private skill/tool/session-memory loading; those are internal runtime concerns.\n"
             "- If no plan update is needed, set should_update_plan=false and updated_steps=[].\n"
-            "- updated_steps should contain only future steps.\n"
-            "- Use role, capability_summary, ownership, and description to choose agents.\n"
+            "- updated_steps should contain only future steps and use names from Available agents.\n"
+            "- Reassign work only when another agent is clearly a better fit based on capability, ownership, and description.\n"
             "- Respect explicit user constraints.\n\n"
             f"Conversation context summary:\n{conversation_summary}\n\n"
             f"User request:\n{user_input}\n\n"
@@ -2051,26 +2936,14 @@ async def _async_review_collaboration_progress_with_main_agent(
         raw_text = "\n".join(chunks).strip()
         parsed = _extract_json_object(raw_text) or {}
 
-        additional_needs: List[str] = []
-        seen_needs: set[str] = set()
-        for item in parsed.get("additional_needs", []):
-            if not isinstance(item, str):
-                continue
-            token = _canonicalize_need_text(item)
-            key = token.lower()
-            if len(token) < 2 or key in seen_needs:
-                continue
-            seen_needs.add(key)
-            additional_needs.append(token)
-            if len(additional_needs) >= 12:
-                break
+        review_needs = _normalize_need_entries(parsed.get("needs"), source_agent="MainAgent", max_items=12)
 
         updated_steps = _normalize_replanned_steps(parsed.get("updated_steps"), available_agents)
         should_update = bool(parsed.get("should_update_plan")) and bool(updated_steps)
         reason = str(parsed.get("reason", "")).strip()
 
         result = {
-            "additional_needs": additional_needs,
+            "needs": review_needs,
             "should_update_plan": should_update,
             "updated_steps": updated_steps,
             "reason": reason,
@@ -2085,7 +2958,7 @@ async def _async_review_collaboration_progress_with_main_agent(
             {"pending_count": len(pending_steps), "open_needs_count": len(open_needs)},
         )
         return {
-            "additional_needs": [],
+            "needs": [],
             "should_update_plan": False,
             "updated_steps": [],
             "reason": "replan_review_failed",
@@ -2104,7 +2977,7 @@ def _review_collaboration_progress_with_main_agent(
     completed_results: List[Dict[str, Any]],
     latest_result: Dict[str, Any],
     pending_steps: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
     trigger_reasons: List[str],
 ) -> Dict[str, Any]:
     return _run_coroutine_sync(
@@ -2133,7 +3006,7 @@ async def _async_handle_collaboration_failure_with_main_agent(
     results_so_far: List[Dict[str, Any]],
     failed_result: Dict[str, Any],
     pending_steps: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     runner = InMemoryRunner(agent=main_agent, app_name="main-collaboration-failure-handler")
     failed_step = failed_result.get("workflow_step")
@@ -2155,7 +3028,7 @@ async def _async_handle_collaboration_failure_with_main_agent(
 
         completed_text = _format_prior_results_for_handoff(results_so_far)
         pending_text = _format_remaining_steps(pending_steps)
-        needs_text = "\n".join(f"- {item}" for item in open_needs) if open_needs else "(none)"
+        needs_text = _format_open_needs_for_prompt(open_needs)
         conversation_summary = _summarize_conversation_history(conversation_history, max_turn_lines=8, max_chars=1200)
         planner_summary = _compact_text(raw_plan or "(none)", max_chars=1200)
 
@@ -2178,11 +3051,11 @@ async def _async_handle_collaboration_failure_with_main_agent(
             '  "reason": "short reason for decision"\n'
             "}\n\n"
             "Guidelines:\n"
-            "- Use only names from Available agents.\n"
             "- If replan is feasible this turn, set decision=replan and provide updated_steps.\n"
             "- If not feasible, set decision=abort and provide a clear user_message.\n"
-            "- updated_steps must contain only future steps.\n"
-            "- Use role, capability_summary, ownership, and description to choose agents.\n"
+            "- Do not create steps for loading agent-private skills, tools, or session memory.\n"
+            "- updated_steps must contain only future steps and use names from Available agents.\n"
+            "- Use capability, ownership, and description to decide whether to retry, switch agents, or stop.\n"
             "- Respect explicit user constraints.\n\n"
             f"Conversation context summary:\n{conversation_summary}\n\n"
             f"User request:\n{user_input}\n\n"
@@ -2255,7 +3128,7 @@ def _handle_collaboration_failure_with_main_agent(
     results_so_far: List[Dict[str, Any]],
     failed_result: Dict[str, Any],
     pending_steps: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     return _run_coroutine_sync(
         _async_handle_collaboration_failure_with_main_agent(
@@ -2370,7 +3243,7 @@ def _build_timeout_control_packet(
     failed_result: Dict[str, Any],
     completed_results: List[Dict[str, Any]],
     pending_steps: List[Dict[str, Any]],
-    open_needs: List[str],
+    open_needs: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     failed_agent = str(failed_result.get("agent", "UnknownAgent")).strip() or "UnknownAgent"
     failed_error = str(failed_result.get("error", "Unknown error")).strip()
@@ -2390,7 +3263,11 @@ def _build_timeout_control_packet(
         "open_needs_count": len(open_needs),
         "completed_results_summary": _format_prior_results_for_handoff(completed_results),
         "pending_steps_summary": _format_remaining_steps(pending_steps),
-        "open_needs": [str(item).strip() for item in open_needs if str(item).strip()][:30],
+        "open_needs": [
+            _build_need_context_entry(item)
+            for item in open_needs[:30]
+            if isinstance(item, dict)
+        ],
     }
     if isinstance(timeout_sec, (int, float)):
         timeout_payload["timeout_sec"] = float(timeout_sec)
@@ -2448,9 +3325,10 @@ async def _async_handle_timeout_with_main_agent(
             "  ]\n"
             "}\n\n"
             "Guidelines:\n"
-            "- Use only names from Available agents in updated_steps.\n"
             "- Use replace_pending only when the current pending steps should be replaced.\n"
-            "- Use role, capability_summary, ownership, and description to choose agents.\n"
+            "- Do not create steps for loading agent-private skills, tools, or session memory.\n"
+            "- updated_steps must use names from Available agents.\n"
+            "- Use capability, ownership, and description to choose agents.\n"
             "- Keep the decision grounded in the current workflow status packet.\n"
             "- Respect explicit user constraints.\n\n"
             f"Conversation context summary:\n{conversation_summary}\n\n"
@@ -2542,17 +3420,29 @@ def _run_collaboration_workflow(
     steps: List[Dict[str, Any]],
     user_input: str,
     conversation_history: str,
-) -> List[Dict[str, Any]]:
-    results: List[Dict[str, Any]] = []
-    artifact_store: List[Dict[str, Any]] = []
+    initial_results: List[Dict[str, Any]] | None = None,
+    initial_artifact_store: List[Dict[str, Any]] | None = None,
+    initial_open_needs: List[Dict[str, Any]] | None = None,
+    initial_step_counter: int = 0,
+) -> Dict[str, Any]:
+    results: List[Dict[str, Any]] = list(initial_results or [])
+    artifact_store: List[Dict[str, Any]] = list(initial_artifact_store or [])
     seen_artifact_keys: set[str] = set()
+    for item in artifact_store:
+        key = _artifact_identity_key(item)
+        if key:
+            seen_artifact_keys.add(key)
     pending_steps: List[Dict[str, Any]] = list(steps)
-    open_needs: List[str] = []
+    open_needs: List[Dict[str, Any]] = list(initial_open_needs or [])
     seen_need_keys: set[str] = set()
+    for item in open_needs:
+        key = _need_identity_key(item)
+        if key:
+            seen_need_keys.add(key)
     step_attempt_counts: Dict[str, int] = {}
     activated_agent_cards_map: Dict[str, Dict[str, Any]] = {}
-    step_counter = 0
-    max_steps = _resolve_collaboration_max_steps(len(steps))
+    step_counter = initial_step_counter
+    max_steps = _resolve_collaboration_max_steps(len(pending_steps) + len(results))
     same_task_review_threshold = _resolve_same_task_review_threshold()
 
     while pending_steps and step_counter < max_steps:
@@ -2565,6 +3455,7 @@ def _run_collaboration_workflow(
         step_attempt_counts[step_signature] = same_task_attempt_count
         pre_step_open_needs = list(open_needs)
         current_agent_meta = step.get("agent_meta", {})
+        workflow_memory_snapshot: Dict[str, Any] | None = None
         if isinstance(current_agent_meta, dict):
             snapshot = _build_agent_card_snapshot(current_agent_meta)
             snapshot_name = str(snapshot.get("name", "")).strip().lower()
@@ -2574,18 +3465,6 @@ def _run_collaboration_workflow(
         total_steps_hint = step_counter + len(pending_steps)
         input_artifacts = _select_input_artifacts_for_step(
             artifact_store=artifact_store,
-        )
-        step_input = _build_collaboration_step_input(
-            workflow_id=workflow_id,
-            user_input=user_input,
-            prior_results=results,
-            input_artifacts=input_artifacts,
-            open_needs=open_needs,
-            remaining_steps=pending_steps,
-            available_agents=available_agents,
-            step=step,
-            step_index=step_counter,
-            total_steps_hint=total_steps_hint,
         )
         log_event(
             "event_manager.collaboration",
@@ -2598,40 +3477,82 @@ def _run_collaboration_workflow(
                 "task_signature": step_signature,
                 "same_task_attempt_count": same_task_attempt_count,
                 "same_task_attempt_threshold": same_task_review_threshold,
-                "open_needs": open_needs,
+                "open_needs": [
+                    _build_need_context_entry(item)
+                    for item in open_needs
+                    if isinstance(item, dict)
+                ],
                 "input_artifact_count": len(input_artifacts),
                 "input_artifact_ids": [str(item.get("id", "")) for item in input_artifacts],
                 "activated_agent_cards": [str(item.get("name", "")) for item in activated_agent_cards],
             },
             direction="outbound",
         )
-        _log_agent_message(
-            action="sent",
-            from_agent="MainAgent",
-            to_agent=agent_name,
-            message=step_input,
-            channel="collaboration_step",
-            workflow_id=workflow_id,
-            workflow_step=step_counter,
-            direction="outbound",
-        )
-
-        workflow_memory_snapshot = _build_workflow_memory_snapshot(
-            workflow_id=workflow_id,
-            user_input=user_input,
-            current_agent=agent_name,
-            current_step=step_counter,
+        delivery_gate_error = _delivery_gate_error(
+            step=step,
+            open_needs=open_needs,
             results=results,
             artifact_store=artifact_store,
-            open_needs=open_needs,
-            pending_steps=pending_steps,
-            activated_agent_cards=activated_agent_cards,
         )
-        result = _execute_single_agent(
-            step["agent_meta"],
-            step_input,
-            workflow_memory_snapshot=workflow_memory_snapshot,
-        )
+        if delivery_gate_error:
+            log_event(
+                "event_manager.collaboration",
+                "delivery_step_blocked_by_gate",
+                {
+                    "step": step_counter,
+                    "agent": agent_name,
+                    "goal": goal,
+                    "reason": delivery_gate_error,
+                },
+                level="WARNING",
+            )
+            result = {
+                "ok": False,
+                "agent": agent_name,
+                "error": delivery_gate_error,
+                "error_type": "delivery_gate",
+                "skipped": True,
+            }
+        else:
+            step_input = _build_collaboration_step_input(
+                workflow_id=workflow_id,
+                user_input=user_input,
+                prior_results=results,
+                input_artifacts=input_artifacts,
+                open_needs=open_needs,
+                remaining_steps=pending_steps,
+                available_agents=available_agents,
+                step=step,
+                step_index=step_counter,
+                total_steps_hint=total_steps_hint,
+            )
+            _log_agent_message(
+                action="sent",
+                from_agent="MainAgent",
+                to_agent=agent_name,
+                message=step_input,
+                channel="collaboration_step",
+                workflow_id=workflow_id,
+                workflow_step=step_counter,
+                direction="outbound",
+            )
+
+            workflow_memory_snapshot = _build_workflow_memory_snapshot(
+                workflow_id=workflow_id,
+                user_input=user_input,
+                current_agent=agent_name,
+                current_step=step_counter,
+                results=results,
+                artifact_store=artifact_store,
+                open_needs=open_needs,
+                pending_steps=pending_steps,
+                activated_agent_cards=activated_agent_cards,
+            )
+            result = _execute_single_agent(
+                step["agent_meta"],
+                step_input,
+                workflow_memory_snapshot=workflow_memory_snapshot,
+            )
         enriched = dict(result)
         enriched["workflow_step"] = step_counter
         enriched["goal"] = goal
@@ -2644,11 +3565,110 @@ def _run_collaboration_workflow(
             if enriched.get("ok")
             else str(enriched.get("error", "")).strip()
         )
-        if enriched.get("ok") and raw_agent_output:
-            structured_summary = _extract_agent_output_summary(raw_agent_output)
-            if structured_summary:
-                enriched["raw_response"] = raw_agent_output
-                enriched["response"] = structured_summary
+        if enriched.get("ok"):
+            structured_output = _extract_structured_agent_output(
+                raw_agent_output,
+                source_agent=agent_name,
+                workflow_id=workflow_id,
+                workflow_step=step_counter,
+            )
+            bootstrap_only_detected = _apply_bootstrap_only_violation(
+                structured_output=structured_output,
+                normalized_parts=enriched.get("normalized_response_parts", []),
+            )
+            if bootstrap_only_detected:
+                log_event(
+                    "event_manager.collaboration",
+                    "worker_output_bootstrap_only_detected",
+                    {
+                        "step": step_counter,
+                        "agent": agent_name,
+                        "normalized_response_parts": list(enriched.get("normalized_response_parts", []))
+                        if isinstance(enriched.get("normalized_response_parts", []), list)
+                        else [],
+                    },
+                    level="WARNING",
+                )
+            enriched["raw_response"] = structured_output["raw_response"]
+            enriched["structured_output"] = structured_output
+            enriched["output_status"] = structured_output["status"]
+            enriched["response"] = (
+                str(structured_output.get("text_response", "")).strip()
+                or str(structured_output.get("summary", "")).strip()
+            )
+            if not bool(structured_output.get("contract_valid")):
+                violations = list(structured_output.get("contract_violations", []))
+                log_event(
+                    "event_manager.collaboration",
+                    "worker_output_contract_violated",
+                    {
+                        "step": step_counter,
+                        "agent": agent_name,
+                        "violations": violations,
+                        "contract_source": structured_output.get("contract_source"),
+                    },
+                    level="WARNING",
+                )
+                repair = _attempt_worker_output_contract_repair(
+                    agent_meta=step["agent_meta"],
+                    agent_name=agent_name,
+                    workflow_id=workflow_id,
+                    workflow_step=step_counter,
+                    invalid_response=raw_agent_output,
+                    violations=violations,
+                    workflow_memory_snapshot=workflow_memory_snapshot,
+                )
+                enriched["contract_repair_attempted"] = True
+                enriched["contract_repair_success"] = bool(repair.get("success"))
+                enriched["contract_repair_raw_response"] = str(repair.get("raw_output", "")).strip()
+                if repair.get("success"):
+                    repaired_result = dict(repair.get("result", {}))
+                    repaired_structured = dict(repair.get("structured_output", {}))
+                    for key in [
+                        "elapsed_sec",
+                        "timeout_sec",
+                        "is_timeout",
+                        "error_type",
+                        "repair_count",
+                    ]:
+                        if key in repaired_result:
+                            enriched[key] = repaired_result.get(key)
+                    enriched["raw_response"] = str(repaired_structured.get("raw_response", "")).strip()
+                    enriched["structured_output"] = repaired_structured
+                    enriched["output_status"] = str(repaired_structured.get("status", "")).strip()
+                    enriched["response"] = (
+                        str(repaired_structured.get("text_response", "")).strip()
+                        or str(repaired_structured.get("summary", "")).strip()
+                    )
+                else:
+                    final_violations = list(
+                        dict.fromkeys(
+                            violations
+                            + list(
+                                dict(repair.get("structured_output", {})).get("contract_violations", [])
+                                if isinstance(repair.get("structured_output", {}), dict)
+                                else []
+                            )
+                        )
+                    )
+                    contract_error = (
+                        "Worker output contract violated after one repair retry: "
+                        + (", ".join(final_violations) if final_violations else "invalid structured response")
+                    )
+                    log_event(
+                        "event_manager.collaboration",
+                        "worker_output_contract_repair_failed",
+                        {
+                            "step": step_counter,
+                            "agent": agent_name,
+                            "violations": final_violations,
+                        },
+                        level="ERROR",
+                    )
+                    enriched["ok"] = False
+                    enriched["error"] = contract_error
+                    enriched["error_type"] = "worker_output_contract_violation"
+                    enriched["response"] = ""
         _log_agent_message(
             action="received",
             from_agent=agent_name,
@@ -2660,144 +3680,83 @@ def _run_collaboration_workflow(
             ok=bool(enriched.get("ok")),
             direction="inbound",
         )
-        parsed_needs = _extract_additional_needs_from_agent_output(raw_agent_output)
-        parsed_artifacts = (
-            _extract_artifacts_from_agent_output(
-                raw_agent_output,
-                source_agent=agent_name,
-                workflow_id=workflow_id,
-                workflow_step=step_counter,
-            )
-            if enriched.get("ok")
-            else []
-        )
-        enriched["parsed_additional_needs"] = parsed_needs
+        if enriched.get("ok"):
+            structured_output = enriched.get("structured_output", {})
+            parsed_needs = list(structured_output.get("needs", [])) if isinstance(structured_output, dict) else []
+            parsed_artifacts = list(structured_output.get("artifacts", [])) if isinstance(structured_output, dict) else []
+        else:
+            parsed_needs = []
+            parsed_artifacts = []
+        enriched["parsed_needs"] = parsed_needs
         enriched["artifacts_emitted"] = parsed_artifacts
         results.append(enriched)
 
-        added_artifacts: List[Dict[str, Any]] = []
-        for artifact in parsed_artifacts:
-            artifact_key = _artifact_identity_key(artifact)
-            if artifact_key and artifact_key in seen_artifact_keys:
-                continue
-            if artifact_key:
-                seen_artifact_keys.add(artifact_key)
-            artifact_store.append(artifact)
-            added_artifacts.append(artifact)
+        added_artifacts = _register_new_artifacts(
+            artifact_store=artifact_store,
+            new_artifacts=parsed_artifacts,
+            seen_artifact_keys=seen_artifact_keys,
+            source_agent=agent_name,
+            workflow_step=step_counter,
+        )
         if added_artifacts:
             enriched["artifact_ids"] = [str(item.get("id", "")) for item in added_artifacts]
-            log_event(
-                "workflow.artifact",
-                "artifacts_registered",
-                {
-                    "source_agent": agent_name,
-                    "workflow_step": step_counter,
-                    "artifact_count": len(added_artifacts),
-                    "artifact_ids": [str(item.get("id", "")) for item in added_artifacts],
-                    "artifact_types": [str(item.get("type", "")) for item in added_artifacts],
-                    "store_size": len(artifact_store),
-                },
-                direction="inbound",
-            )
 
-        added_needs: List[str] = []
-        if parsed_needs:
-            for item in parsed_needs:
-                need = _canonicalize_need_text(item)
-                key = need.lower()
-                if not need or key in seen_need_keys:
-                    continue
-                seen_need_keys.add(key)
-                open_needs.append(need)
-                added_needs.append(need)
-                target_agent, request = _parse_targeted_need(need)
-                log_event(
-                    "workflow.need",
-                    "need_emitted",
-                    {
-                        "source_agent": agent_name,
-                        "target_agent": target_agent,
-                        "request": request or need,
-                        "workflow_step": step_counter,
-                    },
-                )
-                _log_agent_message(
-                    action="need_requested",
-                    from_agent=agent_name,
-                    to_agent=target_agent or "MainAgent",
-                    message=request or need,
-                    channel="additional_needs",
-                    workflow_id=workflow_id,
-                    workflow_step=step_counter,
-                    direction="outbound",
-                )
-            if added_needs:
-                log_event(
-                    "event_manager.collaboration",
-                    "open_needs_updated_from_agent_output",
-                    {"added_needs": added_needs, "open_needs": open_needs},
-                    direction="inbound",
-                )
+        added_needs = _append_unique_open_needs(
+            open_needs=open_needs,
+            new_needs=parsed_needs,
+            seen_need_keys=seen_need_keys,
+        )
+        if added_needs:
+            _log_emitted_needs(
+                needs=added_needs,
+                source_agent=agent_name,
+                workflow_id=workflow_id,
+                workflow_step=step_counter,
+                open_needs=open_needs,
+            )
 
         if enriched.get("ok"):
             clarification_request = _first_user_clarification_request(added_needs)
-            clarification_source = "agent_output_additional_needs"
+            clarification_source = "agent_output_needs"
             if not clarification_request:
                 clarification_request = _first_user_clarification_request(open_needs)
                 clarification_source = "agent_output_open_needs"
             if clarification_request:
-                enriched["workflow_paused"] = True
-                enriched["pause_reason"] = "awaiting_user_clarification"
-                enriched["pause_request"] = clarification_request
-                log_event(
-                    "event_manager.collaboration",
-                    "workflow_paused_for_user_input",
-                    {
-                        "step": step_counter,
-                        "agent": agent_name,
-                        "request": clarification_request,
-                        "source": clarification_source,
-                    },
+                _mark_workflow_paused_for_user_input(
+                    result=enriched,
+                    request=clarification_request,
+                    step=step_counter,
+                    agent=agent_name,
+                    source=clarification_source,
                 )
                 break
 
         if enriched.get("ok") and pre_step_open_needs:
-            current_agent_key = agent_name.strip().lower()
-            pre_step_need_keys = {
-                str(item).strip().lower()
-                for item in pre_step_open_needs
-                if str(item).strip()
-            }
-            resolved_by_step: List[str] = []
-            remaining_open_needs: List[str] = []
-            for need in open_needs:
-                need_text = str(need).strip()
-                need_key = need_text.lower()
-                if need_key not in pre_step_need_keys:
-                    remaining_open_needs.append(need)
-                    continue
-                target_agent, request = _parse_targeted_need(need_text)
-                if target_agent and target_agent.strip().lower() == current_agent_key:
-                    resolved_by_step.append(need_text)
-                    log_event(
-                        "workflow.need",
-                        "need_resolved_by_step_completion",
-                        {
-                            "resolved_by_agent": agent_name,
-                            "target_agent": target_agent,
-                            "request": request or need_text,
-                            "workflow_step": step_counter,
-                        },
-                    )
-                    continue
-                remaining_open_needs.append(need)
-
+            open_needs, resolved_by_step = _resolve_open_needs_for_completed_agent(
+                open_needs=open_needs,
+                previous_open_needs=pre_step_open_needs,
+                agent_name=agent_name,
+                agent_meta=step.get("agent_meta", {}),
+            )
+            for need in resolved_by_step:
+                request = _normalize_need_text(str(need.get("request", "")).strip())
+                log_event(
+                    "workflow.need",
+                    "need_resolved_by_step_completion",
+                    {
+                        "resolved_by_agent": agent_name,
+                        "request": request or _need_display_text(need),
+                        "workflow_step": step_counter,
+                    },
+                )
             if resolved_by_step:
-                open_needs = remaining_open_needs
                 log_event(
                     "event_manager.collaboration",
                     "open_needs_resolved_by_step",
-                    {"resolved_needs": resolved_by_step, "remaining_open_needs": open_needs},
+                    {
+                        "resolved_needs": [_build_need_context_entry(item) for item in resolved_by_step],
+                        "remaining_open_needs": [_build_need_context_entry(item) for item in open_needs],
+                    },
                     direction="inbound",
                 )
 
@@ -2888,9 +3847,7 @@ def _run_collaboration_workflow(
                 user_message = str(timeout_review.get("user_message", "")).strip()
                 status_summary = str(timeout_review.get("status_summary", "")).strip()
 
-                if root_cause:
-                    current_error = str(enriched.get("error", "Unknown error")).strip()
-                    enriched["error"] = f"{current_error}\n\nTimeout Review: {root_cause}"
+                _append_error_detail(enriched, "Timeout Review", root_cause)
 
                 enriched["timeout_recovery"] = {
                     "decision": decision,
@@ -2900,27 +3857,18 @@ def _run_collaboration_workflow(
                     "status_summary": status_summary,
                     "next_step_policy": str(timeout_review.get("next_step_policy", "resume_pending")).strip(),
                 }
-                enriched["failure_recovery"] = dict(enriched["timeout_recovery"])
 
                 if timeout_review.get("should_continue"):
-                    if timeout_review.get("replace_pending") and timeout_review.get("updated_steps"):
-                        pending_steps = list(timeout_review["updated_steps"])
-                        log_event(
-                            "event_manager.collaboration",
-                            "plan_updated_after_timeout",
-                            {
-                                "failed_step": step_counter,
-                                "failed_agent": agent_name,
-                                "reason": reason,
-                                "new_pending_steps": [
-                                    {
-                                        "agent": str(step_meta.get("agent", "")),
-                                        "goal": str(step_meta.get("goal", "")),
-                                    }
-                                    for step_meta in pending_steps
-                                ],
-                            },
-                        )
+                    replaced_pending = _maybe_replace_pending_steps_from_review(
+                        should_replace=bool(timeout_review.get("replace_pending")),
+                        updated_steps=timeout_review.get("updated_steps"),
+                        event_name="plan_updated_after_timeout",
+                        failed_step=step_counter,
+                        failed_agent=agent_name,
+                        reason=reason,
+                    )
+                    if replaced_pending is not None:
+                        pending_steps = replaced_pending
                     log_event(
                         "event_manager.collaboration",
                         "workflow_resumed_after_timeout",
@@ -2933,9 +3881,7 @@ def _run_collaboration_workflow(
                     )
                     continue
 
-                if user_message:
-                    current_error = str(enriched.get("error", "Unknown error")).strip()
-                    enriched["error"] = f"{current_error}\n\nCoordinator Message: {user_message}"
+                _append_coordinator_message(enriched, user_message)
 
                 log_event(
                     "event_manager.collaboration",
@@ -2968,9 +3914,7 @@ def _run_collaboration_workflow(
             decision = str(failure_review.get("decision", "abort")).strip().lower() or "abort"
             reason = str(failure_review.get("reason", "")).strip()
 
-            if root_cause:
-                current_error = str(enriched.get("error", "Unknown error")).strip()
-                enriched["error"] = f"{current_error}\n\nFailure Analysis: {root_cause}"
+            _append_error_detail(enriched, "Failure Analysis", root_cause)
 
             enriched["failure_recovery"] = {
                 "decision": decision,
@@ -2979,29 +3923,19 @@ def _run_collaboration_workflow(
                 "user_message": user_message,
             }
 
-            if failure_review.get("should_replan") and failure_review.get("updated_steps"):
-                pending_steps = list(failure_review["updated_steps"])
-                log_event(
-                    "event_manager.collaboration",
-                    "plan_recovered_from_error",
-                    {
-                        "failed_step": step_counter,
-                        "failed_agent": agent_name,
-                        "reason": reason,
-                        "new_pending_steps": [
-                            {
-                                "agent": str(step_meta.get("agent", "")),
-                                "goal": str(step_meta.get("goal", "")),
-                            }
-                            for step_meta in pending_steps
-                        ],
-                    },
-                )
+            replaced_pending = _maybe_replace_pending_steps_from_review(
+                should_replace=bool(failure_review.get("should_replan")),
+                updated_steps=failure_review.get("updated_steps"),
+                event_name="plan_recovered_from_error",
+                failed_step=step_counter,
+                failed_agent=agent_name,
+                reason=reason,
+            )
+            if replaced_pending is not None:
+                pending_steps = replaced_pending
                 continue
 
-            if user_message:
-                current_error = str(enriched.get("error", "Unknown error")).strip()
-                enriched["error"] = f"{current_error}\n\nCoordinator Message: {user_message}"
+            _append_coordinator_message(enriched, user_message)
 
             log_event(
                 "event_manager.collaboration",
@@ -3022,122 +3956,56 @@ def _run_collaboration_workflow(
             pending_steps=pending_steps,
             open_needs=open_needs,
         )
-        should_review = bool(review_trigger_reasons)
-        if should_review:
-            review = _review_collaboration_progress_with_main_agent(
-                main_agent=main_agent,
-                available_agents=available_agents,
-                user_input=user_input,
-                conversation_history=conversation_history,
-                raw_plan=raw_plan,
-                completed_results=results,
-                latest_result=enriched,
-                pending_steps=pending_steps,
-                open_needs=open_needs,
-                trigger_reasons=review_trigger_reasons,
-            )
-        else:
-            review = {
-                "additional_needs": [],
-                "should_update_plan": False,
-                "updated_steps": [],
-                "reason": "review_skipped_no_trigger",
-            }
-            log_event(
-                "event_manager.collaboration",
-                "replan_review_skipped",
-                {
-                    "step": step_counter,
-                    "agent": agent_name,
-                    "pending_count": len(pending_steps),
-                    "open_needs_count": len(open_needs),
-                    "trigger_reasons": review_trigger_reasons,
-                },
-            )
+        review = _run_progress_review_or_skip(
+            review_trigger_reasons=review_trigger_reasons,
+            main_agent=main_agent,
+            available_agents=available_agents,
+            user_input=user_input,
+            conversation_history=conversation_history,
+            raw_plan=raw_plan,
+            results=results,
+            enriched=enriched,
+            pending_steps=pending_steps,
+            open_needs=open_needs,
+            step_counter=step_counter,
+            agent_name=agent_name,
+        )
 
-        review_added_needs: List[str] = []
-        for item in review.get("additional_needs", []):
-            if not isinstance(item, str):
-                continue
-            need = _canonicalize_need_text(item)
-            key = need.lower()
-            if not need or key in seen_need_keys:
-                continue
-            seen_need_keys.add(key)
-            open_needs.append(need)
-            review_added_needs.append(need)
-        if review.get("additional_needs"):
+        review_added_needs = _append_unique_open_needs(
+            open_needs=open_needs,
+            new_needs=list(review.get("needs", [])),
+            seen_need_keys=seen_need_keys,
+        )
+        if review.get("needs"):
             log_event(
                 "event_manager.collaboration",
                 "open_needs_updated",
-                {"open_needs": open_needs},
+                {"open_needs": [_build_need_context_entry(item) for item in open_needs]},
                 direction="inbound",
             )
 
         clarification_request = _first_user_clarification_request(review_added_needs)
-        clarification_source = "review_additional_needs"
+        clarification_source = "review_needs"
         if not clarification_request:
             clarification_request = _first_user_clarification_request(open_needs)
             clarification_source = "review_open_needs"
         if clarification_request:
-            enriched["workflow_paused"] = True
-            enriched["pause_reason"] = "awaiting_user_clarification"
-            enriched["pause_request"] = clarification_request
-            log_event(
-                "event_manager.collaboration",
-                "workflow_paused_for_user_input",
-                {
-                    "step": step_counter,
-                    "agent": agent_name,
-                    "request": clarification_request,
-                    "source": clarification_source,
-                },
+            _mark_workflow_paused_for_user_input(
+                result=enriched,
+                request=clarification_request,
+                step=step_counter,
+                agent=agent_name,
+                source=clarification_source,
             )
             break
 
-        review_updated_plan = bool(review.get("should_update_plan") and review.get("updated_steps"))
-        if review_updated_plan:
-            candidate_steps = list(review["updated_steps"])
-            candidate_signatures = _step_signature_list(candidate_steps)
-            pending_signatures = _step_signature_list(pending_steps)
-            completed_signature = _step_signature({"agent": agent_name, "goal": goal})
-            additional_needs_in_review = bool(review.get("additional_needs"))
-
-            no_progress_reasons: List[str] = []
-            if candidate_signatures and all(sig == completed_signature for sig in candidate_signatures):
-                no_progress_reasons.append("repeats_completed_step")
-            if candidate_signatures and candidate_signatures == pending_signatures:
-                no_progress_reasons.append("identical_to_existing_pending")
-
-            if no_progress_reasons and not additional_needs_in_review:
-                review_updated_plan = False
-                log_event(
-                    "event_manager.collaboration",
-                    "plan_update_rejected_no_progress",
-                    {
-                        "reason": str(review.get("reason", "")),
-                        "reasons": no_progress_reasons,
-                        "candidate_signatures": candidate_signatures,
-                        "pending_signatures": pending_signatures,
-                    },
-                )
-            else:
-                pending_steps = candidate_steps
-                log_event(
-                    "event_manager.collaboration",
-                    "plan_updated",
-                    {
-                        "reason": str(review.get("reason", "")),
-                        "new_pending_steps": [
-                            {
-                                "agent": str(step_meta.get("agent", "")),
-                                "goal": str(step_meta.get("goal", "")),
-                            }
-                            for step_meta in pending_steps
-                        ],
-                    },
-                )
-        else:
+        review_updated_plan, pending_steps = _apply_progress_review_plan_update(
+            review=review,
+            pending_steps=pending_steps,
+            completed_agent=agent_name,
+            completed_goal=goal,
+        )
+        if not review_updated_plan:
             fallback_plan = _build_indirect_delegation_fallback_steps(
                 open_needs=open_needs,
                 available_agents=available_agents,
@@ -3159,35 +4027,29 @@ def _run_collaboration_workflow(
                     removed_needs = [
                         need
                         for need in open_needs
-                        if str(need).strip().lower() in consumed_need_keys
+                        if _need_identity_key(need) in consumed_need_keys
                     ]
                     open_needs = [
                         need
                         for need in open_needs
-                        if str(need).strip().lower() not in consumed_need_keys
+                        if _need_identity_key(need) not in consumed_need_keys
                     ]
                     for removed in removed_needs:
-                        target_agent, request = _parse_targeted_need(str(removed))
+                        request = _normalize_need_text(str(removed.get("request", "")).strip())
                         log_event(
                             "workflow.need",
                             "need_resolved_by_plan_augmentation",
                             {
-                                "target_agent": target_agent,
-                                "request": request or str(removed),
+                                "required_capabilities": _normalize_need_capabilities(removed.get("required_capabilities", [])),
+                                "request": request or _need_display_text(removed),
                             },
                         )
                 log_event(
                     "event_manager.collaboration",
-                    "plan_augmented_from_additional_needs",
+                    "plan_augmented_from_open_needs",
                     {
-                        "added_steps": [
-                            {
-                                "agent": str(step_meta.get("agent", "")),
-                                "goal": str(step_meta.get("goal", "")),
-                            }
-                            for step_meta in fallback_steps
-                        ],
-                        "remaining_open_needs": open_needs,
+                        "added_steps": _pending_step_log_entries(fallback_steps),
+                        "remaining_open_needs": [_build_need_context_entry(item) for item in open_needs],
                     },
                 )
 
@@ -3203,7 +4065,7 @@ def _run_collaboration_workflow(
                 "workflow_paused": True,
                 "pause_reason": "awaiting_user_clarification",
                 "pause_request": clarification_request,
-                "parsed_additional_needs": [],
+                "parsed_needs": [],
             }
             results.append(pause_entry)
             log_event(
@@ -3226,7 +4088,14 @@ def _run_collaboration_workflow(
                 level="ERROR",
             )
 
-    return results
+    return {
+        "workflow_id": workflow_id,
+        "results": results,
+        "artifact_store": artifact_store,
+        "open_needs": open_needs,
+        "pending_steps": pending_steps,
+        "step_counter": step_counter,
+    }
 
 
 def _extract_pause_request_from_results(results: List[Dict[str, Any]]) -> Dict[str, Any] | None:
@@ -3244,6 +4113,116 @@ def _extract_pause_request_from_results(results: List[Dict[str, Any]]) -> Dict[s
             "request": request,
         }
     return None
+
+
+def _serialize_pending_steps_for_snapshot(pending_steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    serialized: List[Dict[str, Any]] = []
+    for step in pending_steps:
+        if not isinstance(step, dict):
+            continue
+        agent = str(step.get("agent", "")).strip()
+        goal = str(step.get("goal", "")).strip()
+        deliverable = str(step.get("deliverable", "")).strip()
+        if not agent:
+            continue
+        serialized.append(
+            {
+                "agent": agent,
+                "goal": goal[:1000],
+                "deliverable": deliverable[:1000],
+            }
+        )
+    return serialized
+
+
+def _copy_open_needs_for_snapshot(open_needs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    copied: List[Dict[str, Any]] = []
+    for need in open_needs:
+        if not isinstance(need, dict):
+            continue
+        copied.append(
+            {
+                "kind": _normalize_need_kind(str(need.get("kind", "")).strip()),
+                "request": _normalize_need_text(str(need.get("request", "")).strip()),
+                "required_capabilities": _normalize_need_capabilities(need.get("required_capabilities", [])),
+                "reason": str(need.get("reason", "")).strip(),
+                "blocking": bool(need.get("blocking")),
+                "source_agent": str(need.get("source_agent", "")).strip(),
+                "workflow_step": need.get("workflow_step"),
+            }
+        )
+    return copied
+
+
+def _copy_artifacts_for_snapshot(artifact_store: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    copied: List[Dict[str, Any]] = []
+    for artifact in artifact_store:
+        if not isinstance(artifact, dict):
+            continue
+        copied.append(dict(artifact))
+    return copied
+
+
+def _build_paused_workflow_snapshot(
+    *,
+    workflow_id: str,
+    raw_plan: str,
+    collaboration_plan: Any,
+    original_user_input: str,
+    conversation_history: str,
+    workflow_state: Dict[str, Any],
+    pause_payload: Dict[str, Any],
+) -> Dict[str, Any]:
+    return {
+        "workflow_id": workflow_id,
+        "raw_plan": raw_plan,
+        "collaboration_plan": collaboration_plan if isinstance(collaboration_plan, dict) else {},
+        "original_user_input": str(original_user_input or ""),
+        "conversation_history": str(conversation_history or ""),
+        "pause_request": str(pause_payload.get("request", "")).strip(),
+        "pause_agent": str(pause_payload.get("agent", "MainAgent")).strip() or "MainAgent",
+        "pause_step": pause_payload.get("workflow_step"),
+        "pending_steps": _serialize_pending_steps_for_snapshot(list(workflow_state.get("pending_steps", []))),
+        "open_needs": _copy_open_needs_for_snapshot(list(workflow_state.get("open_needs", []))),
+        "artifact_store": _copy_artifacts_for_snapshot(list(workflow_state.get("artifact_store", []))),
+        "completed_results": [dict(item) for item in list(workflow_state.get("results", [])) if isinstance(item, dict)],
+    }
+
+
+def _merge_user_input_with_clarification(
+    *,
+    original_user_input: str,
+    pause_request: str,
+    clarification_response: str,
+) -> str:
+    merged_parts = [str(original_user_input or "").strip()]
+    request = str(pause_request or "").strip()
+    response = str(clarification_response or "").strip()
+    if request and response:
+        merged_parts.append(f"User clarification for '{request}': {response}")
+    elif response:
+        merged_parts.append(f"User clarification: {response}")
+    return "\n\n".join(part for part in merged_parts if part).strip()
+
+
+def _build_user_clarification_artifact(
+    *,
+    workflow_id: str,
+    clarification_request: str,
+    clarification_response: str,
+) -> Dict[str, Any]:
+    summary = _compact_text(str(clarification_response or "").strip(), max_chars=240)
+    title = _compact_text(str(clarification_request or "User clarification").strip(), max_chars=120)
+    return {
+        "id": f"{workflow_id}:clarification:{uuid4().hex[:8]}",
+        "type": "user_clarification",
+        "title": title or "User clarification",
+        "summary": summary or "(empty clarification response)",
+        "source_agent": "User",
+        "workflow_step": 0,
+        "request": str(clarification_request or "").strip(),
+        "response": str(clarification_response or "").strip(),
+    }
 
 
 def _build_agent_input(user_input: str, conversation_history: str) -> str:
@@ -3277,12 +4256,12 @@ def _fallback_collaboration_steps_from_agents(
     ]
 
 
-def execute_plan(
+def execute_plan_detailed(
     plan: Dict[str, Any],
     main_agent: Any,
     available_agents: List[Dict[str, Any]],
     context: Dict[str, Any] | None = None,
-) -> Any:
+) -> Dict[str, Any]:
     raw_plan = str(plan.get("raw_plan", ""))
     user_input = str(plan.get("meta", {}).get("user_input", ""))
     collaboration_plan = plan.get("meta", {}).get("collaboration_plan", {})
@@ -3327,7 +4306,7 @@ def execute_plan(
                 ],
             },
         )
-        results = _run_collaboration_workflow(
+        workflow_state = _run_collaboration_workflow(
             main_agent=main_agent,
             available_agents=executable_agents,
             workflow_id=workflow_id,
@@ -3336,18 +4315,34 @@ def execute_plan(
             user_input=user_input,
             conversation_history=conversation_history,
         )
+        results = list(workflow_state.get("results", []))
         pause_payload = _extract_pause_request_from_results(results)
         if pause_payload:
+            paused_workflow = _build_paused_workflow_snapshot(
+                workflow_id=workflow_id,
+                raw_plan=raw_plan,
+                collaboration_plan=collaboration_plan,
+                original_user_input=user_input,
+                conversation_history=conversation_history,
+                workflow_state=workflow_state,
+                pause_payload=pause_payload,
+            )
             log_event(
                 "event_manager.collaboration",
                 "workflow_paused_response_returned",
                 pause_payload,
             )
             request = str(pause_payload.get("request", "")).strip()
-            return (
-                "진행을 일시 중단하고 사용자 응답을 기다립니다.\n\n"
-                f"{request}"
-            )
+            return {
+                "output_text": (
+                    "진행을 일시 중단하고 사용자 응답을 기다립니다.\n\n"
+                    f"{request}"
+                ),
+                "raw_plan": raw_plan,
+                "workflow_id": workflow_id,
+                "results": results,
+                "paused_workflow": paused_workflow,
+            }
         formatted = _format_execution_output(raw_plan=raw_plan, results=results)
         final_summary = _summarize_collaboration_with_main_agent(
             main_agent=main_agent,
@@ -3360,7 +4355,13 @@ def execute_plan(
         if final_summary:
             formatted = f"{formatted}\n\n=== Final Summary ===\n{final_summary}"
         log_event("event_manager", "collaboration_execution_completed", {"results": results})
-        return formatted
+        return {
+            "output_text": formatted,
+            "raw_plan": raw_plan,
+            "workflow_id": workflow_id,
+            "results": results,
+            "paused_workflow": None,
+        }
 
     a2a_agents = [agent for agent in available_agents if _is_a2a_agent(agent)]
     if len(a2a_agents) == 1 and user_input:
@@ -3395,12 +4396,268 @@ def execute_plan(
             ok=bool(direct_result.get("ok")),
             direction="inbound",
         )
-        return direct_result
+        return {
+            "output_text": str(direct_result),
+            "raw_plan": raw_plan,
+            "workflow_id": workflow_id,
+            "results": [direct_result] if isinstance(direct_result, dict) else [],
+            "paused_workflow": None,
+        }
 
     fallback = raw_plan or "No plan was generated."
     log_event("event_manager", "execute_plan_fallback", {"result": fallback})
-    return fallback
+    return {
+        "output_text": fallback,
+        "raw_plan": raw_plan,
+        "workflow_id": workflow_id,
+        "results": [],
+        "paused_workflow": None,
+    }
 
 
-__all__ = ["execute_plan"]
+def _resume_paused_workflow_acknowledgement(
+    *,
+    pause_request: str,
+    clarification_response: str,
+) -> str:
+    request = str(pause_request or "").strip()
+    response = str(clarification_response or "").strip()
+    if request and response:
+        return f"확인했습니다. '{request}'에 대해 '{response}'라고 답해 주셔서 해당 확인 단계를 종료했습니다."
+    if response:
+        return f"확인했습니다. 추가로 주신 답변 '{response}'을(를) 반영했습니다."
+    return "확인했습니다. 사용자 응답을 반영해 일시중단된 확인 단계를 종료했습니다."
 
+
+def resume_paused_workflow_detailed(
+    *,
+    paused_workflow: Dict[str, Any],
+    clarification_response: str,
+    main_agent: Any,
+    available_agents: List[Dict[str, Any]],
+    context: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    snapshot = dict(paused_workflow or {})
+    workflow_id = str(snapshot.get("workflow_id", "")).strip() or f"default-{uuid4().hex[:8]}"
+    raw_plan = str(snapshot.get("raw_plan", "")).strip()
+    original_user_input = str(snapshot.get("original_user_input", "")).strip()
+    pause_request = str(snapshot.get("pause_request", "")).strip()
+    context_map = context or {}
+    conversation_history = str(context_map.get("conversation_history", "") or snapshot.get("conversation_history", "")).strip()
+
+    executable_agents = [agent for agent in available_agents if _is_local_agent(agent) or _is_a2a_agent(agent)]
+    pending_steps = _normalize_replanned_steps(snapshot.get("pending_steps"), executable_agents)
+    open_needs = _normalize_need_entries(snapshot.get("open_needs"), source_agent="MainAgent", max_items=20)
+    open_needs = [need for need in open_needs if not _is_user_clarification_need(need)]
+    completed_results = [
+        dict(item)
+        for item in snapshot.get("completed_results", [])
+        if isinstance(item, dict)
+    ]
+    artifact_store = _copy_artifacts_for_snapshot(list(snapshot.get("artifact_store", [])))
+    clarification_artifact = _build_user_clarification_artifact(
+        workflow_id=workflow_id,
+        clarification_request=pause_request,
+        clarification_response=clarification_response,
+    )
+    artifact_store.append(clarification_artifact)
+
+    merged_user_input = _merge_user_input_with_clarification(
+        original_user_input=original_user_input,
+        pause_request=pause_request,
+        clarification_response=clarification_response,
+    )
+
+    log_event(
+        "event_manager.collaboration",
+        "workflow_resume_started",
+        {
+            "workflow_id": workflow_id,
+            "pending_count": len(pending_steps),
+            "open_needs_count": len(open_needs),
+            "completed_count": len(completed_results),
+        },
+    )
+
+    if not pending_steps and not open_needs:
+        output_text = _resume_paused_workflow_acknowledgement(
+            pause_request=pause_request,
+            clarification_response=clarification_response,
+        )
+        log_event(
+            "event_manager.collaboration",
+            "workflow_resumed_without_replan",
+            {"workflow_id": workflow_id, "reason": "no_remaining_work_after_clarification"},
+        )
+        return {
+            "output_text": output_text,
+            "raw_plan": raw_plan,
+            "workflow_id": workflow_id,
+            "results": completed_results,
+            "paused_workflow": None,
+        }
+
+    latest_result = {
+        "ok": True,
+        "agent": "MainAgent",
+        "workflow_step": len(completed_results),
+        "goal": "사용자 응답을 반영하여 일시중단된 workflow를 재개합니다.",
+        "response": _compact_text(
+            f"User clarification received for '{pause_request}': {clarification_response}",
+            max_chars=420,
+        ),
+        "raw_response": _compact_text(
+            f"User clarification received for '{pause_request}': {clarification_response}",
+            max_chars=420,
+        ),
+        "parsed_needs": [],
+        "artifacts_emitted": [clarification_artifact],
+        "workflow_paused": False,
+    }
+    review = _review_collaboration_progress_with_main_agent(
+        main_agent=main_agent,
+        available_agents=executable_agents,
+        user_input=merged_user_input,
+        conversation_history=conversation_history,
+        raw_plan=raw_plan,
+        completed_results=completed_results,
+        latest_result=latest_result,
+        pending_steps=pending_steps,
+        open_needs=open_needs,
+        trigger_reasons=["resumed_after_user_clarification"],
+    )
+    if review.get("needs"):
+        review_needs = _normalize_need_entries(review.get("needs"), source_agent="MainAgent", max_items=12)
+        seen_need_keys = {_need_identity_key(item) for item in open_needs if _need_identity_key(item)}
+        _append_unique_open_needs(
+            open_needs=open_needs,
+            new_needs=review_needs,
+            seen_need_keys=seen_need_keys,
+        )
+
+    clarification_request = _first_user_clarification_request(open_needs)
+    if clarification_request:
+        paused_snapshot = {
+            "workflow_id": workflow_id,
+            "raw_plan": raw_plan,
+            "collaboration_plan": snapshot.get("collaboration_plan", {}),
+            "original_user_input": merged_user_input,
+            "conversation_history": conversation_history,
+            "pause_request": clarification_request,
+            "pause_agent": "MainAgent",
+            "pause_step": latest_result.get("workflow_step"),
+            "pending_steps": _serialize_pending_steps_for_snapshot(pending_steps),
+            "open_needs": _copy_open_needs_for_snapshot(open_needs),
+            "artifact_store": _copy_artifacts_for_snapshot(artifact_store),
+            "completed_results": completed_results,
+        }
+        return {
+            "output_text": "진행을 일시 중단하고 사용자 응답을 기다립니다.\n\n" + clarification_request,
+            "raw_plan": raw_plan,
+            "workflow_id": workflow_id,
+            "results": completed_results,
+            "paused_workflow": paused_snapshot,
+        }
+
+    review_updated_plan, pending_steps = _apply_progress_review_plan_update(
+        review=review,
+        pending_steps=pending_steps,
+        completed_agent="MainAgent",
+        completed_goal=str(latest_result.get("goal", "")),
+    )
+    if not review_updated_plan:
+        fallback_plan = _build_indirect_delegation_fallback_steps(
+            open_needs=open_needs,
+            available_agents=executable_agents,
+            pending_steps=pending_steps,
+        )
+        fallback_steps = [item for item in fallback_plan.get("steps", []) if isinstance(item, dict)]
+        consumed_need_keys = {
+            str(item).strip().lower()
+            for item in fallback_plan.get("consumed_need_keys", [])
+            if str(item).strip()
+        }
+        if fallback_steps:
+            pending_steps = fallback_steps + pending_steps
+            if consumed_need_keys:
+                open_needs = [
+                    need
+                    for need in open_needs
+                    if _need_identity_key(need) not in consumed_need_keys
+                ]
+
+    resumed_state = _run_collaboration_workflow(
+        main_agent=main_agent,
+        available_agents=executable_agents,
+        workflow_id=workflow_id,
+        raw_plan=raw_plan,
+        steps=pending_steps,
+        user_input=merged_user_input,
+        conversation_history=conversation_history,
+        initial_results=completed_results,
+        initial_artifact_store=artifact_store,
+        initial_open_needs=open_needs,
+        initial_step_counter=len(completed_results),
+    )
+    resumed_results = list(resumed_state.get("results", []))
+    pause_payload = _extract_pause_request_from_results(resumed_results)
+    if pause_payload:
+        paused_snapshot = _build_paused_workflow_snapshot(
+            workflow_id=workflow_id,
+            raw_plan=raw_plan,
+            collaboration_plan=snapshot.get("collaboration_plan", {}),
+            original_user_input=merged_user_input,
+            conversation_history=conversation_history,
+            workflow_state=resumed_state,
+            pause_payload=pause_payload,
+        )
+        return {
+            "output_text": "진행을 일시 중단하고 사용자 응답을 기다립니다.\n\n" + str(pause_payload.get("request", "")).strip(),
+            "raw_plan": raw_plan,
+            "workflow_id": workflow_id,
+            "results": resumed_results,
+            "paused_workflow": paused_snapshot,
+        }
+
+    formatted = _format_execution_output(raw_plan=raw_plan, results=resumed_results)
+    final_summary = _summarize_collaboration_with_main_agent(
+        main_agent=main_agent,
+        user_input=merged_user_input,
+        conversation_history=conversation_history,
+        raw_plan=raw_plan,
+        results=resumed_results,
+    )
+    final_summary = _ensure_summary_agent_sections(final_summary, resumed_results)
+    if final_summary:
+        formatted = f"{formatted}\n\n=== Final Summary ===\n{final_summary}"
+    log_event(
+        "event_manager.collaboration",
+        "workflow_resumed_completed",
+        {"workflow_id": workflow_id, "results_count": len(resumed_results)},
+    )
+    return {
+        "output_text": formatted,
+        "raw_plan": raw_plan,
+        "workflow_id": workflow_id,
+        "results": resumed_results,
+        "paused_workflow": None,
+    }
+
+
+def execute_plan(
+    plan: Dict[str, Any],
+    main_agent: Any,
+    available_agents: List[Dict[str, Any]],
+    context: Dict[str, Any] | None = None,
+) -> str:
+    return str(
+        execute_plan_detailed(
+            plan=plan,
+            main_agent=main_agent,
+            available_agents=available_agents,
+            context=context,
+        ).get("output_text", "")
+    )
+
+
+__all__ = ["execute_plan", "execute_plan_detailed", "resume_paused_workflow_detailed"]

@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
 from agentic_sample_ad.main_agent.system_logger import log_event, log_exception
+from agentic_sample_ad.tool_output_utils import render_tool_output
 
 
 def _resolve_slack_server_path() -> str:
@@ -13,7 +14,7 @@ def _resolve_slack_server_path() -> str:
 
 def slack_post_message(channel: str, text: str) -> str:
     """
-    Send a message through a Slack MCP server.
+    Send a message through a Slack MCP server and return the shared tool output contract.
     """
     slack_server_path = _resolve_slack_server_path()
     log_event(
@@ -36,7 +37,15 @@ def slack_post_message(channel: str, text: str) -> str:
             {"reason": "missing_server_path", "message": message},
             level="ERROR",
         )
-        return message
+        return render_tool_output(
+            tool_name="slack_post_message",
+            ok=False,
+            summary=message,
+            content_type="error",
+            data={"channel": channel, "text": text},
+            errors=[message],
+            metadata={"server_script_path": slack_server_path},
+        )
 
     tool_name = "post_message"
     arguments: Dict[str, Any] = {"channel": channel, "text": text}
@@ -53,7 +62,23 @@ def slack_post_message(channel: str, text: str) -> str:
             {"channel": channel, "result": result},
             direction="inbound",
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        ok = not bool(result.get("isError")) if isinstance(result, dict) else True
+        errors = []
+        if isinstance(result, dict) and result.get("isError"):
+            errors.append("Slack MCP server returned an error.")
+        return render_tool_output(
+            tool_name="slack_post_message",
+            ok=ok,
+            summary=(
+                f"Posted message to Slack channel '{channel}'."
+                if ok
+                else f"Failed to post message to Slack channel '{channel}'."
+            ),
+            content_type="delivery",
+            data={"channel": channel, "text": text, "result": result},
+            errors=errors,
+            metadata={"server_script_path": slack_server_path},
+        )
     except Exception as e:
         log_exception(
             "tool.slack_post_message",

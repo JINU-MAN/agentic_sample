@@ -17,6 +17,7 @@ class SessionMemory:
     session_id: str
     turns: List[Dict[str, str]] = field(default_factory=list)
     workflow_contexts: List[Dict[str, Any]] = field(default_factory=list)
+    paused_workflow: Dict[str, Any] | None = None
 
     def add_turn(self, role: str, text: str) -> None:
         self.turns.append(
@@ -41,6 +42,21 @@ class SessionMemory:
             }
         )
 
+    def set_paused_workflow(self, payload: Dict[str, Any]) -> None:
+        self.paused_workflow = {
+            "ts": _utc_now_iso(),
+            "payload": dict(payload or {}),
+        }
+
+    def get_paused_workflow(self) -> Dict[str, Any] | None:
+        if not isinstance(self.paused_workflow, dict):
+            return None
+        payload = self.paused_workflow.get("payload")
+        return dict(payload) if isinstance(payload, dict) else None
+
+    def clear_paused_workflow(self) -> None:
+        self.paused_workflow = None
+
     def history_as_text(self, max_turns: int = 14) -> str:
         if not self.turns:
             return ""
@@ -52,6 +68,7 @@ class SessionMemory:
             "session_id": self.session_id,
             "turns": list(self.turns),
             "workflow_contexts": list(self.workflow_contexts),
+            "paused_workflow": dict(self.paused_workflow) if isinstance(self.paused_workflow, dict) else None,
         }
 
 

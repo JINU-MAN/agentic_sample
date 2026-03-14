@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 
 from agentic_sample_ad.mcp_local.client import call_mcp_tool
 from agentic_sample_ad.paper_agent.system_logger import log_event, log_exception
+from agentic_sample_ad.tool_output_utils import render_tool_output
 
 
 BASE_DIR = Path(__file__).parent.parent.parent
@@ -291,7 +292,7 @@ def _score_paper_for_question(paper: Dict[str, Any], terms: List[str]) -> int:
 
 def scrape_papers_with_mcp(query: str) -> str:
     """
-    Search PDFs with MCP paper server and return normalized JSON text.
+    Search PDFs with MCP paper server and return the shared tool output contract.
     """
     safe_query = query.strip()
     log_event(
@@ -307,11 +308,31 @@ def scrape_papers_with_mcp(query: str) -> str:
             arguments={"query": safe_query},
         )
         normalized = _extract_mcp_result(raw)
-        result_text = json.dumps(normalized, ensure_ascii=False, indent=2)
+        error_messages = [
+            str(item.get("error", "")).strip()
+            for item in normalized
+            if isinstance(item, dict) and str(item.get("error", "")).strip()
+        ]
+        items = [item for item in normalized if not (isinstance(item, dict) and item.get("error"))]
+        ok = not error_messages
+        result_text = render_tool_output(
+            tool_name="scrape_papers_with_mcp",
+            ok=ok,
+            summary=(
+                f"Found {len(items)} paper candidate(s) for query '{safe_query}'."
+                if ok
+                else (error_messages[0] if error_messages else "Paper search failed.")
+            ),
+            content_type="collection",
+            items=items,
+            data={"query": safe_query, "result_count": len(items)},
+            errors=error_messages,
+            metadata={"server_script_path": str(PAPER_MCP_SERVER)},
+        )
         log_event(
             "tool.scrape_papers_with_mcp",
             "call_completed",
-            {"query": safe_query, "result_count": len(normalized)},
+            {"query": safe_query, "result_count": len(items), "ok": ok},
             direction="inbound",
         )
         return result_text
@@ -333,7 +354,7 @@ def fetch_external_paper_with_mcp(
     max_chars: int = 12000,
 ) -> str:
     """
-    Fetch external paper metadata or a compact preview from URL / DOI / arXiv ID.
+    Fetch external paper metadata or a compact preview and return the shared tool output contract.
     """
     safe_reference = reference.strip()
     safe_url = url.strip()
@@ -366,7 +387,28 @@ def fetch_external_paper_with_mcp(
             },
         )
         result_obj = _extract_mcp_object_result(raw)
-        result_text = json.dumps(result_obj, ensure_ascii=False, indent=2)
+        ok = bool(result_obj.get("ok")) if isinstance(result_obj, dict) and "ok" in result_obj else bool(result_obj)
+        title = str(result_obj.get("title", "")).strip()
+        error_text = str(result_obj.get("error", "")).strip()
+        result_text = render_tool_output(
+            tool_name="fetch_external_paper_with_mcp",
+            ok=ok,
+            summary=(
+                f"Fetched external paper reference '{title}'."
+                if ok and title
+                else ("Fetched external paper reference." if ok else (error_text or "External paper fetch failed."))
+            ),
+            content_type="object",
+            data=result_obj,
+            errors=[error_text] if error_text else [],
+            metadata={
+                "reference": safe_reference,
+                "url": safe_url,
+                "doi": safe_doi,
+                "arxiv_id": safe_arxiv_id,
+                "server_script_path": str(PAPER_MCP_SERVER),
+            },
+        )
         log_event(
             "tool.fetch_external_paper_with_mcp",
             "call_completed",
@@ -376,6 +418,7 @@ def fetch_external_paper_with_mcp(
                 "title": str(result_obj.get("title", ""))[:160],
                 "doi": str(result_obj.get("doi", ""))[:120],
                 "arxiv_id": str(result_obj.get("arxiv_id", ""))[:40],
+                "ok": ok,
             },
             direction="inbound",
         )
@@ -404,7 +447,7 @@ def load_paper_memory_with_mcp(
     load_mode: str = "overview",
 ) -> str:
     """
-    Load workflow-scoped paper memory.
+    Load workflow-scoped paper memory and return the shared tool output contract.
 
     - overview mode (default): store compact overview from title/abstract/introduction-like head text.
     - full mode: also store full body text for detailed QA.
@@ -447,7 +490,15 @@ def load_paper_memory_with_mcp(
                 "loaded_count": 0,
                 "error": str(candidates[0].get("error", "search_error")),
             }
-            return json.dumps(payload, ensure_ascii=False, indent=2)
+            return render_tool_output(
+                tool_name="load_paper_memory_with_mcp",
+                ok=False,
+                summary=str(payload.get("error", "search_error")),
+                content_type="memory",
+                data=payload,
+                errors=[str(payload.get("error", "search_error"))],
+                metadata={"server_script_path": str(PAPER_MCP_SERVER)},
+            )
 
         ranked = [item for item in candidates if isinstance(item, dict)]
         ranked.sort(key=lambda x: int(x.get("score", 0)), reverse=True)
@@ -562,7 +613,20 @@ def load_paper_memory_with_mcp(
                 for item in loaded_papers
             ],
         }
-        result_text = json.dumps(result_payload, ensure_ascii=False, indent=2)
+        result_text = render_tool_output(
+            tool_name="load_paper_memory_with_mcp",
+            ok=bool(loaded_papers),
+            summary=(
+                f"Loaded {len(loaded_papers)} paper(s) into workflow memory."
+                if loaded_papers
+                else f"No papers were loaded into workflow memory for query '{safe_query}'."
+            ),
+            content_type="memory",
+            items=result_payload.get("papers", []),
+            data=result_payload,
+            errors=[] if loaded_papers else ["memory_load_empty"],
+            metadata={"server_script_path": str(PAPER_MCP_SERVER)},
+        )
         log_event(
             "tool.load_paper_memory_with_mcp",
             "call_completed",
@@ -599,7 +663,7 @@ def expand_paper_memory_with_mcp(
     max_chars_per_paper: int = MAX_MEMORY_CHARS_PER_PAPER,
 ) -> str:
     """
-    Lazily expand workflow paper memory with full text for the most relevant papers.
+    Lazily expand workflow paper memory with full text and return the shared tool output contract.
     """
     safe_question = question.strip()
     safe_workflow_id = _normalize_workflow_id(workflow_id)
@@ -626,7 +690,15 @@ def expand_paper_memory_with_mcp(
                 "error": "memory_empty",
                 "message": "No loaded paper memory. Call load_paper_memory_with_mcp first.",
             }
-            return json.dumps(payload, ensure_ascii=False, indent=2)
+            return render_tool_output(
+                tool_name="expand_paper_memory_with_mcp",
+                ok=False,
+                summary=str(payload.get("message", "No loaded paper memory.")),
+                content_type="memory",
+                data=payload,
+                errors=[str(payload.get("error", "memory_empty"))],
+                metadata={"server_script_path": str(PAPER_MCP_SERVER)},
+            )
 
         papers = [item for item in memory.get("papers", []) if isinstance(item, dict)]
         terms = _tokenize_text(safe_question)
@@ -698,7 +770,20 @@ def expand_paper_memory_with_mcp(
             "full_loaded_count": int(memory.get("full_loaded_count", 0)),
             "expanded_papers": expanded,
         }
-        result_text = json.dumps(payload, ensure_ascii=False, indent=2)
+        result_text = render_tool_output(
+            tool_name="expand_paper_memory_with_mcp",
+            ok=bool(expanded),
+            summary=(
+                f"Expanded full text for {len(expanded)} paper(s)."
+                if expanded
+                else "No additional paper memory was expanded."
+            ),
+            content_type="memory",
+            items=expanded,
+            data=payload,
+            errors=[] if expanded else ["memory_expand_empty"],
+            metadata={"server_script_path": str(PAPER_MCP_SERVER)},
+        )
         log_event(
             "tool.expand_paper_memory_with_mcp",
             "call_completed",
@@ -731,7 +816,7 @@ def query_paper_memory(
     max_snippets: int = MAX_MEMORY_SNIPPETS,
 ) -> str:
     """
-    Query loaded paper memory and return the most relevant snippets quickly.
+    Query loaded paper memory and return the shared tool output contract.
     """
     safe_question = question.strip()
     safe_workflow_id = _normalize_workflow_id(workflow_id)
@@ -755,7 +840,14 @@ def query_paper_memory(
                 "error": "memory_empty",
                 "message": "No loaded paper memory. Call load_paper_memory_with_mcp first.",
             }
-            return json.dumps(payload, ensure_ascii=False, indent=2)
+            return render_tool_output(
+                tool_name="query_paper_memory",
+                ok=False,
+                summary=str(payload.get("message", "No loaded paper memory.")),
+                content_type="memory",
+                data=payload,
+                errors=[str(payload.get("error", "memory_empty"))],
+            )
 
         terms = _tokenize_text(safe_question)
         snippet_candidates: List[Dict[str, Any]] = []
@@ -857,7 +949,19 @@ def query_paper_memory(
             ),
             "snippets": picked,
         }
-        result_text = json.dumps(payload, ensure_ascii=False, indent=2)
+        result_text = render_tool_output(
+            tool_name="query_paper_memory",
+            ok=True,
+            summary=(
+                f"Retrieved {len(picked)} memory snippet(s) for the current paper question."
+                if picked
+                else "No matching snippets were found in the current paper memory."
+            ),
+            content_type="memory",
+            items=picked,
+            data=payload,
+            errors=[],
+        )
         log_event(
             "tool.query_paper_memory",
             "call_completed",

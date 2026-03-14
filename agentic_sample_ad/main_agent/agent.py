@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 from google.adk.agents import LlmAgent
 
 from agentic_sample_ad.agent_session_memory_runtime import build_load_session_memory_tool
+from agentic_sample_ad.event_manager import execute_plan_detailed, resume_paused_workflow_detailed
 from agentic_sample_ad.main_agent.slack_mcp_tool import slack_post_message
 from agentic_sample_ad.main_agent.workflow_memory_tool import read_workflow_memory
 from agentic_sample_ad.model_settings import resolve_agent_model
@@ -14,7 +15,6 @@ from agentic_sample_ad.planner import plan_with_main_agent
 from agentic_sample_ad.skill_runtime import build_skill_toolset
 
 from .card_registry import load_sub_agent_cards
-from .event_manager import execute_plan
 from .session_memory import get_or_create_session
 from .system_logger import (
     enable_a2a_package_logging,
@@ -78,7 +78,8 @@ def create_main_agent() -> LlmAgent:
         instruction=(
             "You are the coordinator of a multi-agent system. "
             "Understand the user request, decide what can be handled directly, and delegate specialist work when it improves the result. "
-            "Own orchestration, replanning, user clarification, and final delivery actions that belong to the coordinator."
+            "Own orchestration, replanning, user clarification, and final delivery actions that belong to the coordinator. "
+            "Your direct tools return JSON with `ok`, `tool_name`, `summary`, `content_type`, `items`, `data`, `errors`, and `metadata`; use that structure internally and do not confuse raw tool output with final user-facing answers."
         ),
         tools=tools,
     )
@@ -260,24 +261,65 @@ def run_main_agent(user_input: str, session_id: str = "default") -> str:
             "conversation_history": session.history_as_text(),
             "session_id": session_id,
         }
-        plan = plan_with_main_agent(
-            main_agent=main_agent,
-            available_agents=available_agents,
-            context=planning_context,
-        )
-        result = execute_plan(
-            plan=plan,
-            main_agent=main_agent,
-            available_agents=available_agents,
-            context=planning_context,
-        )
-        result_text = str(result)
+        paused_workflow = session.get_paused_workflow()
+        if paused_workflow:
+            log_main_event(
+                "paused_workflow_resume_started",
+                {
+                    "session_id": session_id,
+                    "workflow_id": str(paused_workflow.get("workflow_id", "")).strip(),
+                },
+            )
+            plan: Dict[str, Any] = {
+                "raw_plan": str(paused_workflow.get("raw_plan", "")),
+                "meta": {
+                    "user_input": str(paused_workflow.get("original_user_input", "")).strip() or user_input,
+                    "collaboration_plan": paused_workflow.get("collaboration_plan", {}),
+                },
+            }
+            execution = resume_paused_workflow_detailed(
+                paused_workflow=paused_workflow,
+                clarification_response=user_input,
+                main_agent=main_agent,
+                available_agents=available_agents,
+                context=planning_context,
+            )
+        else:
+            plan = plan_with_main_agent(
+                main_agent=main_agent,
+                available_agents=available_agents,
+                context=planning_context,
+            )
+            execution = execute_plan_detailed(
+                plan=plan,
+                main_agent=main_agent,
+                available_agents=available_agents,
+                context=planning_context,
+            )
+        result_text = str(execution.get("output_text", ""))
+
+        paused_snapshot = execution.get("paused_workflow")
+        if isinstance(paused_snapshot, dict) and paused_snapshot:
+            session.set_paused_workflow(paused_snapshot)
+            log_main_event(
+                "paused_workflow_saved",
+                {
+                    "session_id": session_id,
+                    "workflow_id": str(paused_snapshot.get("workflow_id", "")).strip(),
+                    "pause_request": str(paused_snapshot.get("pause_request", "")).strip(),
+                },
+            )
+        else:
+            session.clear_paused_workflow()
+            log_main_event("paused_workflow_cleared", {"session_id": session_id})
 
         session.add_workflow_context(
             {
                 "raw_plan": str(plan.get("raw_plan", "")),
                 "collaboration_plan": plan.get("meta", {}).get("collaboration_plan", {}),
                 "execution_output": result_text,
+                "workflow_id": str(execution.get("workflow_id", "")).strip(),
+                "paused_workflow_active": bool(paused_snapshot),
             }
         )
         session.add_assistant_turn(result_text)

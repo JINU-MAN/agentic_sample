@@ -2,6 +2,11 @@
 
 ## Available internal action
 
+- All direct tools return one JSON object with:
+  - `ok`, `tool_name`, `summary`, `content_type`, `items`, `data`, `errors`, `metadata`
+  - Read `summary` first, then inspect `items` or `data`.
+  - Do not confuse raw tool JSON with final user-facing or workflow-step output.
+
 - `load_session_memory(section="", query="", max_items=6)`
   - Use when you need MainAgent's current tool inventory, known sub-agent contracts, or the handoff schema without re-reading long instructions.
   - Prefer `section="contracts"` for ownership and delegation rules.
